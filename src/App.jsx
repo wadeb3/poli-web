@@ -2065,6 +2065,22 @@ const titleCase = str => {
 const policyYear = p => p.last_edited_at ? new Date(p.last_edited_at).getFullYear() : null;
 const RECENT_CUTOFF_YEAR = 2022; // policies last touched before this are treated as "older" for highlight curation
 
+// They Vote For You's own site uses categorical labels (e.g. "voted
+// consistently for") rather than raw percentages — that labeling lives on a
+// different API endpoint than the one we use (would need ~200+ extra requests
+// to fetch their exact wording per person). This mirrors that same 7-band
+// scheme using the agreement score we already have, so the UI never shows a
+// bare percentage.
+const agreementCategory = (agreement) => {
+  if (agreement >= 90) return { label:"Voted consistently for",  color:C.green };
+  if (agreement >= 70) return { label:"Voted mostly for",        color:C.green };
+  if (agreement >= 55) return { label:"Leans for",               color:C.green };
+  if (agreement >  45) return { label:"Mixed record",            color:C.amber };
+  if (agreement >  30) return { label:"Leans against",           color:C.red   };
+  if (agreement >  10) return { label:"Voted mostly against",    color:C.red   };
+  return                       { label:"Voted consistently against", color:C.red };
+};
+
 function SenatorCard({ sen }) {
   const [expanded, setExpanded] = useState(false);
   const c = PARTY_COLOR[sen.party] || C.mid;
@@ -2083,23 +2099,26 @@ function SenatorCard({ sen }) {
   const supports = sorted.slice(0, 3);
   const opposes  = sorted.slice(-3).reverse();
   const allSorted = Array.isArray(sen.policy_positions)
-    ? [...sen.policy_positions].filter(p => p.voted && p.agreement != null).sort((a, b) => b.agreement - a.agreement)
+    ? [...sen.policy_positions]
+        .filter(p => p.voted && p.agreement != null)
+        .sort((a, b) => new Date(b.last_edited_at || 0) - new Date(a.last_edited_at || 0))
     : [];
 
   const Bar = ({ p }) => {
     const year = policyYear(p);
+    const cat = agreementCategory(p.agreement);
     return (
       <div style={{ marginBottom:10 }}>
-        <div style={{ display:"flex", justifyContent:"space-between", gap:10, fontSize:11.5, marginBottom:3 }}>
-          <span style={{ color:C.ink, lineHeight:1.4 }}>{titleCase(p.name)}</span>
-          <span style={{ color:C.faint, flexShrink:0, whiteSpace:"nowrap" }}>{year ? `${year} · ` : ""}{Math.round(p.agreement)}%</span>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, marginBottom:4 }}>
+          <span style={{ fontSize:11.5, color:C.ink, lineHeight:1.4 }}>{titleCase(p.name)}</span>
+          {year && <span style={{ fontSize:10, color:C.faint, flexShrink:0 }}>{year}</span>}
         </div>
-        <div style={{ height:5, background:C.border, borderRadius:99, overflow:"hidden" }}>
-          <div style={{ width:`${p.agreement}%`, height:"100%", background:p.agreement>=50?C.green:C.red, borderRadius:99 }} />
-        </div>
+        <span style={{ display:"inline-block", fontSize:10, fontWeight:700, color:cat.color, background:`${cat.color}14`, border:`1px solid ${cat.color}30`, padding:"2px 8px", borderRadius:99 }}>{cat.label}</span>
       </div>
     );
   };
+
+  const offices = Array.isArray(sen.offices) ? sen.offices.map(o => typeof o === "string" ? o : (o?.name || o?.position || o?.title)).filter(Boolean) : [];
 
   return (
     <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"22px 24px" }}>
@@ -2110,7 +2129,12 @@ function SenatorCard({ sen }) {
         </div>
         <div>
           <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:C.ink, marginBottom:3 }}>{sen.name}</div>
-          <PartyPill party={sen.party} />
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+            <PartyPill party={sen.party} />
+            {offices.map((o, i) => (
+              <span key={i} style={{ fontSize:11, fontWeight:600, color:C.blue, background:C.blueSoft, padding:"3px 9px", borderRadius:99 }}>{o}</span>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -2137,7 +2161,7 @@ function SenatorCard({ sen }) {
       {positions.length > 0 ? (
         <>
           <div style={{ background:C.surface, borderRadius:10, padding:"9px 12px", marginBottom:16, fontSize:11, color:C.mid, lineHeight:1.5 }}>
-            Score reflects how closely their votes matched each policy position — <strong style={{ color:C.ink }}>100% = consistently voted for it</strong>, <strong style={{ color:C.ink }}>0% = consistently voted against it</strong>. Prioritising policies active since {RECENT_CUTOFF_YEAR}.
+            Labels reflect how closely their votes matched each policy position, based on official parliamentary voting records. Prioritising policies active since {RECENT_CUTOFF_YEAR}.
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:24 }}>
             <div>
@@ -2157,7 +2181,7 @@ function SenatorCard({ sen }) {
       {allSorted.length > 0 && (
         <>
           <button onClick={() => setExpanded(x => !x)} style={{ marginTop:16, background:"none", border:"none", padding:0, fontSize:11.5, fontWeight:600, color:C.accent, cursor:"pointer" }}>
-            {expanded ? "Hide full record ↑" : `View all ${allSorted.length} policy positions ↓`}
+            {expanded ? "Hide full record ↑" : `View all ${allSorted.length} policy positions (newest first) ↓`}
           </button>
           {expanded && (
             <div style={{ marginTop:12, paddingTop:12, borderTop:`1px solid ${C.border}`, maxHeight:340, overflowY:"auto" }} className="poli-scroll">

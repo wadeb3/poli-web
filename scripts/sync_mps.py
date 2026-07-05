@@ -79,6 +79,7 @@ def transform(people):
             row["votes_attended"] = detail.get("votes_attended")
             row["votes_possible"] = detail.get("votes_possible")
             row["rebellions"] = detail.get("rebellions")
+            row["offices"] = detail.get("offices") or []
 
             # TVFY nests the policy name/description under a "policy" sub-object,
             # and "agreement" comes back as a string (e.g. "100", "6.9") — flatten
@@ -104,6 +105,7 @@ def transform(people):
             row["votes_attended"] = None
             row["votes_possible"] = None
             row["rebellions"] = None
+            row["offices"] = None
             row["policy_positions"] = None
 
         rows.append(row)
