@@ -1888,11 +1888,6 @@ function MyMPTab({ userVotes, initialPostcode, initialView }) {
         <div style={{ marginTop:10, fontSize:11, color:C.faint }}>Currently covers ~19 sample electorates — full national postcode coverage is a planned upgrade.</div>
       </div>
 
-      {result && !loading && (
-        <div style={{ marginBottom:14, background:C.surface, borderRadius:10, padding:"10px 14px", fontSize:12, color:C.mid }}>
-          Showing: <strong style={{ color:C.ink }}>{activeView==="mp"?"Your MP":activeView==="senators"?"Your senators":"Electorate history"}</strong> — use the tab above to switch views.
-        </div>
-      )}
 
       {loading && <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"32px", textAlign:"center" }}><div style={{ fontFamily:"'Instrument Serif',serif", fontSize:18, color:C.faint }}>Looking up your electorate…</div></div>}
       {searched&&!loading&&!result && <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"28px 24px", textAlign:"center" }}><div style={{ fontFamily:"'Instrument Serif',serif", fontSize:20, color:C.ink, marginBottom:8 }}>Electorate not found</div><p style={{ fontSize:13, color:C.mid, margin:0 }}>Try a postcode, suburb name, or electorate name.</p></div>}
@@ -1942,15 +1937,15 @@ function MyMPTab({ userVotes, initialPostcode, initialView }) {
 
               <Divider my={18} />
 
-              {/* ── Stat tiles ── */}
+              {/* ── Stat tiles — matching senator card layout ── */}
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:10, marginBottom:20 }}>
                 <div style={{ background:C.surface, borderRadius:12, padding:"14px 16px" }}>
                   <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:mpColor }}>{result.electorate}</div>
                   <div style={{ fontSize:11, color:C.faint, marginTop:3 }}>Electorate</div>
                 </div>
                 <div style={{ background:C.surface, borderRadius:12, padding:"14px 16px" }}>
-                  <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:result.mp.margin<5?C.amber:C.green }}>{result.mp.margin}%</div>
-                  <div style={{ fontSize:11, color:C.faint, marginTop:3 }}>{result.mp.margin<5?"Marginal ⚠":"Safe seat"} (2022)</div>
+                  <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:C.ink }}>{result.state}</div>
+                  <div style={{ fontSize:11, color:C.faint, marginTop:3 }}>State</div>
                 </div>
                 {liveMp?.votes_attended != null && liveMp?.votes_possible > 0 && (
                   <div style={{ background:C.surface, borderRadius:12, padding:"14px 16px" }}>
@@ -2153,7 +2148,7 @@ function SenatorTracker({ stateOverride }) {
         <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"28px", textAlign:"center", color:C.faint, fontSize:13 }}>No senators found for {state} in the database yet.</div>
       )}
 
-      <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+      <div style={{ display:"flex", flexDirection:"column", gap:16, maxWidth:820, margin:"0 auto" }}>
         {senators.map((sen) => <SenatorCard key={sen.id} sen={sen} />)}
       </div>
     </div>
@@ -2264,19 +2259,23 @@ function SenatorCard({ sen }) {
 
       <Divider my={16} />
 
-      {/* ── Stats row ── */}
+      {/* ── Stats row — matching MP card layout ── */}
       {(attendancePct != null || sen.rebellions != null) && (
-        <div style={{ display:"grid", gridTemplateColumns:attendancePct != null && sen.rebellions != null ? "1fr 1fr" : "1fr", gap:10, marginBottom:20 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:10, marginBottom:20 }}>
+          <div style={{ background:C.surface, borderRadius:12, padding:"14px 16px" }}>
+            <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:C.ink }}>{sen.electorate || sen.state || "—"}</div>
+            <div style={{ fontSize:11, color:C.faint, marginTop:3 }}>{sen.chamber === "senate" ? "State" : "Electorate"}</div>
+          </div>
           {attendancePct != null && (
             <div style={{ background:C.surface, borderRadius:12, padding:"14px 16px" }}>
-              <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:24, color:C.ink, lineHeight:1 }}>{attendancePct}%</div>
-              <div style={{ fontSize:11, color:C.faint, marginTop:4 }}>Voting attendance</div>
+              <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:C.ink }}>{attendancePct}%</div>
+              <div style={{ fontSize:11, color:C.faint, marginTop:3 }}>Voting attendance</div>
             </div>
           )}
           {sen.rebellions != null && (
             <div style={{ background:sen.rebellions > 0 ? C.amberSoft : C.surface, border:sen.rebellions > 0 ? `1px solid ${C.amber}22` : "none", borderRadius:12, padding:"14px 16px" }}>
-              <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:24, color:sen.rebellions > 0 ? C.amber : C.ink, lineHeight:1 }}>{sen.rebellions}</div>
-              <div style={{ fontSize:11, color:C.faint, marginTop:4 }}>Times voted against own party</div>
+              <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:sen.rebellions > 0 ? C.amber : C.ink }}>{sen.rebellions}</div>
+              <div style={{ fontSize:11, color:C.faint, marginTop:3 }}>Times voted against own party</div>
             </div>
           )}
         </div>
