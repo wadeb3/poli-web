@@ -1898,58 +1898,151 @@ function MyMPTab({ userVotes, initialPostcode, initialView }) {
       {searched&&!loading&&!result && <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"28px 24px", textAlign:"center" }}><div style={{ fontFamily:"'Instrument Serif',serif", fontSize:20, color:C.ink, marginBottom:8 }}>Electorate not found</div><p style={{ fontSize:13, color:C.mid, margin:0 }}>Try a postcode, suburb name, or electorate name.</p></div>}
 
       {result && !loading && activeView==="mp" && (
-        <div style={{ display:"grid", gridTemplateColumns:"minmax(280px, 380px) 1fr", gap:16, alignItems:"start" }}>
-          <div>
-          {/* MP card */}
-          <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"22px 24px", marginBottom:12 }}>
-            <div style={{ display:"flex", gap:8, marginBottom:14, flexWrap:"wrap" }}>
-              <span style={{ padding:"3px 10px", borderRadius:99, fontSize:11, fontWeight:700, background:`${mpColor}0D`, color:mpColor, border:`1px solid ${mpColor}30` }}>{result.state}</span>
-              <span style={{ padding:"3px 10px", borderRadius:99, fontSize:11, color:C.mid, background:C.surface, border:`1px solid ${C.border}` }}>Federal Electorate</span>
-              {liveMp && (
-                <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 10px", borderRadius:99, fontSize:11, fontWeight:600, color:C.green, background:C.greenSoft }}>
-                  <span style={{ width:5, height:5, borderRadius:"50%", background:C.green, display:"inline-block" }} /> Live from Supabase
-                </span>
+        <div style={{ maxWidth:820, margin:"0 auto" }}>
+          {liveMpLoading && (
+            <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"32px", textAlign:"center" }}>
+              <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:18, color:C.faint }}>Loading your MP's record…</div>
+            </div>
+          )}
+
+          {!liveMpLoading && (
+            <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"28px 28px 24px" }}>
+
+              {/* ── Tags row ── */}
+              <div style={{ display:"flex", gap:8, marginBottom:18, flexWrap:"wrap" }}>
+                <span style={{ padding:"3px 10px", borderRadius:99, fontSize:11, fontWeight:700, background:`${mpColor}0D`, color:mpColor, border:`1px solid ${mpColor}30` }}>{result.state}</span>
+                <span style={{ padding:"3px 10px", borderRadius:99, fontSize:11, color:C.mid, background:C.surface, border:`1px solid ${C.border}` }}>House of Representatives</span>
+                {liveMp && (
+                  <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 10px", borderRadius:99, fontSize:11, fontWeight:600, color:C.green, background:C.greenSoft }}>
+                    <span style={{ width:5, height:5, borderRadius:"50%", background:C.green, display:"inline-block" }} /> Live data
+                  </span>
+                )}
+              </div>
+
+              {/* ── Profile header ── */}
+              <div style={{ display:"flex", gap:18, alignItems:"flex-start", marginBottom:6 }}>
+                <div style={{ width:64, height:64, borderRadius:16, background:`${mpColor}15`, border:`1px solid ${mpColor}30`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <span style={{ fontFamily:"'Instrument Serif',serif", fontSize:26, color:mpColor }}>{displayName?.split(" ").map(n=>n[0]).join("").slice(0,2)}</span>
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:26, color:C.ink, marginBottom:4, lineHeight:1.15 }}>{displayName}</div>
+                  <div style={{ fontSize:13, color:C.mid, marginBottom:8 }}>{liveMp ? `Member for ${result.electorate}` : result.mp.role}</div>
+                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+                    <PartyPill party={displayParty} />
+                    {/* Office badges */}
+                    {(() => {
+                      const offices = liveMp?.offices ? (Array.isArray(liveMp.offices) ? liveMp.offices : []).map(o => typeof o === "string" ? o : (o?.name || o?.position || o?.title)).filter(Boolean) : [];
+                      return offices.map((o, i) => (
+                        <span key={i} style={{ fontSize:10, fontWeight:600, color:C.blue, background:C.blueSoft, border:`1px solid ${C.blue}20`, padding:"3px 9px", borderRadius:99 }}>{o}</span>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              </div>
+
+              <Divider my={18} />
+
+              {/* ── Stat tiles ── */}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:10, marginBottom:20 }}>
+                <div style={{ background:C.surface, borderRadius:12, padding:"14px 16px" }}>
+                  <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:mpColor }}>{result.electorate}</div>
+                  <div style={{ fontSize:11, color:C.faint, marginTop:3 }}>Electorate</div>
+                </div>
+                <div style={{ background:C.surface, borderRadius:12, padding:"14px 16px" }}>
+                  <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:result.mp.margin<5?C.amber:C.green }}>{result.mp.margin}%</div>
+                  <div style={{ fontSize:11, color:C.faint, marginTop:3 }}>{result.mp.margin<5?"Marginal ⚠":"Safe seat"} (2022)</div>
+                </div>
+                {liveMp?.votes_attended != null && liveMp?.votes_possible > 0 && (
+                  <div style={{ background:C.surface, borderRadius:12, padding:"14px 16px" }}>
+                    <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:C.ink }}>{Math.round((liveMp.votes_attended / liveMp.votes_possible) * 100)}%</div>
+                    <div style={{ fontSize:11, color:C.faint, marginTop:3 }}>Voting attendance</div>
+                  </div>
+                )}
+                {liveMp?.rebellions != null && (
+                  <div style={{ background:liveMp.rebellions > 0 ? C.amberSoft : C.surface, border:liveMp.rebellions > 0 ? `1px solid ${C.amber}22` : "none", borderRadius:12, padding:"14px 16px" }}>
+                    <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:liveMp.rebellions > 0 ? C.amber : C.ink }}>{liveMp.rebellions}</div>
+                    <div style={{ fontSize:11, color:C.faint, marginTop:3 }}>Party rebellions</div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Contact button ── */}
+              <button onClick={()=>setShowContact(true)} style={{ width:"100%", padding:"13px", borderRadius:12, background:C.accent, border:"none", cursor:"pointer", fontSize:14, fontWeight:700, color:"#fff", marginBottom:20 }}>
+                ✉️ Write to {displayName?.split(" ")[0]}
+              </button>
+
+              {isStale && (
+                <div style={{ background:C.amberSoft, border:`1px solid ${C.amber}33`, borderRadius:12, padding:"12px 16px", marginBottom:20, fontSize:12, color:C.mid, lineHeight:1.5 }}>
+                  ⚠ Couldn't find a live match for this electorate in Supabase — showing sample data, which may be outdated since the last election.
+                </div>
+              )}
+
+              {/* ── Voting record — reusing SenatorCard's internal layout ── */}
+              {liveMp && (() => {
+                const positions = Array.isArray(liveMp.policy_positions)
+                  ? liveMp.policy_positions.filter(p => p.voted && p.agreement != null && isSubstantivePolicy(p))
+                  : [];
+                const byRecency = [...positions].sort((a, b) => new Date(b.last_edited_at || 0) - new Date(a.last_edited_at || 0));
+                const recentFor     = byRecency.filter(p => p.agreement >= 70).slice(0, 3);
+                const recentAgainst = byRecency.filter(p => p.agreement <= 30).slice(0, 3);
+                const allByRecency = Array.isArray(liveMp.policy_positions)
+                  ? [...liveMp.policy_positions].filter(p => p.voted && p.agreement != null).sort((a, b) => new Date(b.last_edited_at || 0) - new Date(a.last_edited_at || 0))
+                  : [];
+
+                const PolicyRow = ({ p }) => {
+                  const year = policyYear(p);
+                  const cat = agreementCategory(p.agreement);
+                  return (
+                    <div style={{ background:C.surface, borderRadius:"0 12px 12px 0", borderLeft:`3px solid ${cat.color}`, padding:"12px 14px", marginBottom:8 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10, marginBottom:6 }}>
+                        <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:14, color:C.ink, lineHeight:1.35 }}>{titleCase(p.name)}</div>
+                        {year && <span style={{ fontSize:10, color:C.faint, flexShrink:0, background:C.white, border:`1px solid ${C.border}`, padding:"2px 7px", borderRadius:99 }}>{year}</span>}
+                      </div>
+                      <span style={{ display:"inline-block", fontSize:10, fontWeight:700, color:cat.color, background:`${cat.color}12`, border:`1px solid ${cat.color}28`, padding:"3px 10px", borderRadius:99 }}>{cat.label}</span>
+                    </div>
+                  );
+                };
+
+                return (
+                  <>
+                    <Divider my={18} />
+                    <SectionLabel>How they vote</SectionLabel>
+
+                    {positions.length > 0 ? (
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
+                        <div>
+                          <SectionLabel color={C.green}>Recent votes for</SectionLabel>
+                          {recentFor.length > 0
+                            ? recentFor.map(p => <PolicyRow key={p.id} p={p} />)
+                            : <div style={{ fontSize:11, color:C.faint, fontStyle:"italic", padding:"8px 0" }}>No strong recent support positions</div>
+                          }
+                        </div>
+                        <div>
+                          <SectionLabel color={C.red}>Recent votes against</SectionLabel>
+                          {recentAgainst.length > 0
+                            ? recentAgainst.map(p => <PolicyRow key={p.id} p={p} />)
+                            : <div style={{ fontSize:11, color:C.faint, fontStyle:"italic", padding:"8px 0" }}>No strong recent opposition positions</div>
+                          }
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ background:C.surface, borderRadius:12, padding:"18px", textAlign:"center" }}>
+                        <span style={{ fontSize:12, color:C.faint }}>No policy voting data available yet</span>
+                      </div>
+                    )}
+
+                    {allByRecency.length > 0 && <ExpandableFullRecord items={allByRecency} PolicyRow={PolicyRow} />}
+                  </>
+                );
+              })()}
+
+              {!liveMp && !isStale && (
+                <div style={{ background:C.surface, borderRadius:12, padding:"18px", textAlign:"center" }}>
+                  <span style={{ fontSize:12, color:C.faint }}>No live voting record found for this electorate yet.</span>
+                </div>
               )}
             </div>
-            <div style={{ display:"flex", gap:16, alignItems:"flex-start", marginBottom:16 }}>
-              <div style={{ width:56, height:56, borderRadius:14, background:`${mpColor}15`, border:`1px solid ${mpColor}30`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                <span style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:mpColor }}>{displayName?.split(" ").map(n=>n[0]).join("").slice(0,2)}</span>
-              </div>
-              <div>
-                <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:C.ink, marginBottom:3 }}>{displayName}</div>
-                <div style={{ fontSize:13, color:C.mid, marginBottom:8 }}>{liveMp ? `Member for ${result.electorate}` : result.mp.role}</div>
-                <div style={{ display:"flex", gap:6 }}><PartyPill party={displayParty} /></div>
-              </div>
-            </div>
-            <Divider my={16} />
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
-              <div style={{ background:C.surface, borderRadius:12, padding:"12px 14px" }}><div style={{ fontFamily:"'Instrument Serif',serif", fontSize:20, color:mpColor }}>{result.electorate}</div><div style={{ fontSize:11, color:C.faint, marginTop:2 }}>Electorate</div></div>
-              <div style={{ background:C.surface, borderRadius:12, padding:"12px 14px" }}><div style={{ fontFamily:"'Instrument Serif',serif", fontSize:20, color:result.mp.margin<5?C.amber:C.green }}>{result.mp.margin}%</div><div style={{ fontSize:11, color:C.faint, marginTop:2 }}>{result.mp.margin<5?"Marginal ⚠":"Safe seat"} (2022 result)</div></div>
-            </div>
-            {/* Contact button */}
-            <button onClick={()=>setShowContact(true)} style={{ width:"100%", padding:"12px", borderRadius:12, background:C.accent, border:"none", cursor:"pointer", fontSize:13, fontWeight:700, color:"#fff" }}>
-              ✉️ Write to {displayName?.split(" ")[0]}
-            </button>
-          </div>
-
-          {isStale && (
-            <div style={{ background:C.amberSoft, border:`1px solid ${C.amber}33`, borderRadius:16, padding:"14px 16px", fontSize:12, color:C.mid, lineHeight:1.5 }}>
-              ⚠ Couldn't find a live match for this electorate in Supabase — showing sample data, which may be outdated since the last election.
-            </div>
           )}
-          </div>
-
-          <div>
-          {/* Voting record — real data once we have a live match */}
-          <SectionLabel>Voting record</SectionLabel>
-          {liveMpLoading && <div style={{ fontSize:13, color:C.faint }}>Loading real voting record…</div>}
-          {!liveMpLoading && liveMp && <SenatorCard sen={liveMp} />}
-          {!liveMpLoading && !liveMp && (
-            <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"20px", fontSize:13, color:C.faint, textAlign:"center" }}>
-              No live voting record found for this electorate yet.
-            </div>
-          )}
-          </div>
         </div>
       )}
 
@@ -1975,6 +2068,30 @@ function MyMPTab({ userVotes, initialPostcode, initialView }) {
         </div>
       )}
     </div>
+  );
+}
+
+// ── Shared expandable full voting record ─────────────────────────────────────
+function ExpandableFullRecord({ items, PolicyRow }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <>
+      <Divider my={16} />
+      <button onClick={() => setExpanded(x => !x)} style={{
+        width:"100%", padding:"10px", borderRadius:10,
+        border:`1.5px solid ${expanded ? C.accent : C.border}`,
+        background:expanded ? C.accentSoft : "none",
+        cursor:"pointer", fontSize:12, fontWeight:600,
+        color:expanded ? C.accent : C.mid,
+      }}>
+        {expanded ? "Hide full record ↑" : `View all ${items.length} policy positions — newest first ↓`}
+      </button>
+      {expanded && (
+        <div style={{ marginTop:14, maxHeight:420, overflowY:"auto" }} className="poli-scroll">
+          {items.map(p => <PolicyRow key={p.id} p={p} />)}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -2082,7 +2199,6 @@ const agreementCategory = (agreement) => {
 };
 
 function SenatorCard({ sen }) {
-  const [expanded, setExpanded] = useState(false);
   const c = PARTY_COLOR[sen.party] || C.mid;
   const attendancePct = (sen.votes_attended != null && sen.votes_possible) ? Math.round((sen.votes_attended / sen.votes_possible) * 100) : null;
 
@@ -2191,25 +2307,7 @@ function SenatorCard({ sen }) {
       )}
 
       {/* ── Full record — expandable, newest first ── */}
-      {allByRecency.length > 0 && (
-        <>
-          <Divider my={16} />
-          <button onClick={() => setExpanded(x => !x)} style={{
-            width:"100%", padding:"10px", borderRadius:10,
-            border:`1.5px solid ${expanded ? C.accent : C.border}`,
-            background:expanded ? C.accentSoft : "none",
-            cursor:"pointer", fontSize:12, fontWeight:600,
-            color:expanded ? C.accent : C.mid,
-          }}>
-            {expanded ? "Hide full record ↑" : `View all ${allByRecency.length} policy positions — newest first ↓`}
-          </button>
-          {expanded && (
-            <div style={{ marginTop:14, maxHeight:420, overflowY:"auto" }} className="poli-scroll">
-              {allByRecency.map(p => <PolicyRow key={p.id} p={p} />)}
-            </div>
-          )}
-        </>
-      )}
+      {allByRecency.length > 0 && <ExpandableFullRecord items={allByRecency} PolicyRow={PolicyRow} />}
     </div>
   );
 }
