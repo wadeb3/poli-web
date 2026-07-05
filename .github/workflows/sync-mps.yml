@@ -1,14 +1,15 @@
 name: Sync MPs from They Vote For You
 
+# NOTE: The automatic weekly schedule is disabled for now — They Vote For You
+# appears to block requests from GitHub Actions' shared IP ranges (confirmed
+# via a 403 error even with a valid key and User-Agent header). The same
+# script works fine run manually from a normal home/office internet
+# connection (see scripts/sync_mps.py and the README for how).
+#
+# Manual trigger is left in place in case this gets revisited later (e.g. if
+# running from a different host, or if TVFY changes their filtering).
 on:
-  schedule:
-    # Runs every Monday at 06:00 UTC (~4pm AEST / 5pm AEDT).
-    # MP/Senator lists change rarely, so weekly is plenty.
-    - cron: "0 6 * * 1"
   workflow_dispatch:
-    # Lets you trigger this manually from the GitHub Actions tab, any time,
-    # without waiting for the weekly schedule — useful right after a
-    # by-election or when testing.
 
 jobs:
   sync:
