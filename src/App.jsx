@@ -2090,49 +2090,57 @@ function SenatorCard({ sen }) {
     ? sen.policy_positions.filter(p => p.voted && p.agreement != null && isSubstantivePolicy(p))
     : [];
 
-  // Prefer recent policies for the curated highlights so "where do they stand"
-  // reflects current debates rather than issues settled a decade ago — but
-  // fall back to the full set if there aren't enough recent ones to fill it.
-  const recent = positions.filter(p => (policyYear(p) || 0) >= RECENT_CUTOFF_YEAR);
-  const pool = recent.length >= 6 ? recent : positions;
-  const sorted   = [...pool].sort((a, b) => b.agreement - a.agreement);
-  const supports = sorted.slice(0, 3);
-  const opposes  = sorted.slice(-3).reverse();
-  const allSorted = Array.isArray(sen.policy_positions)
+  // Sort by recency FIRST, then pick the strongest for/against from that
+  // recency-ordered list — so highlights always reflect current debates,
+  // not decade-old settled issues that happen to have 100%/0% scores.
+  const byRecency = [...positions].sort((a, b) => new Date(b.last_edited_at || 0) - new Date(a.last_edited_at || 0));
+  const recentFor     = byRecency.filter(p => p.agreement >= 70).slice(0, 3);
+  const recentAgainst = byRecency.filter(p => p.agreement <= 30).slice(0, 3);
+
+  const allByRecency = Array.isArray(sen.policy_positions)
     ? [...sen.policy_positions]
         .filter(p => p.voted && p.agreement != null)
         .sort((a, b) => new Date(b.last_edited_at || 0) - new Date(a.last_edited_at || 0))
     : [];
 
-  const Bar = ({ p }) => {
+  const offices = Array.isArray(sen.offices) ? sen.offices.map(o => typeof o === "string" ? o : (o?.name || o?.position || o?.title)).filter(Boolean) : [];
+
+  // Individual policy row — styled like the budget tracker's impact cards
+  // with a colored left border, proper card separation, and category pill
+  const PolicyRow = ({ p }) => {
     const year = policyYear(p);
     const cat = agreementCategory(p.agreement);
     return (
-      <div style={{ marginBottom:10 }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, marginBottom:4 }}>
-          <span style={{ fontSize:11.5, color:C.ink, lineHeight:1.4 }}>{titleCase(p.name)}</span>
-          {year && <span style={{ fontSize:10, color:C.faint, flexShrink:0 }}>{year}</span>}
+      <div style={{
+        background:C.surface, borderRadius:"0 12px 12px 0",
+        borderLeft:`3px solid ${cat.color}`,
+        padding:"12px 14px", marginBottom:8,
+      }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10, marginBottom:6 }}>
+          <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:14, color:C.ink, lineHeight:1.35 }}>{titleCase(p.name)}</div>
+          {year && (
+            <span style={{ fontSize:10, color:C.faint, flexShrink:0, background:C.white, border:`1px solid ${C.border}`, padding:"2px 7px", borderRadius:99 }}>{year}</span>
+          )}
         </div>
-        <span style={{ display:"inline-block", fontSize:10, fontWeight:700, color:cat.color, background:`${cat.color}14`, border:`1px solid ${cat.color}30`, padding:"2px 8px", borderRadius:99 }}>{cat.label}</span>
+        <span style={{ display:"inline-block", fontSize:10, fontWeight:700, color:cat.color, background:`${cat.color}12`, border:`1px solid ${cat.color}28`, padding:"3px 10px", borderRadius:99 }}>{cat.label}</span>
       </div>
     );
   };
 
-  const offices = Array.isArray(sen.offices) ? sen.offices.map(o => typeof o === "string" ? o : (o?.name || o?.position || o?.title)).filter(Boolean) : [];
-
   return (
     <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"22px 24px" }}>
-      {/* Profile header — styled like the old MP card */}
-      <div style={{ display:"flex", gap:16, alignItems:"flex-start", marginBottom:16 }}>
+
+      {/* ── Profile header ── */}
+      <div style={{ display:"flex", gap:16, alignItems:"flex-start" }}>
         <div style={{ width:56, height:56, borderRadius:14, background:`${c}15`, border:`1px solid ${c}30`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
           <span style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:c }}>{sen.name.split(" ").map(n=>n[0]).join("").slice(0,2)}</span>
         </div>
-        <div>
-          <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:C.ink, marginBottom:3 }}>{sen.name}</div>
+        <div style={{ flex:1 }}>
+          <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:C.ink, marginBottom:4 }}>{sen.name}</div>
           <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
             <PartyPill party={sen.party} />
             {offices.map((o, i) => (
-              <span key={i} style={{ fontSize:11, fontWeight:600, color:C.blue, background:C.blueSoft, padding:"3px 9px", borderRadius:99 }}>{o}</span>
+              <span key={i} style={{ fontSize:10, fontWeight:600, color:C.blue, background:C.blueSoft, border:`1px solid ${C.blue}20`, padding:"3px 9px", borderRadius:99 }}>{o}</span>
             ))}
           </div>
         </div>
@@ -2140,52 +2148,64 @@ function SenatorCard({ sen }) {
 
       <Divider my={16} />
 
-      {/* Stat tiles — same visual language as the old Electorate/Margin tiles */}
+      {/* ── Stats row ── */}
       {(attendancePct != null || sen.rebellions != null) && (
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:18 }}>
+        <div style={{ display:"grid", gridTemplateColumns:attendancePct != null && sen.rebellions != null ? "1fr 1fr" : "1fr", gap:10, marginBottom:20 }}>
           {attendancePct != null && (
-            <div style={{ background:C.surface, borderRadius:12, padding:"12px 14px" }}>
-              <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:20, color:C.ink }}>{attendancePct}%</div>
-              <div style={{ fontSize:11, color:C.faint, marginTop:2 }}>Voting attendance</div>
+            <div style={{ background:C.surface, borderRadius:12, padding:"14px 16px" }}>
+              <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:24, color:C.ink, lineHeight:1 }}>{attendancePct}%</div>
+              <div style={{ fontSize:11, color:C.faint, marginTop:4 }}>Voting attendance</div>
             </div>
           )}
           {sen.rebellions != null && (
-            <div style={{ background:C.surface, borderRadius:12, padding:"12px 14px" }}>
-              <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:20, color:C.ink }}>{sen.rebellions}</div>
-              <div style={{ fontSize:11, color:C.faint, marginTop:2 }}>Times voted against their own party</div>
+            <div style={{ background:sen.rebellions > 0 ? C.amberSoft : C.surface, border:sen.rebellions > 0 ? `1px solid ${C.amber}22` : "none", borderRadius:12, padding:"14px 16px" }}>
+              <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:24, color:sen.rebellions > 0 ? C.amber : C.ink, lineHeight:1 }}>{sen.rebellions}</div>
+              <div style={{ fontSize:11, color:C.faint, marginTop:4 }}>Times voted against own party</div>
             </div>
           )}
         </div>
       )}
 
+      {/* ── Highlighted positions — recency-first ── */}
       {positions.length > 0 ? (
-        <>
-          <div style={{ background:C.surface, borderRadius:10, padding:"9px 12px", marginBottom:16, fontSize:11, color:C.mid, lineHeight:1.5 }}>
-            Labels reflect how closely their votes matched each policy position, based on official parliamentary voting records. Prioritising policies active since {RECENT_CUTOFF_YEAR}.
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
+          <div>
+            <SectionLabel color={C.green}>Recent votes for</SectionLabel>
+            {recentFor.length > 0
+              ? recentFor.map(p => <PolicyRow key={p.id} p={p} />)
+              : <div style={{ fontSize:11, color:C.faint, fontStyle:"italic", padding:"8px 0" }}>No strong recent support positions</div>
+            }
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:24 }}>
-            <div>
-              <div style={{ fontSize:9, fontWeight:700, color:C.green, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:10 }}>Strongly supports</div>
-              {supports.map((p) => <Bar key={p.id} p={p} />)}
-            </div>
-            <div>
-              <div style={{ fontSize:9, fontWeight:700, color:C.red, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:10 }}>Strongly opposes</div>
-              {opposes.map((p) => <Bar key={p.id} p={p} />)}
-            </div>
+          <div>
+            <SectionLabel color={C.red}>Recent votes against</SectionLabel>
+            {recentAgainst.length > 0
+              ? recentAgainst.map(p => <PolicyRow key={p.id} p={p} />)
+              : <div style={{ fontSize:11, color:C.faint, fontStyle:"italic", padding:"8px 0" }}>No strong recent opposition positions</div>
+            }
           </div>
-        </>
+        </div>
       ) : (
-        <span style={{ fontSize:11, color:C.faint, fontStyle:"italic" }}>No policy voting data available yet</span>
+        <div style={{ background:C.surface, borderRadius:12, padding:"18px", textAlign:"center" }}>
+          <span style={{ fontSize:12, color:C.faint }}>No policy voting data available yet</span>
+        </div>
       )}
 
-      {allSorted.length > 0 && (
+      {/* ── Full record — expandable, newest first ── */}
+      {allByRecency.length > 0 && (
         <>
-          <button onClick={() => setExpanded(x => !x)} style={{ marginTop:16, background:"none", border:"none", padding:0, fontSize:11.5, fontWeight:600, color:C.accent, cursor:"pointer" }}>
-            {expanded ? "Hide full record ↑" : `View all ${allSorted.length} policy positions (newest first) ↓`}
+          <Divider my={16} />
+          <button onClick={() => setExpanded(x => !x)} style={{
+            width:"100%", padding:"10px", borderRadius:10,
+            border:`1.5px solid ${expanded ? C.accent : C.border}`,
+            background:expanded ? C.accentSoft : "none",
+            cursor:"pointer", fontSize:12, fontWeight:600,
+            color:expanded ? C.accent : C.mid,
+          }}>
+            {expanded ? "Hide full record ↑" : `View all ${allByRecency.length} policy positions — newest first ↓`}
           </button>
           {expanded && (
-            <div style={{ marginTop:12, paddingTop:12, borderTop:`1px solid ${C.border}`, maxHeight:340, overflowY:"auto" }} className="poli-scroll">
-              {allSorted.map((p) => <Bar key={p.id} p={p} />)}
+            <div style={{ marginTop:14, maxHeight:420, overflowY:"auto" }} className="poli-scroll">
+              {allByRecency.map(p => <PolicyRow key={p.id} p={p} />)}
             </div>
           )}
         </>
