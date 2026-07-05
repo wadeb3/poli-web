@@ -95,6 +95,7 @@ def transform(people):
                     "name": policy.get("name"),
                     "agreement": agreement,
                     "voted": pc.get("voted"),
+                    "last_edited_at": policy.get("last_edited_at"),
                 })
             row["policy_positions"] = flattened
             print(f"  [{i}/{total}] {row['name']} — detail fetched ({len(flattened)} policies)")

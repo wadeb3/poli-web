@@ -1824,9 +1824,33 @@ function MyMPTab({ userVotes, initialPostcode, initialView }) {
   const [searched, setSearched] = useState(!!initialPostcode);
   const [loading, setLoading]   = useState(false);
   const [showContact, setShowContact] = useState(false);
+  const [liveMp, setLiveMp]           = useState(null);
+  const [liveMpLoading, setLiveMpLoading] = useState(false);
   // activeView driven by initialView prop from shell sub-nav, or local state
   const [activeView, setActiveView] = useState(initialView||"mp");
   useEffect(() => { if (initialView) setActiveView(initialView); }, [initialView]);
+
+  // Sample electorate data (name/margin) can go stale the moment an election
+  // happens — so once we know which electorate someone's in, we look up who
+  // is ACTUALLY currently sitting there from live Supabase data, rather than
+  // trusting the hardcoded sample MP name.
+  useEffect(() => {
+    if (!result) { setLiveMp(null); return; }
+    let cancelled = false;
+    setLiveMpLoading(true);
+    supabase
+      .from("mps")
+      .select("*")
+      .eq("chamber", "representatives")
+      .ilike("electorate", result.electorate)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        setLiveMp(error ? null : data);
+        setLiveMpLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [result]);
 
   const doSearch = q => {
     if (!q.trim()||q.trim().length<3) return;
@@ -1834,21 +1858,16 @@ function MyMPTab({ userVotes, initialPostcode, initialView }) {
     setTimeout(()=>{ setResult(findElectorate(q)); setSearched(true); setLoading(false); },500);
   };
 
-  const mpColor = result?(PARTY_COLOR[result.mp.party]||C.mid):C.accent;
-
-  const matchScore = () => {
-    if (!result||!userVotes||!Object.keys(userVotes).length) return null;
-    const ids = Object.keys(result.mp.votes).map(Number);
-    const compared = ids.filter(id=>userVotes[id]);
-    if (!compared.length) return null;
-    const matches = compared.filter(id=>(result.mp.votes[id]==="aye"&&userVotes[id]==="support")||(result.mp.votes[id]==="nay"&&userVotes[id]==="oppose"));
-    return { matches:matches.length, total:compared.length };
-  };
-  const score = result?matchScore():null;
+  // Display name/party come from live data when we have it (current), falling
+  // back to the sample data only if the live lookup hasn't found a match.
+  const displayName  = liveMp?.name  || result?.mp.name;
+  const displayParty = liveMp?.party || result?.mp.party;
+  const mpColor = result?(PARTY_COLOR[displayParty]||C.mid):C.accent;
+  const isStale = result && !liveMpLoading && !liveMp; // sample electorate but no live match found
 
   return (
     <div>
-      {showContact && result && <ContactModal mp={result.mp} userVotes={userVotes} onClose={()=>setShowContact(false)} />}
+      {showContact && result && <ContactModal mp={{...result.mp, name:displayName, party:displayParty}} userVotes={userVotes} onClose={()=>setShowContact(false)} />}
 
       {/* Search */}
       <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"22px 24px", marginBottom:16 }}>
@@ -1866,6 +1885,7 @@ function MyMPTab({ userVotes, initialPostcode, initialView }) {
             <button key={s} onClick={()=>{setQuery(s);doSearch(s);}} style={{ padding:"4px 10px", borderRadius:99, border:`1px solid ${C.border}`, background:C.surface, fontSize:11, fontWeight:500, color:C.mid, cursor:"pointer" }}>{s}</button>
           ))}
         </div>
+        <div style={{ marginTop:10, fontSize:11, color:C.faint }}>Currently covers ~19 sample electorates — full national postcode coverage is a planned upgrade.</div>
       </div>
 
       {result && !loading && (
@@ -1882,61 +1902,53 @@ function MyMPTab({ userVotes, initialPostcode, initialView }) {
           <div>
           {/* MP card */}
           <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"22px 24px", marginBottom:12 }}>
-            <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+            <div style={{ display:"flex", gap:8, marginBottom:14, flexWrap:"wrap" }}>
               <span style={{ padding:"3px 10px", borderRadius:99, fontSize:11, fontWeight:700, background:`${mpColor}0D`, color:mpColor, border:`1px solid ${mpColor}30` }}>{result.state}</span>
               <span style={{ padding:"3px 10px", borderRadius:99, fontSize:11, color:C.mid, background:C.surface, border:`1px solid ${C.border}` }}>Federal Electorate</span>
+              {liveMp && (
+                <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 10px", borderRadius:99, fontSize:11, fontWeight:600, color:C.green, background:C.greenSoft }}>
+                  <span style={{ width:5, height:5, borderRadius:"50%", background:C.green, display:"inline-block" }} /> Live from Supabase
+                </span>
+              )}
             </div>
             <div style={{ display:"flex", gap:16, alignItems:"flex-start", marginBottom:16 }}>
               <div style={{ width:56, height:56, borderRadius:14, background:`${mpColor}15`, border:`1px solid ${mpColor}30`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                <span style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:mpColor }}>{result.mp.name.split(" ").map(n=>n[0]).join("").slice(0,2)}</span>
+                <span style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:mpColor }}>{displayName?.split(" ").map(n=>n[0]).join("").slice(0,2)}</span>
               </div>
               <div>
-                <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:C.ink, marginBottom:3 }}>{result.mp.name}</div>
-                <div style={{ fontSize:13, color:C.mid, marginBottom:8 }}>{result.mp.role}</div>
-                <div style={{ display:"flex", gap:6 }}><PartyPill party={result.mp.party} /><span style={{ padding:"3px 10px", borderRadius:99, fontSize:11, color:C.mid, background:C.surface, border:`1px solid ${C.border}` }}>Since {result.mp.since}</span></div>
+                <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:C.ink, marginBottom:3 }}>{displayName}</div>
+                <div style={{ fontSize:13, color:C.mid, marginBottom:8 }}>{liveMp ? `Member for ${result.electorate}` : result.mp.role}</div>
+                <div style={{ display:"flex", gap:6 }}><PartyPill party={displayParty} /></div>
               </div>
             </div>
             <Divider my={16} />
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
               <div style={{ background:C.surface, borderRadius:12, padding:"12px 14px" }}><div style={{ fontFamily:"'Instrument Serif',serif", fontSize:20, color:mpColor }}>{result.electorate}</div><div style={{ fontSize:11, color:C.faint, marginTop:2 }}>Electorate</div></div>
-              <div style={{ background:C.surface, borderRadius:12, padding:"12px 14px" }}><div style={{ fontFamily:"'Instrument Serif',serif", fontSize:20, color:result.mp.margin<5?C.amber:C.green }}>{result.mp.margin}%</div><div style={{ fontSize:11, color:C.faint, marginTop:2 }}>{result.mp.margin<5?"Marginal ⚠":"Safe seat"}</div></div>
+              <div style={{ background:C.surface, borderRadius:12, padding:"12px 14px" }}><div style={{ fontFamily:"'Instrument Serif',serif", fontSize:20, color:result.mp.margin<5?C.amber:C.green }}>{result.mp.margin}%</div><div style={{ fontSize:11, color:C.faint, marginTop:2 }}>{result.mp.margin<5?"Marginal ⚠":"Safe seat"} (2022 result)</div></div>
             </div>
             {/* Contact button */}
             <button onClick={()=>setShowContact(true)} style={{ width:"100%", padding:"12px", borderRadius:12, background:C.accent, border:"none", cursor:"pointer", fontSize:13, fontWeight:700, color:"#fff" }}>
-              ✉️ Write to {result.mp.name.split(" ")[0]}
+              ✉️ Write to {displayName?.split(" ")[0]}
             </button>
           </div>
 
-          {/* Alignment score */}
-          {score && (
-            <div style={{ background:score.matches/score.total>=0.5?C.greenSoft:C.redSoft, border:`1px solid ${score.matches/score.total>=0.5?C.greenMid:C.redMid}`, borderRadius:16, padding:"18px 20px", display:"flex", gap:16, alignItems:"center" }}>
-              <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:48, color:score.matches/score.total>=0.5?C.green:C.red, lineHeight:1, flexShrink:0 }}>{score.matches}/{score.total}</div>
-              <div><div style={{ fontFamily:"'Instrument Serif',serif", fontSize:17, color:C.ink, marginBottom:4 }}>Your alignment with {result.mp.name.split(" ")[0]}</div><p style={{ fontSize:13, color:C.mid, margin:0, lineHeight:1.5 }}>{score.matches===score.total?"You agree on every policy you've voted on.":score.matches===0?"You disagree on every tracked policy.":`You agree on ${score.matches} of ${score.total} policies you've voted on.`}</p></div>
+          {isStale && (
+            <div style={{ background:C.amberSoft, border:`1px solid ${C.amber}33`, borderRadius:16, padding:"14px 16px", fontSize:12, color:C.mid, lineHeight:1.5 }}>
+              ⚠ Couldn't find a live match for this electorate in Supabase — showing sample data, which may be outdated since the last election.
             </div>
           )}
           </div>
 
           <div>
-          {/* Voting record */}
+          {/* Voting record — real data once we have a live match */}
           <SectionLabel>Voting record</SectionLabel>
-          {POLICIES.map(policy=>{
-            const mpVote=result.mp.votes[policy.id]; const uVote=userVotes?.[policy.id];
-            const forVote=mpVote==="aye";
-            const aligned=uVote&&((mpVote==="aye"&&uVote==="support")||(mpVote==="nay"&&uVote==="oppose"));
-            const opposed=uVote&&((mpVote==="aye"&&uVote==="oppose")||(mpVote==="nay"&&uVote==="support"));
-            return (
-              <div key={policy.id} style={{ background:C.white, border:`1px solid ${aligned?C.greenMid:opposed?C.redMid:C.border}`, borderRadius:14, padding:"14px 16px", marginBottom:8, display:"flex", gap:12, alignItems:"center" }}>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:15, color:C.ink, marginBottom:5 }}>{policy.title}</div>
-                  <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
-                    <span style={{ fontSize:11, fontWeight:600, color:forVote?C.green:C.red, background:forVote?C.greenSoft:C.redSoft, padding:"2px 8px", borderRadius:99 }}>{forVote?"✓ Voted for":"✗ Voted against"}</span>
-                    {uVote&&<span style={{ fontSize:11, fontWeight:500, color:aligned?C.green:opposed?C.red:C.faint }}>{aligned?"Agrees with you":opposed?"Disagrees with you":""}</span>}
-                    {!uVote&&<span style={{ fontSize:11, color:C.faint }}>Vote a policy to compare</span>}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {liveMpLoading && <div style={{ fontSize:13, color:C.faint }}>Loading real voting record…</div>}
+          {!liveMpLoading && liveMp && <SenatorCard sen={liveMp} />}
+          {!liveMpLoading && !liveMp && (
+            <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"20px", fontSize:13, color:C.faint, textAlign:"center" }}>
+              No live voting record found for this electorate yet.
+            </div>
+          )}
           </div>
         </div>
       )}
@@ -2037,6 +2049,22 @@ function SenatorTracker({ stateOverride }) {
 // since procedural motions get near-unanimous voting within a party.
 const isSubstantivePolicy = p => p.name && !p.name.toLowerCase().includes("(procedural)");
 
+// TVFY policy names come back as plain lowercase sentence fragments
+// (e.g. "an emissions reduction fund"). Title-case them for display, skipping
+// small linking words (except when they're the first word) so it reads like
+// a proper heading rather than "The Intervention In The Northern Territory".
+const TITLE_CASE_SKIP = new Set(["a","an","the","of","in","on","at","by","for","to","and","or","but","as","is","with","from","into","onto","over","than","that","this"]);
+const titleCase = str => {
+  if (!str) return "";
+  return str.split(" ").map((word, i) => {
+    if (i > 0 && TITLE_CASE_SKIP.has(word.toLowerCase())) return word.toLowerCase();
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(" ");
+};
+
+const policyYear = p => p.last_edited_at ? new Date(p.last_edited_at).getFullYear() : null;
+const RECENT_CUTOFF_YEAR = 2022; // policies last touched before this are treated as "older" for highlight curation
+
 function SenatorCard({ sen }) {
   const [expanded, setExpanded] = useState(false);
   const c = PARTY_COLOR[sen.party] || C.mid;
@@ -2045,67 +2073,90 @@ function SenatorCard({ sen }) {
   const positions = Array.isArray(sen.policy_positions)
     ? sen.policy_positions.filter(p => p.voted && p.agreement != null && isSubstantivePolicy(p))
     : [];
-  const sorted   = [...positions].sort((a, b) => b.agreement - a.agreement);
+
+  // Prefer recent policies for the curated highlights so "where do they stand"
+  // reflects current debates rather than issues settled a decade ago — but
+  // fall back to the full set if there aren't enough recent ones to fill it.
+  const recent = positions.filter(p => (policyYear(p) || 0) >= RECENT_CUTOFF_YEAR);
+  const pool = recent.length >= 6 ? recent : positions;
+  const sorted   = [...pool].sort((a, b) => b.agreement - a.agreement);
   const supports = sorted.slice(0, 3);
   const opposes  = sorted.slice(-3).reverse();
   const allSorted = Array.isArray(sen.policy_positions)
     ? [...sen.policy_positions].filter(p => p.voted && p.agreement != null).sort((a, b) => b.agreement - a.agreement)
     : [];
 
-  const Bar = ({ p }) => (
-    <div style={{ marginBottom:8 }}>
-      <div style={{ display:"flex", justifyContent:"space-between", gap:10, fontSize:11.5, marginBottom:3 }}>
-        <span style={{ color:C.ink, lineHeight:1.4 }}>{p.name}</span>
-        <span style={{ color:C.faint, flexShrink:0 }}>{Math.round(p.agreement)}%</span>
+  const Bar = ({ p }) => {
+    const year = policyYear(p);
+    return (
+      <div style={{ marginBottom:10 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", gap:10, fontSize:11.5, marginBottom:3 }}>
+          <span style={{ color:C.ink, lineHeight:1.4 }}>{titleCase(p.name)}</span>
+          <span style={{ color:C.faint, flexShrink:0, whiteSpace:"nowrap" }}>{year ? `${year} · ` : ""}{Math.round(p.agreement)}%</span>
+        </div>
+        <div style={{ height:5, background:C.border, borderRadius:99, overflow:"hidden" }}>
+          <div style={{ width:`${p.agreement}%`, height:"100%", background:p.agreement>=50?C.green:C.red, borderRadius:99 }} />
+        </div>
       </div>
-      <div style={{ height:5, background:C.border, borderRadius:99, overflow:"hidden" }}>
-        <div style={{ width:`${p.agreement}%`, height:"100%", background:p.agreement>=50?C.green:C.red, borderRadius:99 }} />
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
-    <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"18px 20px" }}>
-      <div style={{ display:"flex", gap:14, alignItems:"center", marginBottom:14 }}>
-        <div style={{ width:44, height:44, borderRadius:11, background:`${c}18`, border:`1px solid ${c}30`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-          <span style={{ fontFamily:"'Instrument Serif',serif", fontSize:15, color:c }}>{sen.name.split(" ").map(n=>n[0]).join("").slice(0,2)}</span>
+    <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"22px 24px" }}>
+      {/* Profile header — styled like the old MP card */}
+      <div style={{ display:"flex", gap:16, alignItems:"flex-start", marginBottom:16 }}>
+        <div style={{ width:56, height:56, borderRadius:14, background:`${c}15`, border:`1px solid ${c}30`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+          <span style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:c }}>{sen.name.split(" ").map(n=>n[0]).join("").slice(0,2)}</span>
         </div>
-        <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:17, color:C.ink, marginBottom:2 }}>{sen.name}</div>
+        <div>
+          <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:22, color:C.ink, marginBottom:3 }}>{sen.name}</div>
           <PartyPill party={sen.party} />
         </div>
-        {attendancePct != null && (
-          <div style={{ textAlign:"center", flexShrink:0 }}>
-            <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:20, color:C.ink, lineHeight:1 }}>{attendancePct}%</div>
-            <div style={{ fontSize:9, color:C.faint, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:2 }}>Attendance</div>
-          </div>
-        )}
-        {sen.rebellions != null && (
-          <div style={{ textAlign:"center", flexShrink:0 }}>
-            <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:20, color:C.ink, lineHeight:1 }}>{sen.rebellions}</div>
-            <div style={{ fontSize:9, color:C.faint, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:2 }}>Rebellions</div>
-          </div>
-        )}
       </div>
 
-      {positions.length > 0 ? (
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
-          <div>
-            <div style={{ fontSize:9, fontWeight:700, color:C.green, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8 }}>Strongly supports</div>
-            {supports.map((p) => <Bar key={p.id} p={p} />)}
-          </div>
-          <div>
-            <div style={{ fontSize:9, fontWeight:700, color:C.red, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8 }}>Strongly opposes</div>
-            {opposes.map((p) => <Bar key={p.id} p={p} />)}
-          </div>
+      <Divider my={16} />
+
+      {/* Stat tiles — same visual language as the old Electorate/Margin tiles */}
+      {(attendancePct != null || sen.rebellions != null) && (
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:18 }}>
+          {attendancePct != null && (
+            <div style={{ background:C.surface, borderRadius:12, padding:"12px 14px" }}>
+              <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:20, color:C.ink }}>{attendancePct}%</div>
+              <div style={{ fontSize:11, color:C.faint, marginTop:2 }}>Voting attendance</div>
+            </div>
+          )}
+          {sen.rebellions != null && (
+            <div style={{ background:C.surface, borderRadius:12, padding:"12px 14px" }}>
+              <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:20, color:C.ink }}>{sen.rebellions}</div>
+              <div style={{ fontSize:11, color:C.faint, marginTop:2 }}>Times voted against their own party</div>
+            </div>
+          )}
         </div>
+      )}
+
+      {positions.length > 0 ? (
+        <>
+          <div style={{ background:C.surface, borderRadius:10, padding:"9px 12px", marginBottom:16, fontSize:11, color:C.mid, lineHeight:1.5 }}>
+            Score reflects how closely their votes matched each policy position — <strong style={{ color:C.ink }}>100% = consistently voted for it</strong>, <strong style={{ color:C.ink }}>0% = consistently voted against it</strong>. Prioritising policies active since {RECENT_CUTOFF_YEAR}.
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:24 }}>
+            <div>
+              <div style={{ fontSize:9, fontWeight:700, color:C.green, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:10 }}>Strongly supports</div>
+              {supports.map((p) => <Bar key={p.id} p={p} />)}
+            </div>
+            <div>
+              <div style={{ fontSize:9, fontWeight:700, color:C.red, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:10 }}>Strongly opposes</div>
+              {opposes.map((p) => <Bar key={p.id} p={p} />)}
+            </div>
+          </div>
+        </>
       ) : (
         <span style={{ fontSize:11, color:C.faint, fontStyle:"italic" }}>No policy voting data available yet</span>
       )}
 
       {allSorted.length > 0 && (
         <>
-          <button onClick={() => setExpanded(x => !x)} style={{ marginTop:14, background:"none", border:"none", padding:0, fontSize:11.5, fontWeight:600, color:C.accent, cursor:"pointer" }}>
+          <button onClick={() => setExpanded(x => !x)} style={{ marginTop:16, background:"none", border:"none", padding:0, fontSize:11.5, fontWeight:600, color:C.accent, cursor:"pointer" }}>
             {expanded ? "Hide full record ↑" : `View all ${allSorted.length} policy positions ↓`}
           </button>
           {expanded && (
