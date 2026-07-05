@@ -2024,62 +2024,97 @@ function SenatorTracker({ stateOverride }) {
         <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"28px", textAlign:"center", color:C.faint, fontSize:13 }}>No senators found for {state} in the database yet.</div>
       )}
 
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(320px, 1fr))", gap:12 }}>
-      {senators.map((sen) => {
-        const c = PARTY_COLOR[sen.party] || C.mid;
-        const attendancePct = (sen.votes_attended != null && sen.votes_possible) ? Math.round((sen.votes_attended / sen.votes_possible) * 100) : null;
-        const topPolicies = Array.isArray(sen.policy_positions) ? sen.policy_positions.filter(p => p.voted).slice(0, 3) : [];
-        return (
-          <div key={sen.id} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"16px 18px" }}>
-            <div style={{ display:"flex", gap:12, alignItems:"flex-start", marginBottom:12 }}>
-              <div style={{ width:40, height:40, borderRadius:10, background:`${c}18`, border:`1px solid ${c}30`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                <span style={{ fontFamily:"'Instrument Serif',serif", fontSize:14, color:c }}>{sen.name.split(" ").map(n=>n[0]).join("").slice(0,2)}</span>
-              </div>
-              <div style={{ flex:1 }}>
-                <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:16, color:C.ink, marginBottom:3 }}>{sen.name}</div>
-                <div style={{ fontSize:11, color:C.mid }}>{sen.party}</div>
-              </div>
-            </div>
-
-            {(attendancePct != null || sen.rebellions != null) && (
-              <div style={{ display:"flex", gap:8, marginBottom:12 }}>
-                {attendancePct != null && (
-                  <div style={{ flex:1, background:C.surface, borderRadius:10, padding:"8px 10px", textAlign:"center" }}>
-                    <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:17, color:C.ink }}>{attendancePct}%</div>
-                    <div style={{ fontSize:9, color:C.faint, textTransform:"uppercase", letterSpacing:"0.05em" }}>Attendance</div>
-                  </div>
-                )}
-                {sen.rebellions != null && (
-                  <div style={{ flex:1, background:C.surface, borderRadius:10, padding:"8px 10px", textAlign:"center" }}>
-                    <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:17, color:C.ink }}>{sen.rebellions}</div>
-                    <div style={{ fontSize:9, color:C.faint, textTransform:"uppercase", letterSpacing:"0.05em" }}>Party rebellions</div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {topPolicies.length > 0 ? (
-              <div>
-                <div style={{ fontSize:9, fontWeight:700, color:C.faint, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:6 }}>Voting record on key policies</div>
-                {topPolicies.map((p, i) => (
-                  <div key={i} style={{ marginBottom:6 }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, marginBottom:2 }}>
-                      <span style={{ color:C.ink }}>{p.name}</span>
-                      <span style={{ color:C.faint }}>{p.agreement}%</span>
-                    </div>
-                    <div style={{ height:4, background:C.border, borderRadius:99, overflow:"hidden" }}>
-                      <div style={{ width:`${p.agreement}%`, height:"100%", background:p.agreement>=50?C.green:C.red, borderRadius:99 }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <span style={{ fontSize:10, color:C.faint, fontStyle:"italic" }}>No policy voting data available yet</span>
-            )}
-          </div>
-        );
-      })}
+      <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+        {senators.map((sen) => <SenatorCard key={sen.id} sen={sen} />)}
       </div>
+    </div>
+  );
+}
+
+// Excludes purely procedural motions ("(procedural)" in the name) from the
+// curated highlight lists — they're real votes but rarely what someone means
+// by "where does my senator stand," and they clutter the top-agreement list
+// since procedural motions get near-unanimous voting within a party.
+const isSubstantivePolicy = p => p.name && !p.name.toLowerCase().includes("(procedural)");
+
+function SenatorCard({ sen }) {
+  const [expanded, setExpanded] = useState(false);
+  const c = PARTY_COLOR[sen.party] || C.mid;
+  const attendancePct = (sen.votes_attended != null && sen.votes_possible) ? Math.round((sen.votes_attended / sen.votes_possible) * 100) : null;
+
+  const positions = Array.isArray(sen.policy_positions)
+    ? sen.policy_positions.filter(p => p.voted && p.agreement != null && isSubstantivePolicy(p))
+    : [];
+  const sorted   = [...positions].sort((a, b) => b.agreement - a.agreement);
+  const supports = sorted.slice(0, 3);
+  const opposes  = sorted.slice(-3).reverse();
+  const allSorted = Array.isArray(sen.policy_positions)
+    ? [...sen.policy_positions].filter(p => p.voted && p.agreement != null).sort((a, b) => b.agreement - a.agreement)
+    : [];
+
+  const Bar = ({ p }) => (
+    <div style={{ marginBottom:8 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", gap:10, fontSize:11.5, marginBottom:3 }}>
+        <span style={{ color:C.ink, lineHeight:1.4 }}>{p.name}</span>
+        <span style={{ color:C.faint, flexShrink:0 }}>{Math.round(p.agreement)}%</span>
+      </div>
+      <div style={{ height:5, background:C.border, borderRadius:99, overflow:"hidden" }}>
+        <div style={{ width:`${p.agreement}%`, height:"100%", background:p.agreement>=50?C.green:C.red, borderRadius:99 }} />
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"18px 20px" }}>
+      <div style={{ display:"flex", gap:14, alignItems:"center", marginBottom:14 }}>
+        <div style={{ width:44, height:44, borderRadius:11, background:`${c}18`, border:`1px solid ${c}30`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+          <span style={{ fontFamily:"'Instrument Serif',serif", fontSize:15, color:c }}>{sen.name.split(" ").map(n=>n[0]).join("").slice(0,2)}</span>
+        </div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:17, color:C.ink, marginBottom:2 }}>{sen.name}</div>
+          <PartyPill party={sen.party} />
+        </div>
+        {attendancePct != null && (
+          <div style={{ textAlign:"center", flexShrink:0 }}>
+            <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:20, color:C.ink, lineHeight:1 }}>{attendancePct}%</div>
+            <div style={{ fontSize:9, color:C.faint, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:2 }}>Attendance</div>
+          </div>
+        )}
+        {sen.rebellions != null && (
+          <div style={{ textAlign:"center", flexShrink:0 }}>
+            <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:20, color:C.ink, lineHeight:1 }}>{sen.rebellions}</div>
+            <div style={{ fontSize:9, color:C.faint, textTransform:"uppercase", letterSpacing:"0.05em", marginTop:2 }}>Rebellions</div>
+          </div>
+        )}
+      </div>
+
+      {positions.length > 0 ? (
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
+          <div>
+            <div style={{ fontSize:9, fontWeight:700, color:C.green, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8 }}>Strongly supports</div>
+            {supports.map((p) => <Bar key={p.id} p={p} />)}
+          </div>
+          <div>
+            <div style={{ fontSize:9, fontWeight:700, color:C.red, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8 }}>Strongly opposes</div>
+            {opposes.map((p) => <Bar key={p.id} p={p} />)}
+          </div>
+        </div>
+      ) : (
+        <span style={{ fontSize:11, color:C.faint, fontStyle:"italic" }}>No policy voting data available yet</span>
+      )}
+
+      {allSorted.length > 0 && (
+        <>
+          <button onClick={() => setExpanded(x => !x)} style={{ marginTop:14, background:"none", border:"none", padding:0, fontSize:11.5, fontWeight:600, color:C.accent, cursor:"pointer" }}>
+            {expanded ? "Hide full record ↑" : `View all ${allSorted.length} policy positions ↓`}
+          </button>
+          {expanded && (
+            <div style={{ marginTop:12, paddingTop:12, borderTop:`1px solid ${C.border}`, maxHeight:340, overflowY:"auto" }} className="poli-scroll">
+              {allSorted.map((p) => <Bar key={p.id} p={p} />)}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

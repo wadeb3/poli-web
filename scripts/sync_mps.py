@@ -79,8 +79,25 @@ def transform(people):
             row["votes_attended"] = detail.get("votes_attended")
             row["votes_possible"] = detail.get("votes_possible")
             row["rebellions"] = detail.get("rebellions")
-            row["policy_positions"] = detail.get("policy_comparisons") or []
-            print(f"  [{i}/{total}] {row['name']} — detail fetched")
+
+            # TVFY nests the policy name/description under a "policy" sub-object,
+            # and "agreement" comes back as a string (e.g. "100", "6.9") — flatten
+            # and convert to numbers here so the frontend doesn't have to.
+            flattened = []
+            for pc in (detail.get("policy_comparisons") or []):
+                policy = pc.get("policy") or {}
+                try:
+                    agreement = float(pc.get("agreement"))
+                except (TypeError, ValueError):
+                    agreement = None
+                flattened.append({
+                    "id": policy.get("id"),
+                    "name": policy.get("name"),
+                    "agreement": agreement,
+                    "voted": pc.get("voted"),
+                })
+            row["policy_positions"] = flattened
+            print(f"  [{i}/{total}] {row['name']} — detail fetched ({len(flattened)} policies)")
         except requests.exceptions.RequestException as e:
             print(f"  [{i}/{total}] {row['name']} — detail fetch failed ({e}), continuing with basic info only")
             row["votes_attended"] = None
