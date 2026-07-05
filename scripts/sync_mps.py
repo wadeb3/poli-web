@@ -30,7 +30,11 @@ if not all([TVFY_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY]):
 
 def fetch_people():
     url = f"https://theyvoteforyou.org.au/api/v1/people.json?key={TVFY_API_KEY}"
-    resp = requests.get(url, timeout=30)
+    headers = {
+        "User-Agent": "Poli-CivicApp/1.0 (+https://github.com/wadeb3/poli-web; civic data project)",
+        "Accept": "application/json",
+    }
+    resp = requests.get(url, headers=headers, timeout=30)
     resp.raise_for_status()
     return resp.json()
 
