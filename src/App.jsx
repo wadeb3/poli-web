@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { supabase } from "./lib/supabaseClient.js";
 
 /*
   POLI v5  ·  Full civic intelligence platform
@@ -1965,43 +1966,116 @@ function MyMPTab({ userVotes, initialPostcode, initialView }) {
   );
 }
 
-// ── Senator tracker with optional state override ──────────────────────────────
+// ── Senator tracker — now pulling real data from Supabase ────────────────────
+// State names in Supabase (from They Vote For You) are full words for some
+// and abbreviations for others depending on source formatting, so we map
+// both the display buttons and the query consistently off this list.
+const AU_STATES = ["NSW","VIC","QLD","WA","SA","TAS","ACT","NT"];
+const STATE_ALIASES = { NSW:["NSW"], VIC:["Victoria","VIC"], QLD:["Queensland","QLD"], WA:["WA"], SA:["SA"], TAS:["Tasmania","TAS"], ACT:["ACT"], NT:["NT"] };
+
 function SenatorTracker({ stateOverride }) {
-  const [state, setState] = useState(stateOverride||"VIC");
-  const senators = SENATORS[state]||[];
-  const states   = Object.keys(SENATORS);
+  const [state, setState]       = useState(stateOverride || "VIC");
+  const [senators, setSenators] = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    const aliases = STATE_ALIASES[state] || [state];
+    supabase
+      .from("mps")
+      .select("*")
+      .eq("chamber", "senate")
+      .in("state", aliases)
+      .order("name")
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) { setError(error.message); setSenators([]); }
+        else { setSenators(data || []); }
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [state]);
+
   return (
     <div>
       {!stateOverride && (
         <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"20px", marginBottom:14 }}>
           <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:20, color:C.ink, marginBottom:4 }}>Your senators</div>
-          <p style={{ fontSize:13, color:C.mid, margin:"0 0 14px", lineHeight:1.5 }}>Every Australian has 12 senators — 6 per state. Select your state to see who represents you in the Senate and how they vote.</p>
+          <p style={{ fontSize:13, color:C.mid, margin:"0 0 14px", lineHeight:1.5 }}>Every Australian has 12 senators — 6 per state. Select your state to see who represents you in the Senate.</p>
           <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-            {states.map(s=><button key={s} onClick={()=>setState(s)} style={{ padding:"6px 14px", borderRadius:99, border:`1.5px solid ${state===s?C.accent:C.border}`, background:state===s?C.accentSoft:C.surface, fontSize:12, fontWeight:600, color:state===s?C.accent:C.mid, cursor:"pointer" }}>{s}</button>)}
+            {AU_STATES.map(s=><button key={s} onClick={()=>setState(s)} style={{ padding:"6px 14px", borderRadius:99, border:`1.5px solid ${state===s?C.accent:C.border}`, background:state===s?C.accentSoft:C.surface, fontSize:12, fontWeight:600, color:state===s?C.accent:C.mid, cursor:"pointer" }}>{s}</button>)}
           </div>
         </div>
       )}
+
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12, fontSize:11, color:C.faint }}>
+        <span style={{ width:6, height:6, borderRadius:"50%", background:C.green, display:"inline-block" }} />
+        Live from Supabase
+      </div>
+
+      {loading && <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"28px", textAlign:"center", color:C.faint, fontSize:13 }}>Loading senators…</div>}
+
+      {error && <div style={{ background:C.redSoft, border:`1px solid ${C.redMid}`, borderRadius:16, padding:"18px", color:C.red, fontSize:13 }}>Couldn't load senators: {error}</div>}
+
+      {!loading && !error && senators.length === 0 && (
+        <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"28px", textAlign:"center", color:C.faint, fontSize:13 }}>No senators found for {state} in the database yet.</div>
+      )}
+
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(320px, 1fr))", gap:12 }}>
-      {senators.map((sen,i)=>{
-        const c=PARTY_COLOR[sen.party]||C.mid;
+      {senators.map((sen) => {
+        const c = PARTY_COLOR[sen.party] || C.mid;
+        const attendancePct = (sen.votes_attended != null && sen.votes_possible) ? Math.round((sen.votes_attended / sen.votes_possible) * 100) : null;
+        const topPolicies = Array.isArray(sen.policy_positions) ? sen.policy_positions.filter(p => p.voted).slice(0, 3) : [];
         return (
-          <div key={i} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"16px 18px" }}>
+          <div key={sen.id} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"16px 18px" }}>
             <div style={{ display:"flex", gap:12, alignItems:"flex-start", marginBottom:12 }}>
               <div style={{ width:40, height:40, borderRadius:10, background:`${c}18`, border:`1px solid ${c}30`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                 <span style={{ fontFamily:"'Instrument Serif',serif", fontSize:14, color:c }}>{sen.name.split(" ").map(n=>n[0]).join("").slice(0,2)}</span>
               </div>
               <div style={{ flex:1 }}>
                 <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:16, color:C.ink, marginBottom:3 }}>{sen.name}</div>
-                <div style={{ fontSize:11, color:C.mid, marginBottom:6 }}>{sen.role}</div>
-                <PartyPill party={sen.party} />
+                <div style={{ fontSize:11, color:C.mid }}>{sen.party}</div>
               </div>
             </div>
-            <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-              {POLICIES.map(p=>{
-                const v=sen.votes?.[p.id];
-                return <div key={p.id} title={p.title} style={{ padding:"3px 8px", borderRadius:6, fontSize:10, fontWeight:600, background:v==="aye"?C.greenSoft:C.redSoft, color:v==="aye"?C.green:C.red, border:`1px solid ${v==="aye"?C.greenMid:C.redMid}` }}>{v==="aye"?"✓":"✗"} {p.title.split(" ").slice(0,2).join(" ")}…</div>
-              })}
-            </div>
+
+            {(attendancePct != null || sen.rebellions != null) && (
+              <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+                {attendancePct != null && (
+                  <div style={{ flex:1, background:C.surface, borderRadius:10, padding:"8px 10px", textAlign:"center" }}>
+                    <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:17, color:C.ink }}>{attendancePct}%</div>
+                    <div style={{ fontSize:9, color:C.faint, textTransform:"uppercase", letterSpacing:"0.05em" }}>Attendance</div>
+                  </div>
+                )}
+                {sen.rebellions != null && (
+                  <div style={{ flex:1, background:C.surface, borderRadius:10, padding:"8px 10px", textAlign:"center" }}>
+                    <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:17, color:C.ink }}>{sen.rebellions}</div>
+                    <div style={{ fontSize:9, color:C.faint, textTransform:"uppercase", letterSpacing:"0.05em" }}>Party rebellions</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {topPolicies.length > 0 ? (
+              <div>
+                <div style={{ fontSize:9, fontWeight:700, color:C.faint, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:6 }}>Voting record on key policies</div>
+                {topPolicies.map((p, i) => (
+                  <div key={i} style={{ marginBottom:6 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, marginBottom:2 }}>
+                      <span style={{ color:C.ink }}>{p.name}</span>
+                      <span style={{ color:C.faint }}>{p.agreement}%</span>
+                    </div>
+                    <div style={{ height:4, background:C.border, borderRadius:99, overflow:"hidden" }}>
+                      <div style={{ width:`${p.agreement}%`, height:"100%", background:p.agreement>=50?C.green:C.red, borderRadius:99 }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <span style={{ fontSize:10, color:C.faint, fontStyle:"italic" }}>No policy voting data available yet</span>
+            )}
           </div>
         );
       })}
