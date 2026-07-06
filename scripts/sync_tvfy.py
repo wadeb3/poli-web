@@ -353,6 +353,127 @@ def sync_divisions(member_to_person=None):
     print(f"  ✅ {len(rows)} divisions and {len(vote_rows)} individual votes upserted.")
 
 
+
+# ── AI Summarisation ───────────────────────────────────────────────────────────
+
+import re
+
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+
+def strip_markdown(text):
+    """Remove markdown syntax from Hansard summary text."""
+    text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)  # [text](url) → text
+    text = re.sub(r'#{1,4}\s*', '', text)                  # headers
+    text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)           # bold
+    text = re.sub(r'\*(.+?)\*', r'\1', text)               # italic
+    text = re.sub(r'>\s*', '', text)                        # blockquotes
+    text = re.sub(r'\n{2,}', ' ', text)                    # multiple newlines
+    text = text.replace('\n', ' ').strip()
+    return text
+
+
+def ai_summarise(division_name, raw_summary):
+    """Call Claude Haiku to produce a one-sentence plain-English summary."""
+    if not ANTHROPIC_API_KEY:
+        return None
+    stripped = strip_markdown(raw_summary)[:600]
+    try:
+        resp = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key":          ANTHROPIC_API_KEY,
+                "anthropic-version":  "2023-06-01",
+                "content-type":       "application/json",
+            },
+            json={
+                "model":      "claude-haiku-4-5-20251001",
+                "max_tokens": 80,
+                "messages": [{
+                    "role":    "user",
+                    "content": (
+                        f"Summarise what was being voted on in one plain-English sentence "
+                        f"(max 25 words), written for a general Australian audience with no "
+                        f"political jargon. Do not start with 'MPs voted' or 'The vote was'. "
+                        f"Just state what the motion was about.\n\n"
+                        f"Division: {division_name}\n"
+                        f"Context: {stripped}"
+                    )
+                }]
+            },
+            timeout=20,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data.get("content", [{}])[0].get("text", "").strip() or None
+    except Exception as e:
+        print(f"    AI summarise failed: {e}")
+        return None
+
+
+def sync_summaries():
+    """
+    Generate plain-English AI summaries for divisions that have long raw
+    Hansard summaries but no summary_plain yet.
+
+    Run with: python3 scripts/sync_tvfy.py --summarise
+
+    Uses Claude Haiku — cheapest model, one call per division, stored
+    permanently in divisions.summary_plain. Never re-runs for a division
+    that already has a summary.
+
+    Cost estimate: ~2000 divisions × ~500 tokens ≈ $0.10-0.15 total.
+    """
+    if not ANTHROPIC_API_KEY:
+        print("\n❌ ANTHROPIC_API_KEY not set — skipping AI summarisation.")
+        print("   Set it with: export ANTHROPIC_API_KEY=your-key")
+        return
+
+    print("\n═══ Generating AI summaries for divisions ═══")
+
+    # Fetch divisions that have a raw summary but no plain summary yet
+    resp = requests.get(
+        f"{SUPABASE_URL}/rest/v1/divisions",
+        headers={**SB_HEADERS, "Prefer": "count=none"},
+        params={
+            "select":           "id,name,summary",
+            "summary":          "not.is.null",
+            "summary_plain":    "is.null",
+            "order":            "date.desc",
+            "limit":            "2000",
+        },
+        timeout=30,
+    )
+    resp.raise_for_status()
+    divisions = resp.json()
+
+    # Filter to ones with long summaries worth summarising
+    to_summarise = [d for d in divisions if d.get("summary") and len(d["summary"]) > 150]
+    print(f"  {len(to_summarise)} divisions need summaries.")
+
+    updated = 0
+    for i, d in enumerate(to_summarise, 1):
+        summary_plain = ai_summarise(d["name"], d["summary"])
+        if not summary_plain:
+            print(f"  [{i}/{len(to_summarise)}] {d['name'][:50]} — skipped")
+            continue
+
+        # Update just this division's summary_plain
+        patch = requests.patch(
+            f"{SUPABASE_URL}/rest/v1/divisions",
+            headers={**SB_HEADERS, "Prefer": "return=minimal"},
+            params={"id": f"eq.{d['id']}"},
+            json={"summary_plain": summary_plain},
+            timeout=20,
+        )
+        patch.raise_for_status()
+        updated += 1
+        print(f"  [{i}/{len(to_summarise)}] {d['name'][:50]}")
+        print(f"    → {summary_plain}")
+        time.sleep(0.5)  # polite rate limiting
+
+    print(f"\n  ✅ {updated} summaries generated and stored.")
+
+
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def main():
@@ -360,9 +481,10 @@ def main():
     parser.add_argument("--mps",       action="store_true", help="Sync MPs/Senators only")
     parser.add_argument("--policies",  action="store_true", help="Sync TVFY policies only")
     parser.add_argument("--divisions", action="store_true", help="Sync divisions only")
+    parser.add_argument("--summarise", action="store_true", help="Generate AI summaries for divisions")
     args = parser.parse_args()
 
-    run_all = not any([args.mps, args.policies, args.divisions])
+    run_all = not any([args.mps, args.policies, args.divisions, args.summarise])
 
     member_to_person = None
     if run_all or args.mps:
@@ -371,6 +493,8 @@ def main():
         sync_policies()
     if run_all or args.divisions:
         sync_divisions(member_to_person)
+    if run_all or args.summarise:
+        sync_summaries()
 
     print("\n✅ Sync complete.")
 

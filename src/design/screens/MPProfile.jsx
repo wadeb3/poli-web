@@ -201,7 +201,55 @@ export function VotingRecord({ mpId, fallbackRecords = [] }) {
   );
 }
 
-// ── Policy row — primary unit, expandable Hansard evidence underneath ─────────
+// Strip markdown from Hansard summaries — links, headers, bold etc.
+const stripMarkdown = text =>
+  text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/#{1,4}\s*/g, "")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/>\s*/g, "")
+    .replace(/\n{2,}/g, " ")
+    .replace(/\n/g, " ")
+    .trim();
+
+function DivisionDetailRow({ d }) {
+  const isAye = d.vote === "aye";
+  const dDate = d.date
+    ? new Date(d.date).toLocaleDateString("en-AU", { day:"numeric", month:"short", year:"numeric" })
+    : "";
+
+  // Use pre-generated plain summary if available (stored in divisions.summary_plain
+  // by sync_tvfy.py), otherwise strip markdown and truncate the raw Hansard text.
+  const displaySummary = d.summary_plain
+    ? d.summary_plain
+    : d.summary
+      ? stripMarkdown(d.summary).slice(0, 180).trimEnd() + (d.summary.length > 180 ? "…" : "")
+      : null;
+
+  return (
+    <div style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"8px 0", borderBottom:`1px solid ${C.borderDark}` }}>
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ fontSize:12, fontWeight:600, color:C.ink, marginBottom:3 }}>{d.name}</div>
+        {displaySummary && (
+          <div style={{ fontSize:11, color:C.mid, lineHeight:1.5, marginBottom:4 }}>{displaySummary}</div>
+        )}
+        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+          <span style={{ fontSize:10, color:C.faint, fontVariantNumeric:"tabular-nums" }}>{dDate}</span>
+          <span style={{ fontSize:10, color:C.faint, background:C.white, border:`1px solid ${C.border}`, padding:"1px 5px", borderRadius:3 }}>
+            {d.house === "senate" ? "Senate" : "House"}
+          </span>
+          {d.rebel && (
+            <span style={{ fontSize:10, fontWeight:700, color:C.purple }}>crossed the floor</span>
+          )}
+        </div>
+      </div>
+      <span style={{ fontSize:10, fontWeight:700, color:isAye ? C.green : C.red, background:isAye ? C.greenSoft : C.redSoft, padding:"2px 8px", borderRadius:99, flexShrink:0, marginTop:2 }}>
+        {isAye ? "Aye" : "No"}
+      </span>
+    </div>
+  );
+}
 
 function PolicyRow({ record, mpId, last }) {
   const [open, setOpen]         = useState(false);
@@ -226,7 +274,7 @@ function PolicyRow({ record, mpId, last }) {
       // the jsonb (from before the sync fix), the contains query won't match —
       // in that case re-sync with --mps to fix the stored types.
       _sb.from("divisions")
-        .select("id, name, date, summary, aye_votes, no_votes, house")
+        .select("id, name, date, summary, summary_plain, aye_votes, no_votes, house")
         .filter("policy_division_ids", "cs", `["${policyId}"]`)
         .order("date", { ascending: false })
         .limit(20)
@@ -306,34 +354,9 @@ function PolicyRow({ record, mpId, last }) {
             </div>
           )}
 
-          {!loading && divisions?.length > 0 && divisions.map((d, i) => {
-            const isAye  = d.vote === "aye";
-            const dDate  = d.date
-              ? new Date(d.date).toLocaleDateString("en-AU", { day:"numeric", month:"short", year:"numeric" })
-              : "";
-            return (
-              <div key={d.id} style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"8px 0", borderBottom: i < divisions.length-1 ? `1px solid ${C.borderDark}` : "none" }}>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:12, fontWeight:600, color:C.ink, marginBottom:3 }}>{d.name}</div>
-                  {d.summary && (
-                    <div style={{ fontSize:11, color:C.mid, lineHeight:1.5, marginBottom:4 }}>{d.summary}</div>
-                  )}
-                  <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-                    <span style={{ fontSize:10, color:C.faint, fontVariantNumeric:"tabular-nums" }}>{dDate}</span>
-                    <span style={{ fontSize:10, color:C.faint, background:C.white, border:`1px solid ${C.border}`, padding:"1px 5px", borderRadius:3 }}>
-                      {d.house === "senate" ? "Senate" : "House"}
-                    </span>
-                    {d.rebel && (
-                      <span style={{ fontSize:10, fontWeight:700, color:C.purple }}>crossed the floor</span>
-                    )}
-                  </div>
-                </div>
-                <span style={{ fontSize:10, fontWeight:700, color: isAye ? C.green : C.red, background: isAye ? C.greenSoft : C.redSoft, padding:"2px 8px", borderRadius:99, flexShrink:0, marginTop:2 }}>
-                  {isAye ? "Aye" : "No"}
-                </span>
-              </div>
-            );
-          })}
+          {!loading && divisions?.length > 0 && divisions.map((d, i) => (
+            <DivisionDetailRow key={d.id} d={d} />
+          ))}
         </div>
       )}
     </div>
