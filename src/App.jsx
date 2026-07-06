@@ -2392,6 +2392,7 @@ const DELIBERATION_CLUSTERS = [
 // ─────────────────────────────────────────────────────────────────────────────
 // SUPABASE MEMBER ADAPTER
 // Transforms the flat mps table row into the shape MPDossier/MPProfile expects.
+// Uses TVFY's official category labels when available (synced by sync_tvfy.py).
 // ─────────────────────────────────────────────────────────────────────────────
 
 // They Vote For You policy names come back lowercase — title-case them.
@@ -2404,50 +2405,60 @@ function toTitleCase(str) {
   ).join(" ");
 }
 
-// Map a TVFY agreement score (0–100) to a VoteRecord vote value.
-// ≥70 = voted for, ≤30 = voted against, 31-69 = mixed (shown as abstain).
-function tvfyAgreementToVote(agreement) {
-  if (agreement == null) return "absent";
-  if (agreement >= 70) return "for";
-  if (agreement <= 30) return "against";
+// TVFY's official category strings → display label + vote direction.
+// Populated by sync_tvfy.py via the policy_comparisons.category field.
+const TVFY_CATEGORY = {
+  for3:       { label:"Voted Consistently For",    vote:"for"     },
+  for2:       { label:"Voted Mostly For",           vote:"for"     },
+  for1:       { label:"Voted Moderately For",       vote:"for"     },
+  mixture:    { label:"Mixed Record",               vote:"abstain" },
+  against1:   { label:"Voted Moderately Against",   vote:"against" },
+  against2:   { label:"Voted Mostly Against",       vote:"against" },
+  against3:   { label:"Voted Consistently Against", vote:"against" },
+  not_enough: { label:"Not Enough Votes",           vote:"absent"  },
+};
+
+// Fallback for older data that only has a numeric agreement score.
+function agreementToVote(ag) {
+  if (ag == null)  return "absent";
+  if (ag >= 70)    return "for";
+  if (ag <= 30)    return "against";
   return "abstain";
 }
 
-// Extract current office titles from the offices array (TVFY format varies).
 function extractOffices(offices) {
   if (!Array.isArray(offices)) return [];
   return offices
     .map(o => typeof o === "string" ? o : (o?.position || o?.name || o?.title || ""))
-    .filter(Boolean)
-    .slice(0, 3); // cap at 3 to avoid overwhelming the header
+    .filter(Boolean).slice(0, 3);
 }
 
 function adaptMember(row) {
-  // Build voting records from TVFY policy_positions (the richest data we have).
-  // Filter to voted=true, agreement not null, non-procedural, sort by recency.
   const rawPositions = Array.isArray(row.policy_positions) ? row.policy_positions : [];
-  const records = rawPositions
-    .filter(p => p.voted && p.agreement != null && p.name &&
-      !p.name.toLowerCase().includes("(procedural)"))
-    .sort((a, b) => new Date(b.last_edited_at || 0) - new Date(a.last_edited_at || 0))
-    .slice(0, 20) // show up to 20 most recent
-    .map(p => ({
-      billTitle:     toTitleCase(p.name),
-      vote:          tvfyAgreementToVote(p.agreement),
-      date:          p.last_edited_at
-                       ? new Date(p.last_edited_at).toLocaleDateString("en-AU", { day:"numeric", month:"short", year:"numeric" })
-                       : "Date unknown",
-      withParty:     undefined, // not available from TVFY policy_comparisons endpoint
-      userAlignment: null,      // populated later when user has voted on bills
-    }));
 
-  // Attendance percentage
+  const records = rawPositions
+    .filter(p => p.voted && (p.category || p.agreement != null) && p.name
+      && !p.name.toLowerCase().includes("(procedural)"))
+    .sort((a, b) => new Date(b.last_edited_at || 0) - new Date(a.last_edited_at || 0))
+    .slice(0, 20)
+    .map(p => {
+      const cat = TVFY_CATEGORY[p.category];
+      return {
+        billTitle:     toTitleCase(p.name),
+        vote:          cat ? cat.vote : agreementToVote(p.agreement),
+        label:         cat ? cat.label : null,
+        date:          p.last_edited_at
+                         ? new Date(p.last_edited_at).toLocaleDateString("en-AU",
+                             { day:"numeric", month:"short", year:"numeric" })
+                         : "Date unknown",
+        withParty:     undefined,
+        userAlignment: null,
+      };
+    });
+
   const attendance = (row.votes_attended != null && row.votes_possible)
     ? Math.round((row.votes_attended / row.votes_possible) * 100)
     : null;
-
-  // Office titles for the header badge row
-  const officeLabels = extractOffices(row.offices);
 
   return {
     id:         row.id,
@@ -2459,16 +2470,14 @@ function adaptMember(row) {
     chamber:    row.chamber === "senate" ? "Senate" : "House",
     state:      row.state || row.electorate,
     electorate: row.electorate,
-    postcodes:  "",   // future AEC enrichment
+    postcodes:  "",
     since:      row.since || "",
-    // MPProfileHeader uses mp.attendance to show the stat tile
     attendance,
     rebellions: row.rebellions,
-    offices:    officeLabels,
-    // MPDossier/MPProfile
+    offices:    extractOffices(row.offices),
     records,
-    alignment:  null,  // populated when user has voted on matching bills
-    saidVsDid:  null,  // future Hansard cross-reference feature
+    alignment:  null,
+    saidVsDid:  null,
   };
 }
 

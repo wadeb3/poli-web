@@ -171,14 +171,14 @@ export function VotingRecord({ records, loading = false, stale = false, onRetry,
   );
 }
 
-/** @param {{ record: VoteRecord, last?: boolean }} props */
 function VoteRow({ record, last }) {
   const vote = {
-    for:     { label: "Voted for",     color: C.green, bg: C.greenSoft },
-    against: { label: "Voted against", color: C.red,   bg: C.redSoft },
-    abstain: { label: "Abstained",     color: C.amber, bg: C.amberSoft },
-    absent:  { label: "Absent",        color: C.faint, bg: C.surface },
-  }[record.vote];
+    for:     { label: record.label || "Voted For",     color: C.green, bg: C.greenSoft },
+    against: { label: record.label || "Voted Against", color: C.red,   bg: C.redSoft },
+    abstain: { label: record.label || "Mixed Record",  color: C.amber, bg: C.amberSoft },
+    absent:  { label: record.label || "Not Enough Data", color: C.faint, bg: C.surface },
+  }[record.vote] || { label: record.label || record.vote, color: C.faint, bg: C.surface };
+
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: last ? "none" : `1px solid ${C.border}` }}>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -187,7 +187,9 @@ function VoteRow({ record, last }) {
         </div>
         <div style={{ fontSize: 11, color: C.faint, fontVariantNumeric: "tabular-nums" }}>
           {record.date}
-          {record.withParty === false && <span style={{ color: C.purple, fontWeight: 600 }}> · crossed the floor</span>}
+          {record.withParty === false && (
+            <span style={{ color: C.purple, fontWeight: 600 }}> · crossed the floor</span>
+          )}
         </div>
       </div>
       {record.userAlignment && (
@@ -195,7 +197,7 @@ function VoteRow({ record, last }) {
           {record.userAlignment === "agree" ? "matches you" : "differs from you"}
         </span>
       )}
-      <span style={{ padding: "3px 10px", borderRadius: 99, fontSize: 11, fontWeight: 650, color: vote.color, background: vote.bg, whiteSpace: "nowrap" }}>
+      <span style={{ padding: "3px 10px", borderRadius: 99, fontSize: 11, fontWeight: 650, color: vote.color, background: vote.bg, whiteSpace: "nowrap", flexShrink: 0 }}>
         {vote.label}
       </span>
     </div>
