@@ -38,7 +38,7 @@ export const NAV = [
   { id: "parliament", label: "Parliament", Icon: IconParliament,
     subs: [{ id: "map", label: "Chamber map" }, { id: "cabinet", label: "Cabinet" }, { id: "parties", label: "Parties" }] },
   { id: "mymp",       label: "My MP",      Icon: IconPerson,
-    subs: [{ id: "mp", label: "My electorate" }, { id: "senators", label: "Senators" }, { id: "compare", label: "Compare seats" }] },
+    subs: [{ id: "mp", label: "My Representatives" }, { id: "compare", label: "Compare Seats" }] },
   { id: "vote",       label: "Vote",       Icon: IconVote,
     subs: [{ id: "polls", label: "Live polls" }, { id: "deliberate", label: "Deliberation" }] },
   { id: "learn",      label: "Learn",      Icon: IconLearn },

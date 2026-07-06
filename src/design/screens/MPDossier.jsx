@@ -1,14 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // MP DOSSIER · two-pane member desk · v6.2
-//
-// Unifies MP lookup, senator tracker and profile into one surface built
-// around the question "who represents me and what have they done":
-//   left  — searchable member ledger (name/electorate/postcode text search,
-//           party + chamber filters)
-//   right — the full dossier: profile header, alignment, voting record,
-//           said-vs-did, donations
-// Below 900px: ledger only; tapping a member opens the dossier full-screen
-// with a back control (the phone version of the same desk).
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useMemo, useState } from "react";
 import { C, TYPE, RADIUS, LAYOUT, partyOf } from "../tokens.js";
@@ -22,26 +13,23 @@ import { IconSearch, IconChevron, IconPerson } from "../icons.jsx";
  * @property {string|number} id
  * @property {string} name
  * @property {string} party
- * @property {string} role        e.g. "Member for Grayndler"
+ * @property {string} role
  * @property {"House"|"Senate"} chamber
  * @property {string} state
  * @property {string} [electorate]
- * @property {string} [postcodes] searchable postcode string, e.g. "2040 2041"
+ * @property {string} [postcodes]
  * @property {string} [since]
  * @property {{score: number, n: number}|null} [alignment]
  * @property {import("./MPProfile.jsx").VoteRecord[]} [records]
  * @property {{said: string, did: string, consistent: boolean, source?: string}} [saidVsDid]
  */
 
-/**
- * @param {{ members: Member[], initialParty?: string|null, initialQuery?: string,
- *           dataState?: "live"|"cached"|"sample", onContact?: (m: Member) => void }} props
- */
 export function MPDossier({ members, initialParty = null, initialQuery = "", dataState = "sample", onContact }) {
   const [wide, setWide] = useState(typeof window !== "undefined" && window.innerWidth >= 900);
   const [query, setQuery] = useState(initialQuery);
+  const [chamber, setChamber] = useState(null); // null = all, "House", "Senate"
   const [party, setParty] = useState(initialParty);
-  const [chamber, setChamber] = useState(null);
+  const [electorate, setElectorate] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -52,45 +40,120 @@ export function MPDossier({ members, initialParty = null, initialQuery = "", dat
   }, []);
   useEffect(() => { setParty(initialParty); }, [initialParty]);
 
-  const parties = useMemo(() => [...new Set(members.map(m => m.party))], [members]);
+  // Build dropdown options from live data
+  const parties = useMemo(() => {
+    const base = chamber
+      ? members.filter(m => m.chamber === chamber)
+      : members;
+    return [...new Set(base.map(m => m.party))].sort();
+  }, [members, chamber]);
+
+  const electorates = useMemo(() => {
+    const base = members.filter(m =>
+      (!chamber || m.chamber === chamber) &&
+      (!party || m.party === party)
+    );
+    // For Senate show states, for House show electorates
+    const entries = base.map(m =>
+      m.chamber === "Senate"
+        ? { label: m.state, value: m.state }
+        : { label: `${m.electorate}${m.state ? ` · ${m.state}` : ""}`, value: m.electorate }
+    ).filter(e => e.value);
+    // Deduplicate by value
+    const seen = new Set();
+    return entries.filter(e => { if (seen.has(e.value)) return false; seen.add(e.value); return true; })
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [members, chamber, party]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return members.filter(m =>
-      (!party || m.party === party) &&
       (!chamber || m.chamber === chamber) &&
+      (!party || m.party === party) &&
+      (!electorate || m.electorate === electorate || m.state === electorate) &&
       (!q || [m.name, m.role, m.electorate, m.state, m.postcodes].filter(Boolean).join(" ").toLowerCase().includes(q))
     );
-  }, [members, query, party, chamber]);
+  }, [members, query, chamber, party, electorate]);
 
-  const selected = filtered.find(m => m.id === selectedId) || (wide ? filtered[0] : filtered.find(m => m.id === selectedId));
+  const selected = filtered.find(m => m.id === selectedId) || (wide ? filtered[0] : undefined);
+
+  // Clear downstream filters when chamber changes
+  const handleChamber = val => {
+    setChamber(val);
+    setParty(null);
+    setElectorate(null);
+  };
+
+  const clearAll = () => { setQuery(""); setParty(null); setElectorate(null); setChamber(null); };
+
+  const selectStyle = {
+    padding: "7px 10px", borderRadius: RADIUS.control, border: `1px solid ${C.border}`,
+    background: C.white, color: C.ink, fontFamily: "inherit", fontSize: 12,
+    cursor: "pointer", outline: "none", appearance: "none", WebkitAppearance: "none",
+    backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23A39C94' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+    backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center",
+    paddingRight: 26,
+  };
 
   const ledger = (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Search + filters */}
-      <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0, background: C.white, zIndex: 1 }}>
+
+      {/* Search */}
+      <div style={{ padding: "14px 16px 12px", borderBottom: `1px solid ${C.border}`, background: C.white, position: "sticky", top: 0, zIndex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: RADIUS.control, border: `1px solid ${C.border}`, background: C.paper, marginBottom: 10 }}>
           <span style={{ color: C.faint }}><IconSearch size={15} /></span>
           <input value={query} onChange={e => setQuery(e.target.value)}
-            placeholder="Name, electorate or postcode…"
-            aria-label="Search members"
+            placeholder="Name, electorate or postcode…" aria-label="Search members"
             style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontFamily: "inherit", fontSize: 13, color: C.ink }} />
         </div>
-        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-          {["House", "Senate"].map(ch => (
-            <FilterPill key={ch} on={chamber === ch} onClick={() => setChamber(chamber === ch ? null : ch)}>{ch}</FilterPill>
-          ))}
-          {parties.map(p => (
-            <FilterPill key={p} on={party === p} dot={partyOf(p).color} onClick={() => setParty(party === p ? null : p)}>{p}</FilterPill>
+
+        {/* House / Senate toggle */}
+        <div style={{ display: "flex", gap: 2, background: C.surface, borderRadius: RADIUS.control, padding: 3, marginBottom: 8 }}>
+          {[{ v: null, l: "All" }, { v: "House", l: "House" }, { v: "Senate", l: "Senate" }].map(({ v, l }) => (
+            <button key={l} onClick={() => handleChamber(v)}
+              style={{
+                flex: 1, padding: "6px 0", borderRadius: 6, border: "none", cursor: "pointer",
+                fontFamily: "inherit", fontSize: 12, fontWeight: 600,
+                background: chamber === v ? C.white : "transparent",
+                color: chamber === v ? C.ink : C.faint,
+                boxShadow: chamber === v ? "0 1px 3px rgba(33,29,26,0.08)" : "none",
+                transition: "background 0.15s",
+              }}>
+              {l}
+            </button>
           ))}
         </div>
+
+        {/* Dropdowns row */}
+        <div style={{ display: "flex", gap: 6 }}>
+          <select value={party || ""} onChange={e => { setParty(e.target.value || null); setElectorate(null); }}
+            aria-label="Filter by party" style={{ ...selectStyle, flex: 1 }}>
+            <option value="">All parties</option>
+            {parties.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <select value={electorate || ""} onChange={e => setElectorate(e.target.value || null)}
+            aria-label="Filter by electorate" style={{ ...selectStyle, flex: 1 }}>
+            <option value="">{chamber === "Senate" ? "All states" : "All electorates"}</option>
+            {electorates.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
+          </select>
+        </div>
+
+        {/* Active filter summary + clear */}
+        {(party || electorate || chamber) && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+            <span style={{ fontSize: 11, color: C.faint }}>{filtered.length} member{filtered.length !== 1 ? "s" : ""}</span>
+            <button onClick={clearAll} style={{ fontSize: 11, color: C.accentText, fontWeight: 600, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+              Clear filters
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Rows */}
+      {/* Member rows */}
       <div style={{ flex: 1, overflowY: "auto" }}>
         {filtered.length === 0 ? (
           <EmptyState title="No members match" icon={<IconPerson size={22} />}
-            sub="Try a different spelling, or clear the party and chamber filters."
-            actionLabel="Clear filters" onAction={() => { setQuery(""); setParty(null); setChamber(null); }} />
+            sub="Try adjusting the filters or search." actionLabel="Clear filters" onAction={clearAll} />
         ) : filtered.map(m => {
           const active = wide && m.id === selected?.id;
           const p = partyOf(m.party);
@@ -134,7 +197,6 @@ export function MPDossier({ members, initialParty = null, initialQuery = "", dat
     </div>
   );
 
-  // Mobile: ledger, or full-screen dossier with back control
   if (!wide) {
     if (mobileOpen && selected) {
       return (
@@ -153,20 +215,18 @@ export function MPDossier({ members, initialParty = null, initialQuery = "", dat
     );
   }
 
-  // Desktop: two-pane desk
   return (
     <div style={{ display: "flex", border: `1px solid ${C.border}`, borderRadius: RADIUS.card, background: C.white, overflow: "hidden", alignItems: "stretch" }}>
       <div style={{ width: LAYOUT.deskListWidth, flexShrink: 0, borderRight: `1px solid ${C.border}`, maxHeight: "calc(100vh - 140px)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
         {ledger}
       </div>
       <div style={{ flex: 1, minWidth: 0, maxHeight: "calc(100vh - 140px)", overflowY: "auto", padding: "20px 24px", background: C.paper }}>
-        {dossier || <EmptyState title="Select a member" sub="Choose someone from the ledger to open their dossier." icon={<IconPerson size={22} />} />}
+        {dossier || <EmptyState title="Select a Member" sub="Choose someone from the ledger to open their dossier." icon={<IconPerson size={22} />} />}
       </div>
     </div>
   );
 }
 
-/** @param {{ on: boolean, dot?: string, onClick: () => void, children: React.ReactNode }} props */
 function FilterPill({ on, dot, onClick, children }) {
   return (
     <button onClick={onClick} aria-pressed={on} style={{

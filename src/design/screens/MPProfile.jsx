@@ -10,6 +10,7 @@
 //   · Supabase-backed: loading skeletons + StaleCallout wired in, matching
 //     the existing MyMPTab fallback pattern
 // ─────────────────────────────────────────────────────────────────────────────
+import { useState } from "react";
 import { C, TYPE, RADIUS, partyOf } from "../tokens.js";
 import { Card, Button, Chip, PartyChip, SectionLabel, Divider } from "../primitives.jsx";
 import { SourceBadge, RowSkeleton, StaleCallout, EmptyState } from "../states.jsx";
@@ -126,7 +127,11 @@ export function AlignmentMeter({ score, n, name }) {
  * @param {{ records: VoteRecord[], loading?: boolean, stale?: boolean,
  *           onRetry?: () => void, title?: string }} props
  */
-export function VotingRecord({ records, loading = false, stale = false, onRetry, title = "Voting record" }) {
+export function VotingRecord({ records, loading = false, stale = false, onRetry, title = "Voting Record" }) {
+  const [shown, setShown] = useState(8);
+  const visible = records.slice(0, shown);
+  const hasMore = records.length > shown;
+
   return (
     <Card style={{ marginTop: 14 }}>
       <SectionLabel right={<span style={{ fontSize: 10.5, color: C.faint }}>Source: Hansard divisions</span>}>
@@ -136,10 +141,31 @@ export function VotingRecord({ records, loading = false, stale = false, onRetry,
       {loading ? (
         <>{[0, 1, 2, 3].map(i => <RowSkeleton key={i} />)}</>
       ) : !records.length ? (
-        <EmptyState title="No recorded divisions yet" icon={<IconPerson size={22} />}
+        <EmptyState title="No Recorded Divisions Yet" icon={<IconPerson size={22} />}
           sub="This member hasn't voted in any divisions Poli tracks. New votes appear within a sitting day." />
       ) : (
-        records.map((r, i) => <VoteRow key={i} record={r} last={i === records.length - 1} />)
+        <>
+          {visible.map((r, i) => <VoteRow key={i} record={r} last={i === visible.length - 1 && !hasMore} />)}
+          {hasMore && (
+            <button onClick={() => setShown(s => s + 12)}
+              style={{
+                width: "100%", marginTop: 12, padding: "10px", borderRadius: RADIUS.control,
+                border: `1px solid ${C.border}`, background: C.surface, cursor: "pointer",
+                fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: C.mid,
+                transition: "background 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = C.surfaceB}
+              onMouseLeave={e => e.currentTarget.style.background = C.surface}>
+              See {Math.min(12, records.length - shown)} more policy positions ↓
+            </button>
+          )}
+          {shown > 8 && (
+            <button onClick={() => setShown(8)}
+              style={{ width: "100%", marginTop: 6, padding: "8px", border: "none", background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 11, color: C.faint }}>
+              Show less ↑
+            </button>
+          )}
+        </>
       )}
     </Card>
   );

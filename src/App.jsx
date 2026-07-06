@@ -2717,7 +2717,7 @@ export default function PoliApp() {
     // BILLS
     if (tab === "bills") {
       if (s === "alerts") return (
-        <V5PageWrapper title="Tracked bills" sub="Bills you're following — updates as they progress.">
+        <V5PageWrapper title="Tracked Bills" sub="Bills you're following — updates as they progress.">
           <AlertsTab alerts={alerts} onToggleAlert={toggleAlert} />
         </V5PageWrapper>
       );
@@ -2729,7 +2729,7 @@ export default function PoliApp() {
       // default: tracker
       return (
         <>
-          <PageHeader title="Bill tracker" sub="Every federal bill, in plain English — including what's buried in the schedules." />
+          <PageHeader title="Bill Tracker" sub="Every federal bill, in plain English — including what's buried in the schedules." />
           <BillsDesk bills={POLICIES} dataState="sample" votes={votes}
             onVote={onVote} alerts={alerts} onToggleAlert={toggleAlert} />
         </>
@@ -2744,7 +2744,7 @@ export default function PoliApp() {
         </V5PageWrapper>
       );
       if (s === "parties") return (
-        <V5PageWrapper title="Party polling" sub="Live polling averages and party standings.">
+        <V5PageWrapper title="Party Polling" sub="Live polling averages and party standings.">
           <PartiesTab />
         </V5PageWrapper>
       );
@@ -2759,22 +2759,18 @@ export default function PoliApp() {
       );
     }
 
-    // MY MP
+    // MY MP — single consolidated view, House/Senate toggle inside MPDossier
     if (tab === "mymp") {
-      // MPDossier is the primary screen — it now handles both MPs and senators
-      // via party/chamber filters. The old separate MyMPTab / SenatorTracker
-      // are folded in here. Members come from Supabase (live).
       if (s === "compare") return (
-        <V5PageWrapper title="Electorate history" sub="How electorates have voted over time.">
+        <V5PageWrapper title="Electorate History" sub="How electorates have voted over time.">
           <ElectorateComparison />
         </V5PageWrapper>
       );
-      // mp + senators both use MPDossier with different initial filters
-      const initialChamber = s === "senators" ? "Senate" : null;
+      // "mp" sub (and default) — MPDossier handles both House and Senate via toggle
       return (
         <>
-          <PageHeader title="Your representatives"
-            sub={membersLoading ? "Loading members from Supabase…" : membersError ? "Couldn't load live data — showing sample." : `${members.length} current MPs & Senators · search by name, electorate or postcode.`} />
+          <PageHeader title="My Representatives"
+            sub={membersLoading ? "Loading members from Supabase…" : membersError ? "Couldn't load live data — showing sample." : `${members.length} current MPs & Senators — search by name, electorate, or postcode.`} />
           {membersLoading ? (
             <div style={{ padding:"40px 0", textAlign:"center", color:"var(--poli-faint)", fontSize:14 }}>Loading members…</div>
           ) : (
@@ -2799,7 +2795,7 @@ export default function PoliApp() {
       );
       return (
         <>
-          <PageHeader title="The ballot" sub="Anonymous, methodology-disclosed community sentiment on live legislation." />
+          <PageHeader title="The Ballot" sub="Anonymous, methodology-disclosed community sentiment on live legislation." />
           <VoteBallot polls={BALLOT_POLLS} dataState="sample" onVote={() => {}} />
         </>
       );
