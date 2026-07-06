@@ -124,15 +124,15 @@ export function MPDossier({ members, initialParty = null, initialQuery = "", dat
           ))}
         </div>
 
-        {/* Dropdowns row */}
-        <div style={{ display: "flex", gap: 6 }}>
+        {/* Dropdowns — stacked so neither clips in the narrow ledger */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <select value={party || ""} onChange={e => { setParty(e.target.value || null); setElectorate(null); }}
-            aria-label="Filter by party" style={{ ...selectStyle, flex: 1 }}>
+            aria-label="Filter by party" style={{ ...selectStyle, width: "100%" }}>
             <option value="">All parties</option>
             {parties.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
           <select value={electorate || ""} onChange={e => setElectorate(e.target.value || null)}
-            aria-label="Filter by electorate" style={{ ...selectStyle, flex: 1 }}>
+            aria-label="Filter by electorate" style={{ ...selectStyle, width: "100%" }}>
             <option value="">{chamber === "Senate" ? "All states" : "All electorates"}</option>
             {electorates.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
           </select>
