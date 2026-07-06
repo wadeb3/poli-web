@@ -227,7 +227,7 @@ function PolicyRow({ record, mpId, last }) {
       // in that case re-sync with --mps to fix the stored types.
       _sb.from("divisions")
         .select("id, name, date, summary, aye_votes, no_votes, house")
-        .contains("policy_division_ids", [policyId])
+        .filter("policy_division_ids", "cs", `["${policyId}"]`)
         .order("date", { ascending: false })
         .limit(20)
         .then(({ data: divData }) => {
