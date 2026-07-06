@@ -2439,15 +2439,14 @@ function adaptMember(row) {
   const records = rawPositions
     .filter(p => p.voted && (p.category || p.agreement != null) && p.name
       && !p.name.toLowerCase().includes("(procedural)"))
-    .sort((a, b) => new Date(b.last_edited_at || 0) - new Date(a.last_edited_at || 0))
-    .slice(0, 20)
     .map(p => {
       const cat = TVFY_CATEGORY[p.category];
       return {
-        policyId:      p.id,          // ← used to look up member_votes via divisions
+        policyId:      p.id,
         billTitle:     toTitleCase(p.name),
         vote:          cat ? cat.vote : agreementToVote(p.agreement),
         label:         cat ? cat.label : null,
+        year:          p.last_edited_at ? new Date(p.last_edited_at).getFullYear() : null,
         date:          p.last_edited_at
                          ? new Date(p.last_edited_at).toLocaleDateString("en-AU",
                              { day:"numeric", month:"short", year:"numeric" })
@@ -2455,8 +2454,9 @@ function adaptMember(row) {
         withParty:     undefined,
         userAlignment: null,
       };
-    });
-
+    })
+    // Keep newest first within each year — the year filter pill handles era selection
+    .sort((a, b) => new Date(b.last_edited_at || 0) - new Date(a.last_edited_at || 0));
   const attendance = (row.votes_attended != null && row.votes_possible)
     ? Math.round((row.votes_attended / row.votes_possible) * 100)
     : null;

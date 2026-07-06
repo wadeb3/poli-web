@@ -106,16 +106,32 @@ export function AlignmentMeter({ score, n, name }) {
 // Evidence layer:  member_votes divisions fetched on demand when a row is expanded
 
 export function VotingRecord({ mpId, fallbackRecords = [] }) {
+  const THIS_YEAR = new Date().getFullYear();
+  const YEAR_BUCKETS = [
+    { label: String(THIS_YEAR),       key: "y0", test: r => r.year === THIS_YEAR },
+    { label: String(THIS_YEAR - 1),   key: "y1", test: r => r.year === THIS_YEAR - 1 },
+    { label: String(THIS_YEAR - 2),   key: "y2", test: r => r.year === THIS_YEAR - 2 },
+    { label: "Older",                 key: "old", test: r => !r.year || r.year < THIS_YEAR - 2 },
+  ];
+
+  const [activeYear, setActiveYear] = useState("y0");
   const [shown, setShown] = useState(10);
 
-  // fallbackRecords = policy_positions from adaptMember — this is always the
-  // primary display layer regardless of whether Hansard data is available
-  const visible = fallbackRecords.slice(0, shown);
-  const hasMore = fallbackRecords.length > shown;
+  // Reset pagination when year changes
+  const handleYear = (key) => { setActiveYear(key); setShown(10); };
+
+  const bucket     = YEAR_BUCKETS.find(b => b.key === activeYear) || YEAR_BUCKETS[0];
+  const filtered   = fallbackRecords.filter(bucket.test);
+  const visible    = filtered.slice(0, shown);
+  const hasMore    = filtered.length > shown;
+
+  // Count per bucket for badge
+  const counts = {};
+  YEAR_BUCKETS.forEach(b => { counts[b.key] = fallbackRecords.filter(b.test).length; });
 
   if (!fallbackRecords.length) return (
-    <Card style={{ marginTop:14 }}>
-      <SectionLabel right={<span style={{ fontSize:10.5, color:C.faint }}>They Vote For You</span>}>
+    <Card style={{ marginTop: 14 }}>
+      <SectionLabel right={<span style={{ fontSize: 10.5, color: C.faint }}>They Vote For You</span>}>
         Voting Record
       </SectionLabel>
       <EmptyState title="No Policy Positions Yet" icon={<IconPerson size={22} />}
@@ -124,27 +140,62 @@ export function VotingRecord({ mpId, fallbackRecords = [] }) {
   );
 
   return (
-    <Card style={{ marginTop:14 }}>
+    <Card style={{ marginTop: 14 }}>
       <SectionLabel right={
-        <span style={{ fontSize:10.5, color:C.faint }}>
+        <span style={{ fontSize: 10.5, color: C.faint }}>
           {fallbackRecords.length} policy positions · They Vote For You
         </span>
       }>
         Voting Record
       </SectionLabel>
 
-      {visible.map((r, i) => (
-        <PolicyRow key={i} record={r} mpId={mpId}
-          last={i === visible.length - 1 && !hasMore} />
-      ))}
+      {/* Year filter pills */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+        {YEAR_BUCKETS.map(b => {
+          const active = activeYear === b.key;
+          const count  = counts[b.key];
+          return (
+            <button key={b.key} onClick={() => handleYear(b.key)}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 5,
+                padding: "5px 12px", borderRadius: 99, cursor: "pointer",
+                fontFamily: "inherit", fontSize: 12, fontWeight: 600,
+                border: `1.5px solid ${active ? C.accent : C.border}`,
+                background: active ? C.accentSoft : C.white,
+                color: active ? C.accent : C.mid,
+                transition: "all 0.15s",
+                opacity: count === 0 ? 0.4 : 1,
+              }}>
+              {b.label}
+              {count > 0 && (
+                <span style={{ fontSize: 10, fontWeight: 700, color: active ? C.accent : C.faint }}>
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-      {hasMore && (
-        <button onClick={() => setShown(s => s + 10)}
-          style={{ width:"100%", marginTop:12, padding:"10px", borderRadius:RADIUS.control, border:`1px solid ${C.border}`, background:C.surface, cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:600, color:C.mid }}
-          onMouseEnter={e => e.currentTarget.style.background = C.surfaceB}
-          onMouseLeave={e => e.currentTarget.style.background = C.surface}>
-          Show {Math.min(10, fallbackRecords.length - shown)} more policy positions ↓
-        </button>
+      {filtered.length === 0 ? (
+        <div style={{ padding: "16px 0", textAlign: "center", fontSize: 13, color: C.faint, fontStyle: "italic" }}>
+          No policy positions for {bucket.label} — try another year.
+        </div>
+      ) : (
+        <>
+          {visible.map((r, i) => (
+            <PolicyRow key={`${r.policyId}-${i}`} record={r} mpId={mpId}
+              last={i === visible.length - 1 && !hasMore} />
+          ))}
+          {hasMore && (
+            <button onClick={() => setShown(s => s + 10)}
+              style={{ width: "100%", marginTop: 12, padding: "10px", borderRadius: RADIUS.control, border: `1px solid ${C.border}`, background: C.surface, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: C.mid }}
+              onMouseEnter={e => e.currentTarget.style.background = C.surfaceB}
+              onMouseLeave={e => e.currentTarget.style.background = C.surface}>
+              Show {Math.min(10, filtered.length - shown)} more ↓
+            </button>
+          )}
+        </>
       )}
     </Card>
   );
@@ -251,7 +302,7 @@ function PolicyRow({ record, mpId, last }) {
 
           {!loading && divisions !== null && divisions.length === 0 && (
             <div style={{ fontSize:12, color:C.faint, fontStyle:"italic" }}>
-              No individual division records found for this policy area yet.
+              No Hansard divisions linked to this policy area yet — TVFY connects divisions to policies over time as they curate their data.
             </div>
           )}
 
