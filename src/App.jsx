@@ -2391,10 +2391,64 @@ const DELIBERATION_CLUSTERS = [
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SUPABASE MEMBER ADAPTER
-// Transforms the flat mps table row into the shape MPDossier expects.
-// Keeps all the rich voting-record data we're pulling from TVFY.
+// Transforms the flat mps table row into the shape MPDossier/MPProfile expects.
 // ─────────────────────────────────────────────────────────────────────────────
+
+// They Vote For You policy names come back lowercase — title-case them.
+const SKIP_WORDS = new Set(["a","an","the","of","in","on","at","by","for","to","and","or","but","as","with","from"]);
+function toTitleCase(str) {
+  if (!str) return "";
+  return str.split(" ").map((w, i) =>
+    i > 0 && SKIP_WORDS.has(w.toLowerCase()) ? w.toLowerCase()
+    : w.charAt(0).toUpperCase() + w.slice(1)
+  ).join(" ");
+}
+
+// Map a TVFY agreement score (0–100) to a VoteRecord vote value.
+// ≥70 = voted for, ≤30 = voted against, 31-69 = mixed (shown as abstain).
+function tvfyAgreementToVote(agreement) {
+  if (agreement == null) return "absent";
+  if (agreement >= 70) return "for";
+  if (agreement <= 30) return "against";
+  return "abstain";
+}
+
+// Extract current office titles from the offices array (TVFY format varies).
+function extractOffices(offices) {
+  if (!Array.isArray(offices)) return [];
+  return offices
+    .map(o => typeof o === "string" ? o : (o?.position || o?.name || o?.title || ""))
+    .filter(Boolean)
+    .slice(0, 3); // cap at 3 to avoid overwhelming the header
+}
+
 function adaptMember(row) {
+  // Build voting records from TVFY policy_positions (the richest data we have).
+  // Filter to voted=true, agreement not null, non-procedural, sort by recency.
+  const rawPositions = Array.isArray(row.policy_positions) ? row.policy_positions : [];
+  const records = rawPositions
+    .filter(p => p.voted && p.agreement != null && p.name &&
+      !p.name.toLowerCase().includes("(procedural)"))
+    .sort((a, b) => new Date(b.last_edited_at || 0) - new Date(a.last_edited_at || 0))
+    .slice(0, 20) // show up to 20 most recent
+    .map(p => ({
+      billTitle:     toTitleCase(p.name),
+      vote:          tvfyAgreementToVote(p.agreement),
+      date:          p.last_edited_at
+                       ? new Date(p.last_edited_at).toLocaleDateString("en-AU", { day:"numeric", month:"short", year:"numeric" })
+                       : "Date unknown",
+      withParty:     undefined, // not available from TVFY policy_comparisons endpoint
+      userAlignment: null,      // populated later when user has voted on bills
+    }));
+
+  // Attendance percentage
+  const attendance = (row.votes_attended != null && row.votes_possible)
+    ? Math.round((row.votes_attended / row.votes_possible) * 100)
+    : null;
+
+  // Office titles for the header badge row
+  const officeLabels = extractOffices(row.offices);
+
   return {
     id:         row.id,
     name:       row.name,
@@ -2405,18 +2459,16 @@ function adaptMember(row) {
     chamber:    row.chamber === "senate" ? "Senate" : "House",
     state:      row.state || row.electorate,
     electorate: row.electorate,
-    postcodes:  "",   // not yet in Supabase — future AEC enrichment
+    postcodes:  "",   // future AEC enrichment
     since:      row.since || "",
-    attendance: row.votes_attended != null && row.votes_possible
-                  ? Math.round((row.votes_attended / row.votes_possible) * 100)
-                  : null,
+    // MPProfileHeader uses mp.attendance to show the stat tile
+    attendance,
     rebellions: row.rebellions,
-    offices:    row.offices || [],
-    policy_positions: row.policy_positions || [],
-    // MPDossier/MPProfile alignment shape — null until user has voted on bills
-    alignment:  null,
-    records:    [],
-    saidVsDid:  null,
+    offices:    officeLabels,
+    // MPDossier/MPProfile
+    records,
+    alignment:  null,  // populated when user has voted on matching bills
+    saidVsDid:  null,  // future Hansard cross-reference feature
   };
 }
 

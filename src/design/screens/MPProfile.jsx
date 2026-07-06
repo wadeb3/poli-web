@@ -61,8 +61,26 @@ export function MPProfileHeader({ mp, alignment, dataState = "live", onContact }
           <div style={{ ...TYPE.sm, color: C.mid, marginTop: 4 }}>
             {mp.role}{mp.since ? ` · since ${mp.since}` : ""}
           </div>
-          <div style={{ marginTop: 8 }}>
+          {/* Office badges — Minister / Shadow Minister roles */}
+          {mp.offices?.length > 0 && (
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 6 }}>
+              {mp.offices.map((o, i) => (
+                <span key={i} style={{ fontSize: 10, fontWeight: 600, color: C.blue, background: C.blueSoft, border: `1px solid ${C.blueMid}`, padding: "2px 8px", borderRadius: 999 }}>{o}</span>
+              ))}
+            </div>
+          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
             <SourceBadge state={dataState} source="APH / Supabase" />
+            {mp.attendance != null && (
+              <span style={{ fontSize: 11, color: C.faint }}>
+                <span style={{ fontVariantNumeric: "tabular-nums", color: C.ink, fontWeight: 600 }}>{mp.attendance}%</span> attendance
+              </span>
+            )}
+            {mp.rebellions != null && mp.rebellions > 0 && (
+              <span style={{ fontSize: 11, color: C.amber, fontWeight: 600 }}>
+                {mp.rebellions} party rebellion{mp.rebellions !== 1 ? "s" : ""}
+              </span>
+            )}
           </div>
         </div>
         {onContact && <Button variant="primary" size="sm" onClick={onContact}>Contact</Button>}
