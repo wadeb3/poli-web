@@ -2444,6 +2444,7 @@ function adaptMember(row) {
     .map(p => {
       const cat = TVFY_CATEGORY[p.category];
       return {
+        policyId:      p.id,          // ← used to look up member_votes via divisions
         billTitle:     toTitleCase(p.name),
         vote:          cat ? cat.vote : agreementToVote(p.agreement),
         label:         cat ? cat.label : null,
