@@ -102,6 +102,15 @@ def sync_mps():
     people = tvfy_get("people.json")
     print(f"  {len(people)} people fetched. Enriching with detail...")
     rows = []
+    # Build cross-reference: latest_member.id (used in divisions votes array)
+    # → person id (used as mps.id). This is the key to matching member_votes
+    # to the mps table — they use different ID spaces in TVFY's API.
+    member_to_person = {}
+    for p in people:
+        m = p.get("latest_member")
+        if m and m.get("id"):
+            member_to_person[str(m["id"])] = str(p["id"])
+
     for i, p in enumerate(people, 1):
         m = p.get("latest_member")
         if not m:
@@ -129,10 +138,10 @@ def sync_mps():
                 try:    ag = float(pc.get("agreement"))
                 except: ag = None
                 flat.append({
-                    "id":            pol.get("id"),
+                    "id":            str(pol.get("id")) if pol.get("id") is not None else None,
                     "name":          pol.get("name"),
                     "agreement":     ag,
-                    "category":      pc.get("category"),   # ← TVFY official label
+                    "category":      pc.get("category"),
                     "voted":         pc.get("voted"),
                     "last_edited_at":pol.get("last_edited_at"),
                 })
@@ -146,6 +155,7 @@ def sync_mps():
         time.sleep(REQUEST_DELAY)
     sb_upsert("mps", rows)
     print(f"  ✅ {len(rows)} MPs/Senators upserted.")
+    return member_to_person  # returned so divisions sync can use it
 
 
 # ── 2. TVFY Policies ───────────────────────────────────────────────────────────
@@ -206,8 +216,26 @@ def fetch_division_detail(div_id):
     return tvfy_get(f"divisions/{div_id}.json")
 
 
-def sync_divisions():
+def get_member_to_person_map():
+    """Fetch the people list and build member_id → person_id lookup.
+    Called when running --divisions without --mps so the map is always available."""
+    print("  Building member ID cross-reference map...")
+    people = tvfy_get("people.json")
+    mapping = {}
+    for p in people:
+        m = p.get("latest_member")
+        if m and m.get("id"):
+            mapping[str(m["id"])] = str(p["id"])
+    print(f"  {len(mapping)} member IDs mapped to person IDs.")
+    return mapping
+
+
+def sync_divisions(member_to_person=None):
     print("\n═══ Syncing Divisions ═══")
+
+    # Get the member→person ID map if not passed in from sync_mps
+    if member_to_person is None:
+        member_to_person = get_member_to_person_map()
 
     # Find the most recent division we already have, so we only fetch new ones
     try:
@@ -288,18 +316,22 @@ def sync_divisions():
             }
             rows.append(row)
 
-            # Per-member vote records — stored separately for efficient lookup
+            # Per-member vote records — map member.id → person id (mps.id)
             for v in (d.get("votes") or []):
                 mp = v.get("member") or {}
+                raw_member_id = str(mp.get("id") or "")
+                # Translate the division's member.id to the person id used
+                # in the mps table — they are different ID spaces in TVFY.
+                person_id = member_to_person.get(raw_member_id, raw_member_id)
                 vote_rows.append({
-                    "division_id": div_id,
-                    "mp_id":       str(mp.get("id") or ""),
-                    "mp_name":     f'{mp.get("name", {}).get("first", "")} {mp.get("name", {}).get("last", "")}'.strip(),
-                    "vote":        v.get("vote"),    # "aye" or "no"
-                    "rebel":       v.get("rebel", False),
+                    "division_id":   div_id,
+                    "mp_id":         person_id,
+                    "mp_name":       f'{mp.get("name", {}).get("first", "")} {mp.get("name", {}).get("last", "")}'.strip(),
+                    "vote":          v.get("vote"),
+                    "rebel":         v.get("rebel", False),
                     "division_date": d.get("date"),
                     "division_name": d.get("name"),
-                    "house":       d.get("house"),
+                    "house":         d.get("house"),
                 })
 
             print(f"  [{i}/{len(all_stubs)}] {d.get('date')} · {d.get('name')[:60]}")
@@ -332,12 +364,13 @@ def main():
 
     run_all = not any([args.mps, args.policies, args.divisions])
 
+    member_to_person = None
     if run_all or args.mps:
-        sync_mps()
+        member_to_person = sync_mps()
     if run_all or args.policies:
         sync_policies()
     if run_all or args.divisions:
-        sync_divisions()
+        sync_divisions(member_to_person)
 
     print("\n✅ Sync complete.")
 

@@ -167,13 +167,16 @@ function PolicyRow({ record, mpId, last }) {
     // the policy name keywords — best available join without a policy_id on the row
     // We fetch all their votes, then filter client-side by policy_division_ids
     // matching this policy's id if available, otherwise show the most recent 10.
-    const policyId = record.policyId ? String(record.policyId) : null;
+    const policyId = record.policyId != null ? String(record.policyId) : null;
 
     if (policyId) {
-      // Find divisions linked to this policy, then get this MP's votes on them
+      // divisions.policy_division_ids stores IDs as strings e.g. ["202"].
+      // We try the string form first. If the existing data has integer IDs in
+      // the jsonb (from before the sync fix), the contains query won't match —
+      // in that case re-sync with --mps to fix the stored types.
       _sb.from("divisions")
         .select("id, name, date, summary, aye_votes, no_votes, house")
-        .contains("policy_division_ids", [policyId])
+        .contains("policy_division_ids", JSON.stringify([policyId]))
         .order("date", { ascending: false })
         .limit(20)
         .then(({ data: divData }) => {
