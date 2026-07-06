@@ -189,7 +189,7 @@ export function MPDossier({ members, initialParty = null, initialQuery = "", dat
     <div>
       <MPProfileHeader mp={selected} alignment={selected.alignment || null} dataState={dataState}
         onContact={onContact ? () => onContact(selected) : undefined} />
-      <VotingRecord records={selected.records || []} />
+      <VotingRecord mpId={selected.id} fallbackRecords={selected.records || []} />
       {selected.saidVsDid && (
         <SaidVsDid said={selected.saidVsDid.said} did={selected.saidVsDid.did}
           consistent={selected.saidVsDid.consistent} source={selected.saidVsDid.source} />
