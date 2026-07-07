@@ -161,7 +161,7 @@ function StagePipeline({ current }) {
         return (
           <div key={s} style={{ flex: 1, minWidth: 0 }}>
             <div style={{ height: 3, borderRadius: 99, background: done || now ? C.ink : C.surfaceB, marginBottom: 5 }} />
-            <div style={{ fontSize: 9.5, fontWeight: now ? 700 : 500, color: now ? C.ink : done ? C.mid : C.faint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <div style={{ fontSize: 10, fontWeight: now ? 700 : 500, color: now ? C.ink : done ? C.mid : C.faint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {s}
             </div>
           </div>
@@ -183,7 +183,7 @@ function HiddenFlag({ count, severity, scrutiny, onClick }) {
       background: sev.bg, border: `1px solid ${sev.bd}`, fontFamily: "inherit",
     }}>
       <span style={{ color: sev.c }}><IconEye size={15} /></span>
-      <span style={{ fontSize: 12.5, fontWeight: 600, color: C.ink }}>
+      <span style={{ fontSize: 12, fontWeight: 600, color: C.ink }}>
         {count} provision{count > 1 ? "s" : ""} hidden in this bill
       </span>
       <span style={{ fontSize: 11, color: sev.c, fontWeight: 600, marginLeft: "auto" }}>{sev.label}</span>
@@ -217,9 +217,9 @@ function FiscalStrip({ fiscal }) {
     <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginTop: 10, padding: "10px 14px", borderRadius: RADIUS.panel, border: `1px solid ${C.border}` }}>
       <span style={{ color: C.teal, marginTop: 1 }}><IconDollar size={15} /></span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 650, color: C.ink }}>{fiscal.budgetImpact}</div>
+        <div style={{ fontSize: 12, fontWeight: 650, color: C.ink }}>{fiscal.budgetImpact}</div>
         <div style={{ fontSize: 12, color: C.mid, marginTop: 2 }}>{fiscal.perHousehold}</div>
-        <div style={{ fontSize: 10.5, color: C.faint, marginTop: 4 }}>Source: {fiscal.costSource}</div>
+        <div style={{ fontSize: 10, color: C.faint, marginTop: 4 }}>Source: {fiscal.costSource}</div>
       </div>
     </div>
   );

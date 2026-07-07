@@ -115,7 +115,7 @@ export function BillsDesk({ bills, votes = {}, onVote, alerts = [], onToggleAler
               <button key={l} onClick={() => { setChamber(v); setCategory(null); }}
                 style={{
                   flex: 1, padding: "5px 0", borderRadius: 6, border: "none",
-                  cursor: "pointer", fontFamily: "inherit", fontSize: 11.5, fontWeight: 600,
+                  cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 600,
                   background: chamber === v ? C.white : "transparent",
                   color: chamber === v ? C.ink : C.faint,
                   boxShadow: chamber === v ? "0 1px 3px rgba(33,29,26,0.08)" : "none",
@@ -241,7 +241,7 @@ function BriefingPane({ bill, dataState, vote, onVote, alertOn, onToggleAlert })
         </div>
       </div>
 
-      <h2 style={{ fontSize: 18, lineHeight: 1.35, fontWeight: 500, color: C.ink, margin: "0 0 8px", fontFamily: FONT.ui }}>{bill.title}</h2>
+      <h2 style={{ fontSize: 16, lineHeight: 1.4, fontWeight: 600, color: C.ink, margin: "0 0 8px", fontFamily: FONT.ui }}>{bill.title}</h2>
 
       {/* What This Means For You — primary summary, positioned where plain was */}
       <div style={{ background: C.surface, borderRadius: RADIUS.panel, padding: "12px 14px", margin: "0 0 16px", borderLeft: `3px solid ${C.accent}` }}>
@@ -250,7 +250,7 @@ function BriefingPane({ bill, dataState, vote, onVote, alertOn, onToggleAlert })
           <span style={{ ...TYPE.overline, fontSize: 10, color: C.accentText }}>What This Means For You</span>
           <span style={{ fontSize: 10, color: C.faint, marginLeft: "auto" }}>Non-partisan · AI summary →</span>
         </div>
-        <p style={{ fontFamily: FONT.ui, fontSize: 14.5, lineHeight: 1.6, fontWeight: 400, color: C.ink, margin: 0, maxWidth: 640 }}>{bill.means || bill.plain || "Summary pending."}</p>
+        <p style={{ fontFamily: FONT.ui, fontSize: 13, lineHeight: 1.6, fontWeight: 400, color: C.ink, margin: 0, maxWidth: 640 }}>{bill.means || bill.plain || "Summary pending."}</p>
         {bill.plain && bill.plain !== "Plain-English summary pending — check back soon." && bill.plain !== bill.means && (
           <FullSummaryExpand plain={bill.plain} />
         )}

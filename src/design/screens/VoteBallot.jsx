@@ -47,11 +47,11 @@ export function VoteBallot({ polls, votes = {}, onVote, dataState = "sample" }) 
           {closed.map(p => (
             <div key={p.id} style={{ padding: "14px 0", borderBottom: `1px solid ${C.border}` }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 8 }}>
-                <span style={{ ...TYPE.h3, fontSize: 16, color: C.ink, flex: 1 }}>{p.title}</span>
+                <span style={{ ...TYPE.h3, fontSize: 13, color: C.ink, flex: 1 }}>{p.title}</span>
                 {p.outcome && <Chip color={p.outcome === "Supported" ? C.green : p.outcome === "Opposed" ? C.red : C.mid} tone="tint">{p.outcome}</Chip>}
               </div>
               <SentimentBar support={p.support} neutral={p.neutral} oppose={p.oppose} height={5} />
-              <div style={{ fontSize: 10.5, color: C.faint, marginTop: 6, fontVariantNumeric: "tabular-nums" }}>
+              <div style={{ fontSize: 10, color: C.faint, marginTop: 6, fontVariantNumeric: "tabular-nums" }}>
                 {p.n.toLocaleString()} responses · <span style={{ color: C.accentText, fontWeight: 600, cursor: "pointer" }}>methodology</span>
               </div>
             </div>
@@ -71,7 +71,7 @@ function BallotEntry({ n, poll, vote, onVote }) {
     <div style={{ display: "flex", gap: 16, padding: "18px 0", borderBottom: `1px solid ${C.border}` }}>
       <IndexNum n={n} size={26} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <h3 style={{ ...TYPE.h3, fontSize: 18, color: C.ink, margin: "0 0 3px" }}>{poll.title}</h3>
+        <h3 style={{ ...TYPE.h3, fontSize: 14, color: C.ink, margin: "0 0 3px" }}>{poll.title}</h3>
         <p style={{ ...TYPE.sm, color: C.mid, margin: "0 0 14px" }}>{poll.question}</p>
 
         {!localVote ? (
@@ -79,7 +79,7 @@ function BallotEntry({ n, poll, vote, onVote }) {
             <Button variant="support" size="sm" onClick={() => cast("support")}>Support</Button>
             <Button variant="secondary" size="sm" onClick={() => cast("neutral")}>Neutral</Button>
             <Button variant="oppose" size="sm" onClick={() => cast("oppose")}>Oppose</Button>
-            <span style={{ fontSize: 10.5, color: C.faint, alignSelf: "center" }}>anonymous · one vote per question</span>
+            <span style={{ fontSize: 10, color: C.faint, alignSelf: "center" }}>anonymous · one vote per question</span>
           </div>
         ) : (
           <div>
@@ -93,7 +93,7 @@ function BallotEntry({ n, poll, vote, onVote }) {
           </div>
         )}
 
-        <div style={{ fontSize: 10.5, color: C.faint, marginTop: 12, fontVariantNumeric: "tabular-nums" }}>
+        <div style={{ fontSize: 10, color: C.faint, marginTop: 12, fontVariantNumeric: "tabular-nums" }}>
           {poll.n.toLocaleString()} responses{poll.closes ? ` · ${poll.closes}` : ""}
         </div>
       </div>

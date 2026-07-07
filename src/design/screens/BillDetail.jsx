@@ -88,7 +88,7 @@ function BillDetailInner({ bill }) {
             }}>
               {s.label}
               {s.count > 0 && (
-                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 18, height: 18, borderRadius: 99, padding: "0 4px", fontSize: 9, fontWeight: 800, background: s.alert ? C.red : C.amber, color: "#fff" }}>{s.count}</span>
+                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 18, height: 18, borderRadius: 99, padding: "0 4px", fontSize: 10, fontWeight: 800, background: s.alert ? C.red : C.amber, color: "#fff" }}>{s.count}</span>
               )}
             </button>
           );
@@ -139,7 +139,7 @@ function Overview({ bill }) {
       {bill.fiscal && (
         <div style={{ background: C.accentSoft, border: `1px solid ${C.accentMid}`, borderRadius: RADIUS.panel, padding: "14px 16px", marginBottom: 16 }}>
           <Overline color={C.accentText} mb={8}>Fiscal impact</Overline>
-          <div style={{ fontFamily: FONT.display, fontSize: 18, color: C.ink, marginBottom: 4 }}>{bill.fiscal.budgetImpact}</div>
+          <div style={{ fontFamily: FONT.display, fontSize: 13, color: C.ink, marginBottom: 4 }}>{bill.fiscal.budgetImpact}</div>
           <div style={{ fontSize: 12, color: C.mid, marginBottom: 6 }}>{bill.fiscal.perHousehold}</div>
           <div style={{ fontSize: 10, color: C.faint }}>Source: {bill.fiscal.costSource}</div>
         </div>
@@ -151,7 +151,7 @@ function Overview({ bill }) {
           <Overline>Key provisions</Overline>
           {bill.provisions?.map((p, i) => (
             <div key={i} style={{ display: "flex", gap: 12, marginBottom: 10, alignItems: "flex-start" }}>
-              <span style={{ fontFamily: FONT.display, fontSize: 16, color: C.accentText, flexShrink: 0, width: 20, marginTop: 1 }}>{i + 1}</span>
+              <span style={{ fontFamily: FONT.display, fontSize: 13, color: C.accentText, flexShrink: 0, width: 20, marginTop: 1 }}>{i + 1}</span>
               <span style={{ fontSize: 13, color: C.mid, lineHeight: 1.6 }}>{p}</span>
             </div>
           ))}
@@ -211,7 +211,7 @@ function Overview({ bill }) {
                 <div style={{ fontSize: 12, fontWeight: 600, color: C.ink }}>{d.donor}</div>
                 <div style={{ fontSize: 10, color: C.faint }}>{d.cycle} · to {d.party}</div>
               </div>
-              <div style={{ fontSize: 15, color: C.amber, fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{d.amount}</div>
+              <div style={{ fontSize: 13, color: C.amber, fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{d.amount}</div>
             </div>
           ))}
         </div>
@@ -246,7 +246,7 @@ function Hidden({ hidden }) {
 
       {hidden.length === 0 && (
         <div style={{ background: C.greenSoft, border: `1px solid ${C.greenMid}`, borderRadius: RADIUS.panel, padding: 20, textAlign: "center" }}>
-          <div style={{ fontFamily: FONT.display, fontSize: 18, color: C.green, marginBottom: 6 }}>No significant concerns flagged</div>
+          <div style={{ fontFamily: FONT.display, fontSize: 13, color: C.green, marginBottom: 6 }}>No significant concerns flagged</div>
           <p style={{ fontSize: 13, color: C.mid, margin: 0, lineHeight: 1.6 }}>This bill's provisions appear consistent with its stated purpose.</p>
         </div>
       )}
@@ -262,7 +262,7 @@ function Hidden({ hidden }) {
                 <Chip color={s.color} tone="tint">{s.label}</Chip>
                 <span style={{ fontSize: 10, color: C.faint, fontFamily: "monospace" }}>{h.clause}</span>
               </div>
-              <div style={{ fontFamily: FONT.display, fontSize: 16, color: C.ink, lineHeight: 1.3 }}>{h.title}</div>
+              <div style={{ fontFamily: FONT.display, fontSize: 13, color: C.ink, lineHeight: 1.3 }}>{h.title}</div>
             </div>
             <div style={{ padding: "14px 16px", background: C.white }}>
               <div style={{ fontSize: 13, color: C.mid, lineHeight: 1.65, marginBottom: 12 }}>{h.summary}</div>
@@ -309,7 +309,7 @@ function Impact({ cohorts = [] }) {
               <Chip color={color(c.impact)} tone="tint">{c.impact.charAt(0).toUpperCase() + c.impact.slice(1)}</Chip>
             </div>
             <div>
-              <div style={{ fontFamily: FONT.display, fontSize: 15, color: C.ink, marginBottom: 4 }}>{c.group}</div>
+              <div style={{ fontFamily: FONT.display, fontSize: 13, color: C.ink, marginBottom: 4 }}>{c.group}</div>
               <div style={{ fontSize: 13, color: C.mid, lineHeight: 1.55 }}>{c.detail}</div>
             </div>
           </div>
@@ -386,7 +386,7 @@ function Parliament({ bill }) {
                   <div style={{ width: 28, height: 28, borderRadius: "50%", background: passed ? C.green : current ? C.accent : C.surfaceB, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: passed || current ? "#fff" : C.faint, border: current ? `2px solid ${C.accentDark}` : "none" }}>
                     {passed ? "✓" : i + 1}
                   </div>
-                  <div style={{ fontSize: 9, color: passed ? C.green : current ? C.accentText : C.faint, fontWeight: current ? 700 : 400, textAlign: "center", maxWidth: 56, lineHeight: 1.3 }}>{stage}</div>
+                  <div style={{ fontSize: 10, color: passed ? C.green : current ? C.accentText : C.faint, fontWeight: current ? 700 : 400, textAlign: "center", maxWidth: 56, lineHeight: 1.3 }}>{stage}</div>
                 </div>
                 {i < STAGES.length - 1 && <div style={{ width: 20, height: 2, background: i < cur ? C.green : C.border, margin: "0 2px 20px", flexShrink: 0 }} />}
               </div>
@@ -410,7 +410,7 @@ function Parliament({ bill }) {
                 <span style={{ fontSize: 11, fontWeight: 600, color: pending ? C.faint : C.mid, fontVariantNumeric: "tabular-nums" }}>{t.date}</span>
                 <span style={{ fontSize: 10, color: C.faint }}>{t.chamber}</span>
               </div>
-              <div style={{ fontFamily: FONT.display, fontSize: 15, color: pending ? C.faint : C.ink, marginBottom: 3 }}>{t.stage}</div>
+              <div style={{ fontFamily: FONT.display, fontSize: 13, color: pending ? C.faint : C.ink, marginBottom: 3 }}>{t.stage}</div>
               <div style={{ fontSize: 12, color: C.faint, lineHeight: 1.5 }}>{t.note}</div>
             </div>
           </div>

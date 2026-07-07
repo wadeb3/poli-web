@@ -87,7 +87,7 @@ export function DeliberationClusters({ clusters, totalResponses, onAddResponse }
   return (
     <Card style={{ marginTop: 14 }}>
       <SectionLabel right={
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, color: C.faint }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, color: C.faint }}>
           <IconSparkle size={12} /> AI-clustered from {totalResponses.toLocaleString()} responses
         </span>
       }>
@@ -110,7 +110,7 @@ export function DeliberationClusters({ clusters, totalResponses, onAddResponse }
               <p style={{ ...TYPE.sm, color: C.mid, margin: 0 }}>{cl.summary}</p>
             </div>
           ))}
-          <p style={{ fontSize: 10.5, color: C.faint, margin: "10px 0 0", lineHeight: 1.5 }}>
+          <p style={{ fontSize: 10, color: C.faint, margin: "10px 0 0", lineHeight: 1.5 }}>
             Themes are grouped by AI and reviewed before publishing. Individual responses stay anonymous.{" "}
             <span style={{ color: C.accentText, fontWeight: 600, cursor: "pointer" }}>How clustering works</span>
           </p>

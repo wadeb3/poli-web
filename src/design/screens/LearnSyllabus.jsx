@@ -53,8 +53,8 @@ export function LearnSyllabus({ xp, streak, levels, units, glossary = {}, onStar
             }}>
               <IndexNum n={i + 1} size={26} />
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: "block", ...TYPE.h3, fontSize: 18, color: C.ink, marginBottom: 3 }}>{u.title}</span>
-                <span style={{ display: "block", ...TYPE.sm, fontSize: 12.5, color: C.mid, marginBottom: 10 }}>{u.blurb}</span>
+                <span style={{ display: "block", ...TYPE.h3, fontSize: 14, color: C.ink, marginBottom: 3 }}>{u.title}</span>
+                <span style={{ display: "block", ...TYPE.sm, fontSize: 12, color: C.mid, marginBottom: 10 }}>{u.blurb}</span>
                 <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ flex: 1, maxWidth: 180, height: 3, borderRadius: 99, background: C.surfaceB, display: "inline-block" }}>
                     <span style={{ display: "block", width: `${pct * 100}%`, height: "100%", background: pct === 1 ? C.green : C.accent, borderRadius: 99 }} />
@@ -86,7 +86,7 @@ export function LearnSyllabus({ xp, streak, levels, units, glossary = {}, onStar
                       <span style={{ display: "block", fontSize: 11, color: C.faint, marginTop: 1 }}>{l.minutes} min</span>
                     </span>
                     {typeof l.progress === "number" && !l.done && l.progress > 0 && (
-                      <span style={{ fontSize: 10.5, color: C.accentText, fontWeight: 600 }}>{Math.round(l.progress * 100)}%</span>
+                      <span style={{ fontSize: 10, color: C.accentText, fontWeight: 600 }}>{Math.round(l.progress * 100)}%</span>
                     )}
                     <Chip color={C.accentText}>+{l.xp} XP</Chip>
                   </button>
@@ -107,8 +107,8 @@ export function LearnSyllabus({ xp, streak, levels, units, glossary = {}, onStar
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", columnGap: 32 }}>
             {(glossaryOpen ? terms : terms.slice(0, 6)).map(([term, def]) => (
               <div key={term} style={{ padding: "11px 0", borderBottom: `1px solid ${C.border}` }}>
-                <div style={{ fontFamily: TYPE.h3.fontFamily, fontSize: 15.5, color: C.ink, marginBottom: 3 }}>{term}</div>
-                <div style={{ fontSize: 12.5, color: C.mid, lineHeight: 1.55 }}>{def}</div>
+                <div style={{ fontFamily: TYPE.h3.fontFamily, fontSize: 14, color: C.ink, marginBottom: 3 }}>{term}</div>
+                <div style={{ fontSize: 12, color: C.mid, lineHeight: 1.55 }}>{def}</div>
               </div>
             ))}
           </div>

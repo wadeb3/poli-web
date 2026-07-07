@@ -73,8 +73,8 @@ export function Hemicycle({ title, composition, majority, dataState = "sample", 
       <SectionLabel right={<SourceBadge state={dataState} updated={updated} source="AEC" />}>{title}</SectionLabel>
 
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
-        <span style={{ ...TYPE.stat, fontSize: 30, color: C.ink }}>{total}</span>
-        <span style={{ fontSize: 12.5, color: C.mid }}>seats · {majority} needed for majority</span>
+        <span style={{ ...TYPE.stat, fontSize: 22, color: C.ink }}>{total}</span>
+        <span style={{ fontSize: 12, color: C.mid }}>seats · {majority} needed for majority</span>
       </div>
 
       <svg viewBox="-108 -108 216 118" style={{ width: "100%", display: "block" }} role="img"
@@ -107,7 +107,7 @@ export function Hemicycle({ title, composition, majority, dataState = "sample", 
               aria-label={`View ${p.label} members`}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 11px",
-                borderRadius: 999, fontFamily: "inherit", fontSize: 11.5, fontWeight: 600, cursor: "pointer",
+                borderRadius: 999, fontFamily: "inherit", fontSize: 11, fontWeight: 600, cursor: "pointer",
                 background: on ? C.surface : C.white, color: C.ink,
                 border: `1px solid ${on ? C.borderDark : C.border}`,
               }}>

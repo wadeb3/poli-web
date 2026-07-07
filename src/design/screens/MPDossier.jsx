@@ -202,11 +202,11 @@ export function MPDossier({ members, initialParty = null, initialQuery = "", ini
               }}>
               <span style={{ width: 8, height: 8, borderRadius: 99, background: p.color, flexShrink: 0 }} />
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: "block", ...TYPE.h3, fontSize: 15, color: C.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+                <span style={{ display: "block", ...TYPE.h3, fontSize: 13, color: C.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
                 <span style={{ display: "block", fontSize: 11, color: C.faint, marginTop: 2 }}>{m.role} · {m.party}</span>
               </span>
               {m.alignment && (
-                <span style={{ fontSize: 11.5, fontWeight: 650, fontVariantNumeric: "tabular-nums", color: m.alignment.score >= 60 ? C.green : m.alignment.score >= 40 ? C.amber : C.red }}>
+                <span style={{ fontSize: 11, fontWeight: 650, fontVariantNumeric: "tabular-nums", color: m.alignment.score >= 60 ? C.green : m.alignment.score >= 40 ? C.amber : C.red }}>
                   {m.alignment.score}%
                 </span>
               )}

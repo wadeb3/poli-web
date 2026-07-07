@@ -50,7 +50,7 @@ export function LearnProgress({ xp, streak, level, nextLevel }) {
         <div style={{ width: `${pct}%`, height: "100%", background: C.accent, borderRadius: 99, transition: "width 0.4s ease" }} />
       </div>
       {nextLevel && (
-        <p style={{ fontSize: 11.5, color: C.mid, margin: "8px 0 0" }}>
+        <p style={{ fontSize: 11, color: C.mid, margin: "8px 0 0" }}>
           {level.maxXp - xp} XP to Level {nextLevel.level}
           {nextLevel.unlock && <> — unlocks <strong style={{ fontWeight: 650, color: C.ink }}>{nextLevel.unlock}</strong></>}
         </p>
@@ -76,8 +76,8 @@ export function LessonCard({ lesson, onStart }) {
           {lesson.done ? "✓" : <IconLearn size={17} />}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ ...TYPE.h3, fontSize: 17, color: C.ink, marginBottom: 3 }}>{lesson.title}</div>
-          <p style={{ ...TYPE.sm, fontSize: 12.5, color: C.mid, margin: 0 }}>{lesson.blurb}</p>
+          <div style={{ ...TYPE.h3, fontSize: 13, color: C.ink, marginBottom: 3 }}>{lesson.title}</div>
+          <p style={{ ...TYPE.sm, fontSize: 12, color: C.mid, margin: 0 }}>{lesson.blurb}</p>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 9 }}>
             <span style={{ fontSize: 11, color: C.faint }}>{lesson.minutes} min</span>
             <Chip color={C.accentText}>+{lesson.xp} XP</Chip>

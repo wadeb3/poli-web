@@ -85,8 +85,8 @@ export function AlignmentMeter({ score, n, name }) {
   return (
     <div>
       <div style={{ display:"flex", alignItems:"baseline", gap:10, marginBottom:8 }}>
-        <span style={{ ...TYPE.stat, fontSize:34, color }}>{score}%</span>
-        <span style={{ fontSize:12.5, color:C.ink, fontWeight:600 }}>alignment with your positions</span>
+        <span style={{ ...TYPE.stat, fontSize:22, color }}>{score}%</span>
+        <span style={{ fontSize:12, color:C.ink, fontWeight:600 }}>alignment with your positions</span>
         <span title="Compares this member's chamber votes to your Poli poll positions."
           style={{ color:C.faint, cursor:"help", marginLeft:"auto" }}><IconInfo size={14} /></span>
       </div>
@@ -132,7 +132,7 @@ export function VotingRecord({ mpId, fallbackRecords = [] }) {
 
   if (!fallbackRecords.length) return (
     <Card style={{ marginTop: 14 }}>
-      <SectionLabel right={<span style={{ fontSize: 10.5, color: C.faint }}>They Vote For You</span>}>
+      <SectionLabel right={<span style={{ fontSize: 10, color: C.faint }}>They Vote For You</span>}>
         Voting Record
       </SectionLabel>
       <EmptyState title="No Policy Positions Yet" icon={<IconPerson size={22} />}
@@ -143,7 +143,7 @@ export function VotingRecord({ mpId, fallbackRecords = [] }) {
   return (
     <Card style={{ marginTop: 14 }}>
       <SectionLabel right={
-        <span style={{ fontSize: 10.5, color: C.faint }}>
+        <span style={{ fontSize: 10, color: C.faint }}>
           {fallbackRecords.length} policy positions · They Vote For You
         </span>
       }>
@@ -384,7 +384,7 @@ export function SaidVsDid({ said, did, consistent, source }) {
           {consistent ? "Consistent" : "Inconsistent"}
         </span>
         {source && (
-          <span style={{ fontSize:10.5, color:C.faint, display:"inline-flex", alignItems:"center", gap:4 }}>
+          <span style={{ fontSize:10, color:C.faint, display:"inline-flex", alignItems:"center", gap:4 }}>
             {source} <IconExternal size={11} />
           </span>
         )}

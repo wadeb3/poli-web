@@ -65,16 +65,26 @@ export const FONT = {
 };
 
 export const TYPE = {
-  masthead: { fontFamily: FONT.display, fontSize: 24, lineHeight: 1.2,  fontWeight: 600, letterSpacing: "-0.008em" },
-  hero:     { fontFamily: FONT.display, fontSize: 19, lineHeight: 1.3,  fontWeight: 500 },
-  h2:       { fontFamily: FONT.display, fontSize: 16, lineHeight: 1.4,  fontWeight: 600 },
-  h3:       { fontFamily: FONT.display, fontSize: 14, lineHeight: 1.45, fontWeight: 600 },
-  stat:     { fontFamily: FONT.display, fontSize: 30, lineHeight: 1,    fontWeight: 600, fontVariantNumeric: "tabular-nums" },
-  body:     { fontFamily: FONT.ui, fontSize: 15, lineHeight: 1.6,  fontWeight: 400 },
-  sm:       { fontFamily: FONT.ui, fontSize: 13, lineHeight: 1.55, fontWeight: 400 },
-  label:    { fontFamily: FONT.ui, fontSize: 12, lineHeight: 1.4,  fontWeight: 600 },
-  caption:  { fontFamily: FONT.ui, fontSize: 11, lineHeight: 1.4,  fontWeight: 500 },
-  overline: { fontFamily: FONT.ui, fontSize: 11, lineHeight: 1.3,  fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.09em" },
+  // Page-level titles only (PageHeader h1)
+  masthead: { fontFamily: FONT.display, fontSize: 20, lineHeight: 1.25, fontWeight: 600, letterSpacing: "-0.005em" },
+  // Section/card titles, bill titles in detail pane
+  hero:     { fontFamily: FONT.display, fontSize: 16, lineHeight: 1.35, fontWeight: 600 },
+  // Card headings, member names
+  h2:       { fontFamily: FONT.display, fontSize: 14, lineHeight: 1.4,  fontWeight: 600 },
+  // List item titles, sub-headings
+  h3:       { fontFamily: FONT.display, fontSize: 13, lineHeight: 1.45, fontWeight: 600 },
+  // Stats / numerals
+  stat:     { fontFamily: FONT.display, fontSize: 28, lineHeight: 1,    fontWeight: 600, fontVariantNumeric: "tabular-nums" },
+  // Body / descriptions
+  body:     { fontFamily: FONT.ui, fontSize: 13, lineHeight: 1.6,  fontWeight: 400 },
+  // Secondary text, notes
+  sm:       { fontFamily: FONT.ui, fontSize: 12, lineHeight: 1.55, fontWeight: 400 },
+  // Labels, chips
+  label:    { fontFamily: FONT.ui, fontSize: 11, lineHeight: 1.4,  fontWeight: 600 },
+  // Meta, dates, source attribution
+  caption:  { fontFamily: FONT.ui, fontSize: 11, lineHeight: 1.4,  fontWeight: 400 },
+  // Section overlines — ALL CAPS
+  overline: { fontFamily: FONT.ui, fontSize: 10, lineHeight: 1.3,  fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.09em" },
   num:      { fontVariantNumeric: "tabular-nums" },
 };
 
