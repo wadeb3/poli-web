@@ -18,7 +18,7 @@ import { SourceBadge, EmptyState } from "../states.jsx";
 import { BillList } from "./BillCard.jsx";
 import { BillDetail } from "./BillDetail.jsx";
 import { ShareCardModal } from "../ShareCard.jsx";
-import { IconBell, IconEye, IconSparkle, IconShare } from "../icons.jsx";
+import { IconBell, IconEye, IconSparkle, IconShare, IconChevron } from "../icons.jsx";
 
 /**
  * @param {{ bills: import("./BillCard.jsx").Bill[],
