@@ -60,16 +60,16 @@ export const partyOf = code => PARTY[code] || PARTY.OTH;
 
 // Typography ──────────────────────────────────────────────────────────────────
 export const FONT = {
-  display: "'Instrument Serif', Georgia, 'Times New Roman', serif",
-  ui: "'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif",
+  display: "'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif",
+  ui:      "'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif",
 };
 
 export const TYPE = {
-  masthead: { fontFamily: FONT.display, fontSize: 42, lineHeight: 1.08, fontWeight: 400, letterSpacing: "-0.015em" }, // lead stories
-  hero:     { fontFamily: FONT.display, fontSize: 34, lineHeight: 1.15, fontWeight: 400, letterSpacing: "-0.01em" },
-  h2:       { fontFamily: FONT.display, fontSize: 24, lineHeight: 1.2,  fontWeight: 400 },
-  h3:       { fontFamily: FONT.display, fontSize: 19, lineHeight: 1.3,  fontWeight: 400 },
-  stat:     { fontFamily: FONT.display, fontSize: 44, lineHeight: 1,    fontWeight: 400 },
+  masthead: { fontFamily: FONT.display, fontSize: 38, lineHeight: 1.1,  fontWeight: 700, letterSpacing: "-0.02em" },
+  hero:     { fontFamily: FONT.display, fontSize: 30, lineHeight: 1.15, fontWeight: 700, letterSpacing: "-0.015em" },
+  h2:       { fontFamily: FONT.display, fontSize: 22, lineHeight: 1.25, fontWeight: 700 },
+  h3:       { fontFamily: FONT.display, fontSize: 17, lineHeight: 1.35, fontWeight: 600 },
+  stat:     { fontFamily: FONT.display, fontSize: 40, lineHeight: 1,    fontWeight: 700, fontVariantNumeric: "tabular-nums" },
   body:     { fontFamily: FONT.ui, fontSize: 15, lineHeight: 1.6,  fontWeight: 400 },
   sm:       { fontFamily: FONT.ui, fontSize: 13, lineHeight: 1.55, fontWeight: 400 },
   label:    { fontFamily: FONT.ui, fontSize: 12, lineHeight: 1.4,  fontWeight: 600 },

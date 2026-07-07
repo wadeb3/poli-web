@@ -12,7 +12,7 @@
 // correct on a phone) — one component, both worlds, same data.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useState } from "react";
-import { C, TYPE, RADIUS, LAYOUT } from "../tokens.js";
+import { C, TYPE, RADIUS, LAYOUT, FONT } from "../tokens.js";
 import { Chip, PartyChip, StatusChip, SentimentBar, Button, Rule } from "../primitives.jsx";
 import { SourceBadge, EmptyState } from "../states.jsx";
 import { BillList } from "./BillCard.jsx";
@@ -30,6 +30,7 @@ export function BillsDesk({ bills, votes = {}, onVote, alerts = [], onToggleAler
   const [wide, setWide] = useState(typeof window !== "undefined" && window.innerWidth >= 900);
   const [chamber, setChamber] = useState(null);
   const [category, setCategory] = useState(null);
+  const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState(bills[0]?.id ?? null);
 
   useEffect(() => {
@@ -56,13 +57,15 @@ export function BillsDesk({ bills, votes = {}, onVote, alerts = [], onToggleAler
       (chamber === "Senate" && b.meta?.originating_chamber === "senate") ||
       (chamber === "House"  && b.meta?.originating_chamber === "representatives");
     const categoryMatch = !category || b.category === category;
-    return chamberMatch && categoryMatch;
+    const q = query.trim().toLowerCase();
+    const queryMatch = !q || b.title.toLowerCase().includes(q);
+    return chamberMatch && categoryMatch && queryMatch;
   });
 
   // Reset selection when filters change
   useEffect(() => {
     setSelectedId(filtered[0]?.id ?? null);
-  }, [chamber, category]);
+  }, [chamber, category, query]);
 
   if (!wide) {
     return <BillList bills={filtered} loading={loading} dataState={dataState} votes={votes}
@@ -79,14 +82,31 @@ export function BillsDesk({ bills, votes = {}, onVote, alerts = [], onToggleAler
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
             <span style={{ ...TYPE.overline, color: C.ink }}>Bills</span>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {(chamber || category) && (
-                <button onClick={() => { setChamber(null); setCategory(null); }}
+              {(chamber || category || query) && (
+                <button onClick={() => { setChamber(null); setCategory(null); setQuery(""); }}
                   style={{ fontSize: 10, fontWeight: 600, color: C.accentText, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
                   Clear
                 </button>
               )}
               <span style={{ ...TYPE.caption, color: C.faint, fontVariantNumeric: "tabular-nums" }}>{filtered.length}</span>
             </div>
+          </div>
+
+          {/* Search */}
+          <div style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 10px", borderRadius:RADIUS.control, border:`1px solid ${C.border}`, background:C.paper, marginBottom:8 }}>
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink:0, color:C.faint }}>
+              <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search bills…"
+              style={{ flex:1, border:"none", outline:"none", background:"transparent", fontFamily:"inherit", fontSize:12, color:C.ink }}
+            />
+            {query && (
+              <button onClick={() => setQuery("")} style={{ background:"none", border:"none", cursor:"pointer", color:C.faint, padding:0, fontSize:14, lineHeight:1 }}>×</button>
+            )}
           </div>
 
           {/* Chamber toggle — switching chamber resets category */}
@@ -226,7 +246,7 @@ function BriefingPane({ bill, dataState, vote, onVote, alertOn, onToggleAlert })
           <span style={{ ...TYPE.overline, fontSize: 10, color: C.accentText }}>What This Means For You</span>
           <span style={{ fontSize: 10, color: C.faint, marginLeft: "auto" }}>Non-partisan · AI summary →</span>
         </div>
-        <p style={{ ...TYPE.body, fontSize: 14.5, color: C.ink, margin: 0, maxWidth: 640 }}>{bill.means || bill.plain || "Summary pending."}</p>
+        <p style={{ fontFamily: FONT.ui, fontSize: 14.5, lineHeight: 1.6, fontWeight: 400, color: C.ink, margin: 0, maxWidth: 640 }}>{bill.means || bill.plain || "Summary pending."}</p>
         {bill.plain && bill.plain !== "Plain-English summary pending — check back soon." && bill.plain !== bill.means && (
           <FullSummaryExpand plain={bill.plain} />
         )}
