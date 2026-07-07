@@ -4,7 +4,7 @@
 // Data: Supabase live (mps) + hardcoded sample (bills, budget, deliberation)
 // All v5 components preserved — migrating tab by tab
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, Component } from "react";
 import { supabase } from "./lib/supabaseClient.js";
 
 // ── v6 design system ──────────────────────────────────────────────────────────
@@ -2703,7 +2703,6 @@ function V5PageWrapper({ title, sub, children }) {
 // MAIN APP SHELL · v6.2
 // ─────────────────────────────────────────────────────────────────────────────
 // ── Top-level error boundary ──────────────────────────────────────────────────
-import { Component } from "react";
 class AppErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { error: null }; }
   static getDerivedStateFromError(e) { return { error: e }; }
