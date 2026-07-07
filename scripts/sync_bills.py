@@ -528,15 +528,35 @@ def translate_bills(retranslate=False):
                 f"Context: Introduced by {sponsor} in the {chamber}. Currently {status_text}."
             )
 
-            if plain or means:
+            # Prompt 3 — category classification
+            CATEGORIES = [
+                "Economy & Tax", "Health", "Environment", "Immigration",
+                "Defence & Security", "Education", "Social Services",
+                "Justice & Law", "Agriculture", "Government & Parliament"
+            ]
+            category = claude_call(
+                f"Classify this Australian parliamentary bill into exactly one of these "
+                f"categories. Reply with only the category name, nothing else.\n\n"
+                f"Categories: {', '.join(CATEGORIES)}\n\n"
+                f"Bill: {bill['title']}\n"
+                f"Summary: {clean[:400]}",
+                max_tokens=20
+            )
+            # Validate — if Claude returns something unexpected, default to closest match
+            if category not in CATEGORIES:
+                category = next((c for c in CATEGORIES if c.lower() in category.lower()), "Government & Parliament")
+
+            if plain or means or category:
                 update = {}
-                if plain: update["summary_plain"] = plain
-                if means: update["means_plain"]   = means
+                if plain:    update["summary_plain"] = plain
+                if means:    update["means_plain"]   = means
+                if category: update["category"]      = category
                 sb_patch("bills", bill["id"], update)
                 translated += 1
                 print(f"  [{i}/{len(to_translate)}] {bill['title'][:55]}")
-                if plain:  print(f"    summary → {plain[:75]}…")
-                if means:  print(f"    means   → {means[:75]}…")
+                if plain:    print(f"    summary  → {plain[:70]}…")
+                if means:    print(f"    means    → {means[:70]}…")
+                if category: print(f"    category → {category}")
 
         except Exception as e:
             print(f"  [{i}/{len(to_translate)}] {bill['title'][:50]} — failed: {e}")

@@ -28,6 +28,8 @@ import { IconBell, IconEye, IconSparkle, IconShare } from "../icons.jsx";
  */
 export function BillsDesk({ bills, votes = {}, onVote, alerts = [], onToggleAlert, dataState = "sample", loading = false }) {
   const [wide, setWide] = useState(typeof window !== "undefined" && window.innerWidth >= 900);
+  const [chamber, setChamber] = useState(null);
+  const [category, setCategory] = useState(null);
   const [selectedId, setSelectedId] = useState(bills[0]?.id ?? null);
 
   useEffect(() => {
@@ -36,24 +38,92 @@ export function BillsDesk({ bills, votes = {}, onVote, alerts = [], onToggleAler
     return () => window.removeEventListener("resize", onR);
   }, []);
 
+  // Build dynamic category list from actual bills data
+  const CATEGORIES = [
+    "Economy & Tax", "Health", "Environment", "Immigration",
+    "Defence & Security", "Education", "Social Services",
+    "Justice & Law", "Agriculture", "Government & Parliament"
+  ];
+  const availableCategories = CATEGORIES.filter(c =>
+    bills.some(b => b.category === c)
+  );
+
+  // Filter by chamber (using originating_chamber via category field fallback) and category
+  const filtered = bills.filter(b => {
+    const chamberMatch = !chamber ||
+      (chamber === "Senate" && (b.category === "Senate" || b.meta?.originating_chamber === "senate" || !CATEGORIES.includes(b.category))) ||
+      (chamber === "House"  && (b.category === "House"  || b.meta?.originating_chamber === "representatives"));
+    const categoryMatch = !category || b.category === category;
+    return chamberMatch && categoryMatch;
+  });
+
+  // Reset selection when filters change
+  useEffect(() => {
+    setSelectedId(filtered[0]?.id ?? null);
+  }, [chamber, category]);
+
   if (!wide) {
-    return <BillList bills={bills} loading={loading} dataState={dataState} votes={votes}
+    return <BillList bills={filtered} loading={loading} dataState={dataState} votes={votes}
       onVote={onVote} alerts={alerts} onToggleAlert={onToggleAlert} />;
   }
 
-  const selected = bills.find(b => b.id === selectedId) || bills[0];
+  const selected = filtered.find(b => b.id === selectedId) || filtered[0];
 
   return (
     <div style={{ display: "flex", gap: 0, alignItems: "flex-start", border: `1px solid ${C.border}`, borderRadius: RADIUS.card, background: C.white, overflow: "hidden" }}>
       {/* LEDGER — master list */}
       <div role="listbox" aria-label="Bills" style={{ width: LAYOUT.deskListWidth, flexShrink: 0, borderRight: `1px solid ${C.border}`, maxHeight: "calc(100vh - 140px)", overflowY: "auto" }}>
         <div style={{ padding: "14px 18px 10px", position: "sticky", top: 0, background: C.white, borderBottom: `1px solid ${C.border}`, zIndex: 1 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-            <span style={{ ...TYPE.overline, color: C.ink }}>All bills</span>
-            <span style={{ ...TYPE.caption, color: C.faint, fontVariantNumeric: "tabular-nums" }}>{bills.length}</span>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+            <span style={{ ...TYPE.overline, color: C.ink }}>Bills</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {(chamber || category) && (
+                <button onClick={() => { setChamber(null); setCategory(null); }}
+                  style={{ fontSize: 10, fontWeight: 600, color: C.accentText, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+                  Clear
+                </button>
+              )}
+              <span style={{ ...TYPE.caption, color: C.faint, fontVariantNumeric: "tabular-nums" }}>{filtered.length}</span>
+            </div>
+          </div>
+
+          {/* Chamber toggle */}
+          <div style={{ display: "flex", gap: 2, background: C.surface, borderRadius: RADIUS.control, padding: 3, marginBottom: 10 }}>
+            {[{ v: null, l: "All" }, { v: "Senate", l: "Senate" }, { v: "House", l: "House" }].map(({ v, l }) => (
+              <button key={l} onClick={() => { setChamber(v); setCategory(null); }}
+                style={{
+                  flex: 1, padding: "5px 0", borderRadius: 6, border: "none",
+                  cursor: "pointer", fontFamily: "inherit", fontSize: 11.5, fontWeight: 600,
+                  background: chamber === v ? C.white : "transparent",
+                  color: chamber === v ? C.ink : C.faint,
+                  boxShadow: chamber === v ? "0 1px 3px rgba(33,29,26,0.08)" : "none",
+                  transition: "background 0.15s",
+                }}>
+                {l}
+              </button>
+            ))}
+          </div>
+
+          {/* Category pills */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+            {availableCategories.map(c => {
+              const active = category === c;
+              return (
+                <button key={c} onClick={() => { setCategory(active ? null : c); setChamber(null); }}
+                  style={{
+                    padding: "3px 9px", borderRadius: 99, border: `1px solid ${active ? C.accent : C.border}`,
+                    background: active ? C.accentSoft : "transparent",
+                    color: active ? C.accentText : C.mid,
+                    fontSize: 10.5, fontWeight: 600, cursor: "pointer",
+                    fontFamily: "inherit", transition: "all 0.15s",
+                  }}>
+                  {c}
+                </button>
+              );
+            })}
           </div>
         </div>
-        {bills.map(b => {
+        {filtered.map(b => {
           const active = b.id === selected?.id;
           return (
             <button key={b.id} role="option" aria-selected={active} onClick={() => setSelectedId(b.id)} style={{

@@ -2404,8 +2404,8 @@ const stripBillMarkdown = text =>
 // defaults — they'll be populated as the data pipeline matures.
 // ─────────────────────────────────────────────────────────────────────────────
 function adaptBill(row) {
-  // Derive a simple category from the originating chamber + sponsor
-  const category = row.originating_chamber === "senate" ? "Senate" : "House";
+  // Use AI-classified category if available, fall back to chamber
+  const category = row.category || (row.originating_chamber === "senate" ? "Senate" : "House");
 
   // Derive party colour context from sponsor_party abbreviation
   const partyMap = {

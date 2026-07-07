@@ -47,6 +47,7 @@ const STAGES = ["Introduced", "Second reading", "Committee", "Third reading", "R
  */
 export function BillCard({ bill, vote = null, onVote, alertOn = false, onToggleAlert, dataState = "sample", renderDetail }) {
   const [expanded, setExpanded] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
   const hidden = bill.hiddenProvisions || [];
   const topSeverity = hidden.some(h => h.severity === "high") ? "high" : hidden.some(h => h.severity === "medium") ? "medium" : "low";
 
@@ -74,11 +75,11 @@ export function BillCard({ bill, vote = null, onVote, alertOn = false, onToggleA
         </div>
       </div>
 
-      {/* Title + summary + single hero stat */}
+      {/* Title + means (primary) + single hero stat */}
       <div style={{ display: "flex", gap: 20, alignItems: "flex-start", marginBottom: 16 }}>
         <div style={{ flex: 1 }}>
           <h3 style={{ ...TYPE.h3, color: C.ink, margin: "0 0 7px" }}>{bill.title}</h3>
-          <p style={{ ...TYPE.sm, color: C.mid, margin: 0 }}>{bill.plain}</p>
+          <p style={{ ...TYPE.sm, color: C.mid, margin: 0 }}>{bill.means}</p>
         </div>
         <Stat value={bill.support} suffix="%" caption="support"
           color={bill.support > 50 ? C.green : bill.oppose > 50 ? C.red : C.ink}
@@ -92,14 +93,28 @@ export function BillCard({ bill, vote = null, onVote, alertOn = false, onToggleA
         <StagePipeline current={bill.currentStageIndex} />
       )}
 
-      {/* AI summary — labelled, with disclosure */}
+      {/* AI summary panel — now shows means with non-partisan label */}
       <div style={{ background: C.surface, borderRadius: RADIUS.panel, padding: "12px 14px", margin: "14px 0 0", borderLeft: `3px solid ${C.accent}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
           <span style={{ color: C.accentText }}><IconSparkle size={13} /></span>
-          <span style={{ ...TYPE.overline, fontSize: 10, color: C.accentText }}>What this means for you</span>
-          <span style={{ fontSize: 10, color: C.faint, marginLeft: "auto" }}>AI summary · how we write these →</span>
+          <span style={{ ...TYPE.overline, fontSize: 10, color: C.accentText }}>What This Means For You</span>
+          <span style={{ fontSize: 10, color: C.faint, marginLeft: "auto" }}>Non-partisan · AI summary →</span>
         </div>
         <p style={{ ...TYPE.sm, color: C.ink, margin: 0 }}>{bill.means}</p>
+
+        {/* Full parliamentary summary — collapsible */}
+        {bill.plain && bill.plain !== "Plain-English summary pending — check back soon." && (
+          <>
+            <button onClick={e => { e.stopPropagation(); setSummaryOpen(o => !o); }}
+              style={{ marginTop: 10, background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 600, color: C.accentText, display: "flex", alignItems: "center", gap: 4 }}>
+              <IconChevron size={11} dir={summaryOpen ? "up" : "down"} />
+              {summaryOpen ? "Hide full summary" : "Full parliamentary summary"}
+            </button>
+            {summaryOpen && (
+              <p style={{ ...TYPE.sm, color: C.mid, margin: "8px 0 0", paddingTop: 8, borderTop: `1px solid ${C.border}` }}>{bill.plain}</p>
+            )}
+          </>
+        )}
       </div>
 
       {/* Hidden-in-the-bill flag — scan-level visibility */}
