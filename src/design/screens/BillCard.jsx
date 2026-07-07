@@ -75,11 +75,10 @@ export function BillCard({ bill, vote = null, onVote, alertOn = false, onToggleA
         </div>
       </div>
 
-      {/* Title + means (primary) + single hero stat */}
+      {/* Title + single hero stat — no summary here, it lives in the accent panel below */}
       <div style={{ display: "flex", gap: 20, alignItems: "flex-start", marginBottom: 16 }}>
         <div style={{ flex: 1 }}>
-          <h3 style={{ ...TYPE.h3, color: C.ink, margin: "0 0 7px" }}>{bill.title}</h3>
-          <p style={{ ...TYPE.sm, color: C.mid, margin: 0 }}>{bill.means}</p>
+          <h3 style={{ ...TYPE.h3, color: C.ink, margin: 0 }}>{bill.title}</h3>
         </div>
         <Stat value={bill.support} suffix="%" caption="support"
           color={bill.support > 50 ? C.green : bill.oppose > 50 ? C.red : C.ink}

@@ -87,7 +87,7 @@ export function BillsDesk({ bills, votes = {}, onVote, alerts = [], onToggleAler
             </div>
           </div>
 
-          {/* Chamber toggle */}
+          {/* Chamber toggle — switching chamber resets category */}
           <div style={{ display: "flex", gap: 2, background: C.surface, borderRadius: RADIUS.control, padding: 3, marginBottom: 10 }}>
             {[{ v: null, l: "All" }, { v: "Senate", l: "Senate" }, { v: "House", l: "House" }].map(({ v, l }) => (
               <button key={l} onClick={() => { setChamber(v); setCategory(null); }}
@@ -104,12 +104,12 @@ export function BillsDesk({ bills, votes = {}, onVote, alerts = [], onToggleAler
             ))}
           </div>
 
-          {/* Category pills */}
+          {/* Category pills — compound on top of chamber, do not clear it */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
             {availableCategories.map(c => {
               const active = category === c;
               return (
-                <button key={c} onClick={() => { setCategory(active ? null : c); setChamber(null); }}
+                <button key={c} onClick={() => setCategory(active ? null : c)}
                   style={{
                     padding: "3px 9px", borderRadius: 99, border: `1px solid ${active ? C.accent : C.border}`,
                     background: active ? C.accentSoft : "transparent",
