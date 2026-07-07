@@ -351,13 +351,14 @@ function Parliament({ bill }) {
       </div>
 
       <Overline mb={12}>History</Overline>
-      {bill.timeline?.map((t, i) => {
+      {(bill.timeline || []).map((t, i) => {
         const pending = t.date === "Pending";
+        const isLast = i === (bill.timeline?.length ?? 0) - 1;
         return (
           <div key={i} style={{ display: "flex", gap: 14, marginBottom: 14, alignItems: "flex-start" }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, alignSelf: "stretch" }}>
               <div style={{ width: 10, height: 10, borderRadius: "50%", background: pending ? C.border : C.accent, marginTop: 3 }} />
-              {i < bill.timeline.length - 1 && <div style={{ width: 1, background: C.border, flex: 1, minHeight: 20, marginTop: 3 }} />}
+              {!isLast && <div style={{ width: 1, background: C.border, flex: 1, minHeight: 20, marginTop: 3 }} />}
             </div>
             <div style={{ flex: 1, paddingBottom: 6 }}>
               <div style={{ display: "flex", gap: 8, alignItems: "baseline", marginBottom: 3 }}>
