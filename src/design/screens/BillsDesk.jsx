@@ -212,7 +212,7 @@ function BriefingPane({ bill, dataState, vote, onVote, alertOn, onToggleAlert })
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <StatusChip status={bill.status} />
-          <PartyChip party={bill.party} showName />
+          {bill.party && bill.party !== "OTH" && <PartyChip party={bill.party} showName />}
           <Chip>{bill.category}</Chip>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
@@ -237,7 +237,7 @@ function BriefingPane({ bill, dataState, vote, onVote, alertOn, onToggleAlert })
         </div>
       </div>
 
-      <h2 style={{ ...TYPE.hero, fontSize: 28, color: C.ink, margin: "0 0 8px" }}>{bill.title}</h2>
+      <h2 style={{ ...TYPE.hero, color: C.ink, margin: "0 0 8px" }}>{bill.title}</h2>
 
       {/* What This Means For You — primary summary, positioned where plain was */}
       <div style={{ background: C.surface, borderRadius: RADIUS.panel, padding: "12px 14px", margin: "0 0 16px", borderLeft: `3px solid ${C.accent}` }}>

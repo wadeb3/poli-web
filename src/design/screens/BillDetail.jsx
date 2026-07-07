@@ -108,22 +108,32 @@ function BillDetailInner({ bill }) {
 
 // ── OVERVIEW ──────────────────────────────────────────────────────────────────
 function Overview({ bill }) {
+  // Build metadata tiles from what we actually have
+  const meta = [
+    { label: "Introduced by",  value: bill.meta?.sponsor },
+    { label: "Chamber",        value: bill.meta?.originating_chamber === "senate" ? "Senate" : bill.meta?.originating_chamber === "representatives" ? "House of Representatives" : bill.meta?.chamber },
+    { label: "Introduced",     value: bill.meta?.introducedDate ? new Date(bill.meta.introducedDate).toLocaleDateString("en-AU", { day:"numeric", month:"short", year:"numeric" }) : null },
+    { label: "Status",         value: bill.status },
+    { label: "Act citation",   value: bill.meta?.billNumber?.includes("Act") ? bill.meta.billNumber : null },
+    { label: "APH record",     value: bill.meta?.parlinfo_url ? "View on APH" : null, url: bill.meta?.parlinfo_url },
+  ].filter(m => m.value);
+
   return (
     <div>
       {/* Bill metadata grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8, marginBottom: 16 }}>
-        {[
-          { label: "Bill", value: bill.meta?.billNumber },
-          { label: "Minister", value: bill.meta?.portfolioMinister },
-          { label: "Chamber", value: bill.meta?.chamber },
-          { label: "Introduced", value: bill.meta?.introduced },
-        ].filter(m => m.value).map(m => (
-          <div key={m.label} style={{ background: C.surface, borderRadius: RADIUS.control, padding: "10px 12px" }}>
-            <Overline mb={3}>{m.label}</Overline>
-            <div style={{ fontSize: 12, color: C.ink, fontWeight: 500, lineHeight: 1.4 }}>{m.value}</div>
-          </div>
-        ))}
-      </div>
+      {meta.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8, marginBottom: 20 }}>
+          {meta.map(m => (
+            <div key={m.label} style={{ background: C.surface, borderRadius: RADIUS.control, padding: "10px 12px" }}>
+              <Overline mb={3}>{m.label}</Overline>
+              {m.url
+                ? <a href={m.url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: C.blue, fontWeight: 500, textDecoration: "none" }}>{m.value} ↗</a>
+                : <div style={{ fontSize: 12, color: C.ink, fontWeight: 500, lineHeight: 1.4 }}>{m.value}</div>
+              }
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Fiscal impact */}
       {bill.fiscal && (
@@ -188,8 +198,8 @@ function Overview({ bill }) {
         </div>
       )}
 
-      {/* Donation transparency */}
-      {bill.donations?.length > 0 && (
+      {/* Donation transparency — live data coming from AEC scraper */}
+      {bill.donations?.length > 0 ? (
         <div style={{ background: C.amberSoft, border: `1px solid ${C.amberMid}`, borderRadius: RADIUS.panel, padding: 14, marginTop: 12 }}>
           <Overline color={C.amber} mb={6}>Donation context</Overline>
           <p style={{ fontSize: 11, color: C.mid, margin: "0 0 10px", lineHeight: 1.5 }}>
@@ -201,9 +211,21 @@ function Overview({ bill }) {
                 <div style={{ fontSize: 12, fontWeight: 600, color: C.ink }}>{d.donor}</div>
                 <div style={{ fontSize: 10, color: C.faint }}>{d.cycle} · to {d.party}</div>
               </div>
-              <div style={{ fontFamily: FONT.display, fontSize: 15, color: C.amber, fontVariantNumeric: "tabular-nums" }}>{d.amount}</div>
+              <div style={{ fontSize: 15, color: C.amber, fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{d.amount}</div>
             </div>
           ))}
+        </div>
+      ) : (
+        <div style={{ border: `1px dashed ${C.border}`, borderRadius: RADIUS.panel, padding: "16px 18px", marginTop: 16, display: "flex", gap: 14, alignItems: "flex-start" }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: C.amberSoft, border: `1px solid ${C.amberMid}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <span style={{ fontSize: 16 }}>💰</span>
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: C.ink, marginBottom: 4 }}>Donation transparency — coming soon</div>
+            <p style={{ fontSize: 12, color: C.mid, margin: 0, lineHeight: 1.6 }}>
+              Poli will surface AEC-disclosed donations from groups with financial interests in this policy area. This helps you understand who funds advocacy around this legislation.
+            </p>
+          </div>
         </div>
       )}
     </div>
