@@ -24,13 +24,13 @@ import { IconSearch, IconChevron, IconPerson } from "../icons.jsx";
  * @property {{said: string, did: string, consistent: boolean, source?: string}} [saidVsDid]
  */
 
-export function MPDossier({ members, initialParty = null, initialQuery = "", dataState = "sample", onContact }) {
+export function MPDossier({ members, initialParty = null, initialQuery = "", initialSelectedId = null, dataState = "sample", onContact }) {
   const [wide, setWide] = useState(typeof window !== "undefined" && window.innerWidth >= 900);
   const [query, setQuery] = useState(initialQuery);
   const [chamber, setChamber] = useState(null); // null = all, "House", "Senate"
   const [party, setParty] = useState(initialParty);
   const [electorate, setElectorate] = useState(null);
-  const [selectedId, setSelectedId] = useState(null);
+  const [selectedId, setSelectedId] = useState(initialSelectedId);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {

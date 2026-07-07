@@ -55,7 +55,7 @@ export function MPProfileHeader({ mp, alignment, dataState = "live", onContact }
             </div>
           )}
           <div style={{ display:"flex", alignItems:"center", gap:12, marginTop:8, flexWrap:"wrap" }}>
-            <SourceBadge state={dataState} source="APH / Supabase" />
+
             {mp.attendance != null && (
               <span style={{ fontSize:11, color:C.faint }}>
                 <span style={{ fontVariantNumeric:"tabular-nums", color:C.ink, fontWeight:600 }}>{mp.attendance}%</span> attendance

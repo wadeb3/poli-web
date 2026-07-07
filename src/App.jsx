@@ -2735,7 +2735,8 @@ function PoliAppInner() {
     return () => clearTimeout(t);
   }, []);
 
-  // ── Theme — violet locked as permanent accent ──
+  // ── Postcode — persisted across Home and My Representatives ──
+  const [savedPostcode, setSavedPostcode] = useState("");
   const [mode, toggleMode] = useTheme();
 
   // ── Navigation ──
@@ -2759,7 +2760,15 @@ function PoliAppInner() {
   const [xp, setXp]         = useState(75);
   const [streak]            = useState(4);
 
-  // ── Live bills from Supabase ──
+  // ── Recent divisions for home page ──
+  const [recentDivisions, setRecentDivisions] = useState([]);
+  useEffect(() => {
+    supabase.from("divisions")
+      .select("id, name, date, aye_votes, no_votes, house")
+      .order("date", { ascending: false })
+      .limit(5)
+      .then(({ data }) => { if (data) setRecentDivisions(data); });
+  }, []);
   const [liveBills, setLiveBills]         = useState([]);
   const [billsLoading, setBillsLoading]   = useState(true);
   const [billsError, setBillsError]       = useState(null);
@@ -2787,9 +2796,22 @@ function PoliAppInner() {
       });
   }, []);
 
+  const [selectedBillId, setSelectedBillId] = useState(null);
+  const [selectedMemberId, setSelectedMemberId] = useState(null);
+
   const navigate = (t, s) => {
     setTab(t);
     if (s) setSub(s);
+  };
+  const navigateToBill = (id) => {
+    setSelectedBillId(id);
+    setTab("bills");
+    setSub("tracker");
+  };
+  const navigateToMember = (id) => {
+    setSelectedMemberId(id);
+    setTab("mymp");
+    setSub("mp");
   };
 
   const onVote = (id, pos) => setVotes(v => ({ ...v, [id]: pos }));
@@ -2846,14 +2868,25 @@ function PoliAppInner() {
 
     // HOME
     if (tab === "home") return (
-      <HomeFront bills={POLICIES} dataState="sample"
-        onOpenBill={() => navigate("bills","tracker")}
-        nextSitting={{ label:"Parliament sits", days:8 }}
-        actions={[
-          { kind:"submission", title:"Senate inquiry: AI in essential services — public submissions", deadline:"closes 18 Jul" },
-          { kind:"hearing",    title:"Housing Australia Future Fund — committee hearing, Canberra",   deadline:"22 Jul" },
-          { kind:"petition",   title:"E-petition EN7231: Truth in political advertising",             deadline:"closes 30 Jul" },
-        ]} />
+      <HomeFront
+        bills={billsLoading ? [] : liveBills}
+        members={membersLoading ? [] : members}
+        divisions={recentDivisions}
+        onOpenBill={(id, section) => {
+          if (section === "parliament") { navigate("parliament"); return; }
+          if (section === "vote") { navigate("vote"); return; }
+          if (id) navigateToBill(id);
+          else navigate("bills", "tracker");
+        }}
+        onOpenMember={(id) => {
+          if (id) navigateToMember(id);
+          else navigate("mymp", "mp");
+        }}
+        onPostcodeChange={setSavedPostcode}
+        savedPostcode={savedPostcode}
+        nextSitting={{ label: "Parliament sits", days: 8 }}
+        dataState={billsLoading ? "cached" : "live"}
+      />
     );
 
     // BILLS
@@ -2877,6 +2910,7 @@ function PoliAppInner() {
             bills={billsLoading || billsError ? POLICIES : liveBills}
             dataState={billsLoading ? "cached" : billsError ? "cached" : "live"}
             loading={billsLoading}
+            initialSelectedId={selectedBillId}
             votes={votes} onVote={onVote}
             alerts={alerts} onToggleAlert={toggleAlert} />
         </>
@@ -2924,6 +2958,8 @@ function PoliAppInner() {
             <MPDossier
               members={membersError ? [] : members}
               initialParty={mpParty}
+              initialSelectedId={selectedMemberId}
+              initialQuery={savedPostcode}
               dataState={membersError ? "cached" : "live"}
               onContact={() => {}}
             />

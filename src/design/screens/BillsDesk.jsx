@@ -26,12 +26,12 @@ import { IconBell, IconEye, IconSparkle, IconShare, IconChevron } from "../icons
  *           alerts?: number[], onToggleAlert?: Function,
  *           dataState?: "live"|"cached"|"sample", loading?: boolean }} props
  */
-export function BillsDesk({ bills, votes = {}, onVote, alerts = [], onToggleAlert, dataState = "sample", loading = false }) {
+export function BillsDesk({ bills, votes = {}, onVote, alerts = [], onToggleAlert, dataState = "sample", loading = false, initialSelectedId = null }) {
   const [wide, setWide] = useState(typeof window !== "undefined" && window.innerWidth >= 900);
   const [chamber, setChamber] = useState(null);
   const [category, setCategory] = useState(null);
   const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState(bills[0]?.id ?? null);
+  const [selectedId, setSelectedId] = useState(initialSelectedId || (bills[0]?.id ?? null));
 
   useEffect(() => {
     const onR = () => setWide(window.innerWidth >= 900);
@@ -221,7 +221,6 @@ function BriefingPane({ bill, dataState, vote, onVote, alertOn, onToggleAlert })
           <Chip>{bill.category}</Chip>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          <SourceBadge state={dataState} updated={bill.meta?.lastUpdated} />
           <button onClick={() => setSharing(true)} aria-label="Share this briefing"
             style={{
               display: "flex", padding: 7, borderRadius: RADIUS.chip, cursor: "pointer",
