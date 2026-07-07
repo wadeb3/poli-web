@@ -61,7 +61,7 @@ export function HomeFront({
         )}
       </div>
 
-      {/* Main 3-column grid — fixed proportions that fit the viewport */}
+      {/* Main 3-column grid — all headers outside cards so containers align */}
       <div style={{ flex: 1, display: "grid", gridTemplateColumns: "minmax(0,1.4fr) minmax(0,1fr) minmax(0,0.9fr)", gap: 10, minHeight: 0, overflow: "hidden" }}>
 
         {/* ── COL 1: Recent Bills ────────────────────────────────────── */}
@@ -76,49 +76,51 @@ export function HomeFront({
           </div>
         </div>
 
-        {/* ── COL 2: Parliament ──────────────────────────────────────── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, minHeight: 0, overflow: "hidden" }}>
+        {/* ── COL 2: Parliament — header outside, two cards inside ────── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 0, minHeight: 0, overflow: "hidden" }}>
+          <PanelHeader label="Parliament" action="Map →" onAction={() => onOpenBill(null, "parliament")} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minHeight: 0 }}>
 
-          {/* Seat composition */}
-          <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "12px 14px", flexShrink: 0 }}>
-            <PanelHeader label="Parliament" action="Map →" onAction={() => onOpenBill(null, "parliament")} compact />
-            <div style={{ display: "flex", height: 6, borderRadius: 99, overflow: "hidden", margin: "8px 0 10px" }}>
-              {PARTY_SEATS.map(p => (
-                <div key={p.label} title={`${p.label}: ${p.seats}`} style={{ width: `${(p.seats / TOTAL_SEATS) * 100}%`, background: p.color }} />
-              ))}
+            {/* Seat composition */}
+            <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "10px 12px", flexShrink: 0 }}>
+              <div style={{ display: "flex", height: 6, borderRadius: 99, overflow: "hidden", marginBottom: 8 }}>
+                {PARTY_SEATS.map(p => (
+                  <div key={p.label} title={`${p.label}: ${p.seats}`} style={{ width: `${(p.seats / TOTAL_SEATS) * 100}%`, background: p.color }} />
+                ))}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {PARTY_SEATS.map(p => (
+                  <div key={p.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: 2, background: p.color, flexShrink: 0 }} />
+                    <span style={{ fontSize: 11, color: C.mid, flex: 1 }}>{p.label}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{p.seats}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 6, paddingTop: 6, borderTop: `1px solid ${C.border}`, fontSize: 10, color: C.faint }}>
+                {TOTAL_SEATS} seats · majority {Math.floor(TOTAL_SEATS / 2) + 1}
+              </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-              {PARTY_SEATS.map(p => (
-                <div key={p.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: 2, background: p.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, color: C.mid, flex: 1 }}>{p.label}</span>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{p.seats}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}`, fontSize: 10, color: C.faint }}>
-              {TOTAL_SEATS} seats · majority {Math.floor(TOTAL_SEATS / 2) + 1}
-            </div>
-          </div>
 
-          {/* Recent divisions */}
-          <div style={{ flex: 1, background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "12px 14px", display: "flex", flexDirection: "column", minHeight: 0 }}>
-            <PanelHeader label="Recent Votes" compact />
-            <div style={{ flex: 1, overflowY: "auto", marginTop: 8 }}>
-              {divisions.length === 0 ? (
-                <div style={{ fontSize: 11, color: C.faint }}>Loading…</div>
-              ) : divisions.slice(0, 6).map((d, i) => (
-                <div key={d.id || i} style={{ display: "flex", alignItems: "flex-start", gap: 8, paddingBottom: 8, marginBottom: 8, borderBottom: i < 5 ? `1px solid ${C.border}` : "none" }}>
-                  <div style={{ width: 6, height: 6, borderRadius: 99, background: d.aye_votes > d.no_votes ? C.green : C.red, marginTop: 3, flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 11, fontWeight: 500, color: C.ink, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
-                    <div style={{ fontSize: 10, color: C.faint, marginTop: 1 }}>
-                      {d.date ? new Date(d.date).toLocaleDateString("en-AU", { day:"numeric", month:"short" }) : ""}
-                      {" · "}{d.aye_votes} aye · {d.no_votes} no
+            {/* Recent divisions */}
+            <div style={{ flex: 1, background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "10px 12px", display: "flex", flexDirection: "column", minHeight: 0 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: C.faint, textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 8 }}>Recent Votes</div>
+              <div style={{ flex: 1, overflowY: "auto" }}>
+                {divisions.length === 0 ? (
+                  <div style={{ fontSize: 11, color: C.faint }}>Loading…</div>
+                ) : divisions.slice(0, 6).map((d, i) => (
+                  <div key={d.id || i} style={{ display: "flex", alignItems: "flex-start", gap: 8, paddingBottom: 7, marginBottom: 7, borderBottom: i < 5 ? `1px solid ${C.border}` : "none" }}>
+                    <div style={{ width: 6, height: 6, borderRadius: 99, background: d.aye_votes > d.no_votes ? C.green : C.red, marginTop: 3, flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 11, fontWeight: 500, color: C.ink, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
+                      <div style={{ fontSize: 10, color: C.faint, marginTop: 1 }}>
+                        {d.date ? new Date(d.date).toLocaleDateString("en-AU", { day:"numeric", month:"short" }) : ""}
+                        {" · "}{d.aye_votes} aye · {d.no_votes} no
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -126,7 +128,7 @@ export function HomeFront({
         {/* ── COL 3: Your Representatives ───────────────────────────── */}
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
           <PanelHeader label="Your Representatives" action="All →" onAction={() => onOpenMember(null)} />
-          <div style={{ flex: 1, background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, minHeight: 0 }}>
+          <div style={{ flex: 1, background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8, minHeight: 0 }}>
             <PostcodeLookup
               members={members}
               savedPostcode={savedPostcode}
@@ -137,22 +139,22 @@ export function HomeFront({
         </div>
       </div>
 
-      {/* ── Community Pulse footer bar ─────────────────────────────────── */}
-      <div style={{ flexShrink: 0, marginTop: 10 }}>
-        <PanelHeader label="Community Pulse" sub="How Australians are voting on active bills" action="Vote →" onAction={() => onOpenBill(null, "vote")} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+      {/* ── Community Pulse footer — fixed height, no overflow ─────────── */}
+      <div style={{ flexShrink: 0, marginTop: 8, height: 80 }}>
+        <PanelHeader label="Community Pulse" sub="How Australians are voting" action="Vote →" onAction={() => onOpenBill(null, "vote")} />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, height: 62 }}>
           {activeBills.length === 0 ? (
-            <div style={{ gridColumn: "1/-1", background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "12px 16px", fontSize: 11, color: C.faint }}>
-              Community sentiment data coming soon — be among the first to vote on active bills.
+            <div style={{ gridColumn: "1/-1", background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "10px 14px", fontSize: 11, color: C.faint, display: "flex", alignItems: "center" }}>
+              Community sentiment coming soon — be among the first to vote on active bills.
             </div>
           ) : activeBills.map(b => (
             <div key={b.id} onClick={() => onOpenBill(b.id)}
-              style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "8px 12px", cursor: "pointer", display: "flex", flexDirection: "column", gap: 5 }}
+              style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "8px 12px", cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "space-between", overflow: "hidden" }}
               onMouseEnter={e => e.currentTarget.style.background = C.surface}
               onMouseLeave={e => e.currentTarget.style.background = C.white}>
               <div style={{ fontSize: 11, fontWeight: 500, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.title}</div>
               <SentimentBar support={b.support} neutral={b.neutral} oppose={b.oppose} height={4} />
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.faint }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}>
                 <span style={{ color: C.green, fontWeight: 600 }}>{b.support}% support</span>
                 <span style={{ color: C.faint }}>{b.neutral}% neutral</span>
                 <span style={{ color: C.red, fontWeight: 600 }}>{b.oppose}% oppose</span>
@@ -168,9 +170,9 @@ export function HomeFront({
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function PanelHeader({ label, sub, count, action, onAction, compact = false }) {
+function PanelHeader({ label, sub, count, action, onAction }) {
   return (
-    <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: compact ? 0 : 6, flexShrink: 0 }}>
+    <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6, flexShrink: 0 }}>
       <span style={{ fontSize: 10, fontWeight: 700, color: C.faint, textTransform: "uppercase", letterSpacing: "0.09em" }}>{label}</span>
       {count != null && <span style={{ fontSize: 10, color: C.faint }}>({count})</span>}
       {sub && <span style={{ fontSize: 10, color: C.faint }}>{sub}</span>}
@@ -259,7 +261,7 @@ function PostcodeLookup({ members, savedPostcode, onPostcodeChange, onOpenMember
           <div style={{ fontSize: 10, color: C.faint, marginBottom: 8 }}>
             {savedPostcode ? `Showing results for "${savedPostcode}"` : "Enter postcode to find your MP and Senators"}
           </div>
-          {members.slice(0, 5).map(m => <RepRow key={m.id} member={m} onClick={() => onOpenMember(m.id)} />)}
+          {members.slice(0, 8).map(m => <RepRow key={m.id} member={m} onClick={() => onOpenMember(m.id)} />)}
         </div>
       )}
 
