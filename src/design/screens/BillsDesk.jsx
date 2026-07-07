@@ -48,11 +48,13 @@ export function BillsDesk({ bills, votes = {}, onVote, alerts = [], onToggleAler
     bills.some(b => b.category === c)
   );
 
-  // Filter by chamber (using originating_chamber via category field fallback) and category
+  // Chamber filter uses the originating_chamber stored in bill.meta
+  // Category filter compounds on top — both can be active simultaneously
+  // Switching chamber resets category (done in the toggle click handler)
   const filtered = bills.filter(b => {
     const chamberMatch = !chamber ||
-      (chamber === "Senate" && (b.category === "Senate" || b.meta?.originating_chamber === "senate" || !CATEGORIES.includes(b.category))) ||
-      (chamber === "House"  && (b.category === "House"  || b.meta?.originating_chamber === "representatives"));
+      (chamber === "Senate" && b.meta?.originating_chamber === "senate") ||
+      (chamber === "House"  && b.meta?.originating_chamber === "representatives");
     const categoryMatch = !category || b.category === category;
     return chamberMatch && categoryMatch;
   });
@@ -164,6 +166,22 @@ export function BillsDesk({ bills, votes = {}, onVote, alerts = [], onToggleAler
   );
 }
 
+function FullSummaryExpand({ plain }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+        style={{ marginTop: 8, background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 600, color: C.accentText, display: "flex", alignItems: "center", gap: 4 }}>
+        <IconChevron size={11} dir={open ? "up" : "down"} />
+        {open ? "Hide full summary" : "Full parliamentary summary"}
+      </button>
+      {open && (
+        <p style={{ fontSize: 13, color: C.mid, margin: "8px 0 0", paddingTop: 8, borderTop: `1px solid ${C.border}`, lineHeight: 1.6 }}>{plain}</p>
+      )}
+    </>
+  );
+}
+
 /** @param {{ bill: import("./BillCard.jsx").Bill, dataState: string, vote: string|null,
  *            onVote?: Function, alertOn: boolean, onToggleAlert?: Function }} props */
 function BriefingPane({ bill, dataState, vote, onVote, alertOn, onToggleAlert }) {
@@ -199,18 +217,22 @@ function BriefingPane({ bill, dataState, vote, onVote, alertOn, onToggleAlert })
         </div>
       </div>
 
-      <h2 style={{ ...TYPE.hero, fontSize: 28, color: C.ink, margin: "0 0 8px" }}>{bill.title}</h2>
-      <p style={{ ...TYPE.body, fontSize: 14.5, color: C.mid, margin: "0 0 16px", maxWidth: 640 }}>{bill.plain}</p>
+      <h2 style={{ ...TYPE.hero, fontSize: 28, color: C.ink, margin: "0 0 16px" }}>{bill.title}</h2>
 
       <SentimentBar support={bill.support} neutral={bill.neutral} oppose={bill.oppose} height={7} />
 
+      {/* What This Means For You — primary display, accent panel */}
       <div style={{ background: C.surface, borderRadius: RADIUS.panel, padding: "12px 14px", margin: "16px 0 0", borderLeft: `3px solid ${C.accent}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
           <span style={{ color: C.accentText }}><IconSparkle size={13} /></span>
-          <span style={{ ...TYPE.overline, fontSize: 10, color: C.accentText }}>What this means for you</span>
-          <span style={{ fontSize: 10, color: C.faint, marginLeft: "auto" }}>AI summary · how we write these →</span>
+          <span style={{ ...TYPE.overline, fontSize: 10, color: C.accentText }}>What This Means For You</span>
+          <span style={{ fontSize: 10, color: C.faint, marginLeft: "auto" }}>Non-partisan · AI summary →</span>
         </div>
         <p style={{ ...TYPE.sm, color: C.ink, margin: 0 }}>{bill.means}</p>
+        {/* Full parliamentary summary — collapsible */}
+        {bill.plain && bill.plain !== "Plain-English summary pending — check back soon." && (
+          <FullSummaryExpand plain={bill.plain} />
+        )}
       </div>
 
       <div style={{ display: "flex", gap: 8, alignItems: "center", margin: "16px 0 4px" }}>

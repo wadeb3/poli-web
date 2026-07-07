@@ -2449,11 +2449,12 @@ function adaptBill(row) {
     hiddenProvisions:  [],
     fiscal:            null,
     meta: {
-      lastUpdated:   row.updated_at,
-      billNumber:    row.act_citation || row.id,
-      introducedDate:row.introduced_date,
-      sponsor:       row.sponsor,
-      parlinfo_url:  row.parlinfo_url,
+      lastUpdated:          row.updated_at,
+      billNumber:           row.act_citation || row.id,
+      introducedDate:       row.introduced_date,
+      sponsor:              row.sponsor,
+      parlinfo_url:         row.parlinfo_url,
+      originating_chamber:  row.originating_chamber,
     },
   };
 }
