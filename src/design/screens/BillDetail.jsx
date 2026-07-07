@@ -116,7 +116,7 @@ function Overview({ bill }) {
       {bill.provisions?.length > 0 && (
         <div style={{ marginBottom: 16 }}>
           <Overline>Key provisions</Overline>
-          {bill.provisions.map((p, i) => (
+          {bill.provisions?.map((p, i) => (
             <div key={i} style={{ display: "flex", gap: 12, marginBottom: 10, alignItems: "flex-start" }}>
               <span style={{ fontFamily: FONT.display, fontSize: 16, color: C.accentText, flexShrink: 0, width: 20, marginTop: 1 }}>{i + 1}</span>
               <span style={{ fontSize: 13, color: C.mid, lineHeight: 1.6 }}>{p}</span>
@@ -129,7 +129,7 @@ function Overview({ bill }) {
       {bill.relatedBills?.length > 0 && (
         <div style={{ marginBottom: 14 }}>
           <Overline mb={8}>Related legislation</Overline>
-          {bill.relatedBills.map((b, i) => (
+          {bill.relatedBills?.map((b, i) => (
             <div key={i} style={{ fontSize: 12, color: C.blue, padding: "6px 0", borderBottom: `1px solid ${C.border}` }}>{b}</div>
           ))}
         </div>
@@ -140,7 +140,7 @@ function Overview({ bill }) {
         <div>
           <Overline mb={8}>Sources</Overline>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {bill.sources.map((s, i) => (
+            {bill.sources?.map((s, i) => (
               <a key={i} href={s.url} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: C.blue, background: C.blueSoft, border: `1px solid ${C.blueMid}`, padding: "4px 10px", borderRadius: 99, fontWeight: 500, textDecoration: "none" }}>
                 {s.label} <IconExternal size={11} />
               </a>
@@ -153,8 +153,8 @@ function Overview({ bill }) {
       {bill.priorAttempts?.length > 0 && (
         <div style={{ background: C.purpleSoft, border: `1px solid ${alpha(C.purple, 15)}`, borderRadius: RADIUS.panel, padding: 14, marginTop: 16 }}>
           <Overline color={C.purple}>This has been tried before</Overline>
-          {bill.priorAttempts.map((p, i) => (
-            <div key={i} style={{ marginBottom: i < bill.priorAttempts.length - 1 ? 12 : 0 }}>
+          {bill.priorAttempts?.map((p, i) => (
+            <div key={i} style={{ marginBottom: i < (bill.priorAttempts?.length ?? 0) - 1 ? 12 : 0 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: C.ink, marginBottom: 4 }}>{p.year} — {p.title}</div>
               <div style={{ marginBottom: 6 }}>
                 <Chip color={p.outcome === "Passed" ? C.green : C.red} tone="tint">{p.outcome}</Chip>
@@ -172,8 +172,8 @@ function Overview({ bill }) {
           <p style={{ fontSize: 11, color: C.mid, margin: "0 0 10px", lineHeight: 1.5 }}>
             Groups with financial interests in this policy area made the following donations in recent election cycles. Poli shows correlation, not causation.
           </p>
-          {bill.donations.map((d, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: i < bill.donations.length - 1 ? `1px solid ${C.border}` : "none" }}>
+          {bill.donations?.map((d, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: i < (bill.donations?.length ?? 0) - 1 ? `1px solid ${C.border}` : "none" }}>
               <div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: C.ink }}>{d.donor}</div>
                 <div style={{ fontSize: 10, color: C.faint }}>{d.cycle} · to {d.party}</div>
@@ -284,7 +284,7 @@ function Debate({ bill }) {
         <div style={{ marginBottom: 20 }}>
           <Overline>Party positions</Overline>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 10 }}>
-            {bill.partyPositions.map((p, i) => (
+            {bill.partyPositions?.map((p, i) => (
               <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 14px", background: C.surface, borderRadius: RADIUS.panel }}>
                 <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
                   <PartyChip party={p.party} />
