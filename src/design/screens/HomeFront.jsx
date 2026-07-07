@@ -52,7 +52,7 @@ export function HomeFront({
     <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 60px)", overflow: "hidden", gap: 0 }}>
 
       {/* Dateline bar */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0 10px", flexShrink: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0 8px", flexShrink: 0 }}>
         <span style={{ fontSize: 11, color: C.faint }}>{today}</span>
         {nextSitting && (
           <span style={{ fontSize: 11, fontWeight: 600, color: C.accentText }}>
@@ -61,15 +61,15 @@ export function HomeFront({
         )}
       </div>
 
-      {/* Main 3-column grid */}
-      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 260px 240px", gap: 10, minHeight: 0 }}>
+      {/* Main 3-column grid — fixed proportions that fit the viewport */}
+      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "minmax(0,1.4fr) minmax(0,1fr) minmax(0,0.9fr)", gap: 10, minHeight: 0, overflow: "hidden" }}>
 
         {/* ── COL 1: Recent Bills ────────────────────────────────────── */}
-        <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
           <PanelHeader label="Recent Bills" count={bills.length} action="All bills →" onAction={() => onOpenBill(null)} />
           <div style={{ flex: 1, overflowY: "auto", background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card }}>
             {recentBills.length === 0 ? (
-              <div style={{ padding: 20, fontSize: 12, color: C.faint, textAlign: "center" }}>Loading…</div>
+              <div style={{ padding: 16, fontSize: 11, color: C.faint, textAlign: "center" }}>Loading…</div>
             ) : recentBills.map((b, i) => (
               <BillRow key={b.id} bill={b} last={i === recentBills.length - 1} onClick={() => onOpenBill(b.id)} />
             ))}
@@ -77,7 +77,7 @@ export function HomeFront({
         </div>
 
         {/* ── COL 2: Parliament ──────────────────────────────────────── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, minHeight: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, minHeight: 0, overflow: "hidden" }}>
 
           {/* Seat composition */}
           <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "12px 14px", flexShrink: 0 }}>
@@ -124,7 +124,7 @@ export function HomeFront({
         </div>
 
         {/* ── COL 3: Your Representatives ───────────────────────────── */}
-        <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
           <PanelHeader label="Your Representatives" action="All →" onAction={() => onOpenMember(null)} />
           <div style={{ flex: 1, background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, minHeight: 0 }}>
             <PostcodeLookup
@@ -147,13 +147,14 @@ export function HomeFront({
             </div>
           ) : activeBills.map(b => (
             <div key={b.id} onClick={() => onOpenBill(b.id)}
-              style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "10px 14px", cursor: "pointer", display: "flex", flexDirection: "column", gap: 6 }}
+              style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "8px 12px", cursor: "pointer", display: "flex", flexDirection: "column", gap: 5 }}
               onMouseEnter={e => e.currentTarget.style.background = C.surface}
               onMouseLeave={e => e.currentTarget.style.background = C.white}>
               <div style={{ fontSize: 11, fontWeight: 500, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.title}</div>
               <SentimentBar support={b.support} neutral={b.neutral} oppose={b.oppose} height={4} />
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.faint }}>
                 <span style={{ color: C.green, fontWeight: 600 }}>{b.support}% support</span>
+                <span style={{ color: C.faint }}>{b.neutral}% neutral</span>
                 <span style={{ color: C.red, fontWeight: 600 }}>{b.oppose}% oppose</span>
               </div>
             </div>
@@ -183,40 +184,35 @@ function PanelHeader({ label, sub, count, action, onAction, compact = false }) {
 }
 
 function BillRow({ bill, last, onClick }) {
-  const isAlt = false; // future: alternate background for even rows
   return (
     <div onClick={onClick}
-      style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", borderBottom: last ? "none" : `1px solid ${C.border}`, cursor: "pointer", background: C.white }}
+      style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", borderBottom: last ? "none" : `1px solid ${C.border}`, cursor: "pointer", background: C.white }}
       onMouseEnter={e => e.currentTarget.style.background = C.surface}
       onMouseLeave={e => e.currentTarget.style.background = C.white}>
 
-      {/* Left: chips + title */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", gap: 4, marginBottom: 3, alignItems: "center" }}>
+        {/* Chips row */}
+        <div style={{ display: "flex", gap: 3, marginBottom: 2, alignItems: "center" }}>
           <StatusChip status={bill.status} />
           <BillTypeChip title={bill.title} />
           {bill.category && (
-            <span style={{ fontSize: 10, color: C.faint, marginLeft: 2 }}>{bill.category}</span>
+            <span style={{ fontSize: 9, color: C.faint, marginLeft: 1 }}>{bill.category}</span>
           )}
         </div>
-        <div style={{ fontSize: 12, fontWeight: 500, color: C.ink, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {/* Title — single line, ellipsis */}
+        <div style={{ fontSize: 11, fontWeight: 500, color: C.ink, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {bill.title}
         </div>
-        {bill.means && bill.means !== "Plain-English analysis pending." && (
-          <div style={{ fontSize: 11, color: C.mid, lineHeight: 1.4, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {bill.means}
-          </div>
-        )}
       </div>
 
-      {/* Right: hidden flag + chevron */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+      {/* Right side */}
+      <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
         {bill.hiddenProvisions?.length > 0 && (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 2, fontSize: 10, color: C.amber, fontWeight: 600 }}>
-            <IconEye size={10} />{bill.hiddenProvisions.length}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 2, fontSize: 9, color: C.amber, fontWeight: 600 }}>
+            <IconEye size={9} />{bill.hiddenProvisions.length}
           </span>
         )}
-        <IconChevron size={11} dir="right" />
+        <IconChevron size={10} dir="right" />
       </div>
     </div>
   );
