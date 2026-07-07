@@ -2390,7 +2390,65 @@ const DELIBERATION_CLUSTERS = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SUPABASE MEMBER ADAPTER
+// SUPABASE BILLS ADAPTER
+// Maps our scraped bills table shape into the Bill shape BillsDesk expects.
+// Fields not yet available (sentiment, fiscal, hiddenProvisions) get sensible
+// defaults — they'll be populated as the data pipeline matures.
+// ─────────────────────────────────────────────────────────────────────────────
+function adaptBill(row) {
+  // Derive a simple category from the originating chamber + sponsor
+  const category = row.originating_chamber === "senate" ? "Senate" : "House";
+
+  // Derive party colour context from sponsor_party abbreviation
+  const partyMap = {
+    ALP:"Australian Labor Party", LNP:"Liberal National Party",
+    LP:"Liberal Party", NP:"National Party", GRN:"Australian Greens",
+    IND:"Independent",
+  };
+  const party = partyMap[row.sponsor_party] || row.sponsor_party || "Government";
+
+  // Build a stage index from status
+  const stageMap = {
+    "Active":    1,
+    "Passed":    3,
+    "Assented":  4,
+    "Lapsed":    1,
+    "Negatived": 2,
+    "Withdrawn": 1,
+  };
+
+  return {
+    id:                row.id,
+    title:             row.title,
+    party,
+    status:            row.status || "Active",
+    category,
+    // Sentiment — not yet collected, default to neutral until community polling wired
+    support:           0,
+    neutral:           100,
+    oppose:            0,
+    // Plain-English summary from Claude translation pipeline
+    plain: row.summary_plain
+             ? row.summary_plain
+             : row.summary_aph
+               ? row.summary_aph
+               : "Plain-English summary pending — check back soon.",
+    // "What this means for you" — future AI step
+    means: row.summary_plain
+             ? `Introduced by ${row.sponsor || "the government"} in the ${category}. ${row.status === "Assented" ? "This bill has become law." : "This bill is currently before parliament."}`
+             : "Analysis pending.",
+    currentStageIndex: stageMap[row.status] ?? 1,
+    hiddenProvisions:  [],
+    fiscal:            null,
+    meta: {
+      lastUpdated:   row.updated_at,
+      billNumber:    row.act_citation || row.id,
+      introducedDate:row.introduced_date,
+      sponsor:       row.sponsor,
+      parlinfo_url:  row.parlinfo_url,
+    },
+  };
+}
 // Transforms the flat mps table row into the shape MPDossier/MPProfile expects.
 // Uses TVFY's official category labels when available (synced by sync_tvfy.py).
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2640,7 +2698,21 @@ export default function PoliApp() {
   const [xp, setXp]         = useState(75);
   const [streak]            = useState(4);
 
-  // ── Live MP data from Supabase ──
+  // ── Live bills from Supabase ──
+  const [liveBills, setLiveBills]         = useState([]);
+  const [billsLoading, setBillsLoading]   = useState(true);
+  const [billsError, setBillsError]       = useState(null);
+
+  useEffect(() => {
+    supabase.from("bills")
+      .select("*")
+      .order("introduced_date", { ascending: false })
+      .then(({ data, error }) => {
+        if (error) { setBillsError(error.message); }
+        else { setLiveBills((data || []).map(adaptBill)); }
+        setBillsLoading(false);
+      });
+  }, []);
   const [members, setMembers]           = useState([]);
   const [membersLoading, setMembersLoading] = useState(true);
   const [membersError, setMembersError]   = useState(null);
@@ -2739,9 +2811,14 @@ export default function PoliApp() {
       // default: tracker
       return (
         <>
-          <PageHeader title="Bill Tracker" sub="Every federal bill, in plain English — including what's buried in the schedules." />
-          <BillsDesk bills={POLICIES} dataState="sample" votes={votes}
-            onVote={onVote} alerts={alerts} onToggleAlert={toggleAlert} />
+          <PageHeader title="Bill Tracker"
+            sub={billsLoading ? "Loading bills from Supabase…" : billsError ? "Couldn't load live data." : `${liveBills.length} bills from the 48th Parliament — translated into plain English.`} />
+          <BillsDesk
+            bills={billsLoading || billsError ? POLICIES : liveBills}
+            dataState={billsLoading ? "cached" : billsError ? "cached" : "live"}
+            loading={billsLoading}
+            votes={votes} onVote={onVote}
+            alerts={alerts} onToggleAlert={toggleAlert} />
         </>
       );
     }
