@@ -236,7 +236,7 @@ export function PageHeader({ title, sub, right }) {
   return (
     <header style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, margin: "8px 0 20px" }}>
       <div>
-        <h1 style={{ ...TYPE.hero, color: C.ink, margin: 0 }}>{title}</h1>
+        <h1 style={{ ...TYPE.masthead, color: C.ink, margin: 0 }}>{title}</h1>
         {sub && <p style={{ ...TYPE.sm, color: C.mid, margin: "6px 0 0", maxWidth: 560 }}>{sub}</p>}
       </div>
       {right}

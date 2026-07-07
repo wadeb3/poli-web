@@ -65,11 +65,11 @@ export const FONT = {
 };
 
 export const TYPE = {
-  masthead: { fontFamily: FONT.display, fontSize: 28, lineHeight: 1.2,  fontWeight: 600, letterSpacing: "-0.01em" },
-  hero:     { fontFamily: FONT.display, fontSize: 22, lineHeight: 1.25, fontWeight: 600, letterSpacing: "-0.005em" },
-  h2:       { fontFamily: FONT.display, fontSize: 18, lineHeight: 1.35, fontWeight: 600 },
-  h3:       { fontFamily: FONT.display, fontSize: 15, lineHeight: 1.4,  fontWeight: 600 },
-  stat:     { fontFamily: FONT.display, fontSize: 32, lineHeight: 1,    fontWeight: 600, fontVariantNumeric: "tabular-nums" },
+  masthead: { fontFamily: FONT.display, fontSize: 24, lineHeight: 1.2,  fontWeight: 600, letterSpacing: "-0.008em" },
+  hero:     { fontFamily: FONT.display, fontSize: 19, lineHeight: 1.3,  fontWeight: 500 },
+  h2:       { fontFamily: FONT.display, fontSize: 16, lineHeight: 1.4,  fontWeight: 600 },
+  h3:       { fontFamily: FONT.display, fontSize: 14, lineHeight: 1.45, fontWeight: 600 },
+  stat:     { fontFamily: FONT.display, fontSize: 30, lineHeight: 1,    fontWeight: 600, fontVariantNumeric: "tabular-nums" },
   body:     { fontFamily: FONT.ui, fontSize: 15, lineHeight: 1.6,  fontWeight: 400 },
   sm:       { fontFamily: FONT.ui, fontSize: 13, lineHeight: 1.55, fontWeight: 400 },
   label:    { fontFamily: FONT.ui, fontSize: 12, lineHeight: 1.4,  fontWeight: 600 },

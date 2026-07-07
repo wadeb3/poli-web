@@ -239,7 +239,7 @@ function BriefingPane({ bill, dataState, vote, onVote, alertOn, onToggleAlert })
         </div>
       </div>
 
-      <h2 style={{ ...TYPE.hero, color: C.ink, margin: "0 0 8px" }}>{bill.title}</h2>
+      <h2 style={{ fontSize: 18, lineHeight: 1.35, fontWeight: 500, color: C.ink, margin: "0 0 8px", fontFamily: FONT.ui }}>{bill.title}</h2>
 
       {/* What This Means For You — primary summary, positioned where plain was */}
       <div style={{ background: C.surface, borderRadius: RADIUS.panel, padding: "12px 14px", margin: "0 0 16px", borderLeft: `3px solid ${C.accent}` }}>
