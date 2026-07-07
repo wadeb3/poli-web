@@ -2709,11 +2709,14 @@ class AppErrorBoundary extends Component {
   static getDerivedStateFromError(e) { return { error: e }; }
   render() {
     if (this.state.error) {
+      const err = this.state.error;
+      const msg = err?.message || (typeof err === "string" ? err : JSON.stringify(err));
+      const stack = err?.stack || "";
       return (
         <div style={{ padding: 32, fontFamily: "monospace", fontSize: 13, background: "#fff3f3", minHeight: "100vh" }}>
           <h2 style={{ color: "#B3372B", marginBottom: 16 }}>Poli crashed — debugging info:</h2>
           <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", background: "#fff", padding: 16, border: "1px solid #EFCBC4", borderRadius: 8 }}>
-            {this.state.error.message}{"\n\n"}{this.state.error.stack}
+            {msg}{stack ? "\n\n" + stack : ""}
           </pre>
         </div>
       );
@@ -2804,10 +2807,9 @@ function PoliAppInner() {
   const navigate = (t, s) => {
     setTab(t);
     if (s) setSub(s);
-    window.poliNavigate = navigate; // expose for deep links from other components
   };
-  // Set on mount
-  useState(() => { window.poliNavigate = navigate; });
+  // Expose navigate globally for deep links from sub-components
+  useEffect(() => { window.poliNavigate = navigate; });
   const navigateToBill = (id) => {
     setSelectedBillId(id);
     setTab("bills");
