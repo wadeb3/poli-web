@@ -2389,8 +2389,16 @@ const DELIBERATION_CLUSTERS = [
     count:481, lean:"mixed" },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SUPABASE BILLS ADAPTER
+// Strip markdown from bill summaries — same as Hansard summaries
+const stripBillMarkdown = text =>
+  text
+    .replace(/^#+\s*/gm, "")           // # headings at start of lines
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")  // [text](url) → text
+    .replace(/\*\*(.+?)\*\*/g, "$1")   // **bold**
+    .replace(/\*(.+?)\*/g, "$1")       // *italic*
+    .replace(/\n{2,}/g, " ")           // multiple newlines → space
+    .replace(/\n/g, " ")
+    .trim();
 // Maps our scraped bills table shape into the Bill shape BillsDesk expects.
 // Fields not yet available (sentiment, fiscal, hiddenProvisions) get sensible
 // defaults — they'll be populated as the data pipeline matures.
@@ -2429,14 +2437,14 @@ function adaptBill(row) {
     oppose:            0,
     // Plain-English summary from Claude translation pipeline
     plain: row.summary_plain
-             ? row.summary_plain
+             ? stripBillMarkdown(row.summary_plain)
              : row.summary_aph
-               ? row.summary_aph
+               ? stripBillMarkdown(row.summary_aph)
                : "Plain-English summary pending — check back soon.",
-    // "What this means for you" — future AI step
-    means: row.summary_plain
-             ? `Introduced by ${row.sponsor || "the government"} in the ${category}. ${row.status === "Assented" ? "This bill has become law." : "This bill is currently before parliament."}`
-             : "Analysis pending.",
+    // "What this means for you" — separate AI translation stored in means_plain
+    means: row.means_plain
+             ? stripBillMarkdown(row.means_plain)
+             : "Plain-English analysis pending.",
     currentStageIndex: stageMap[row.status] ?? 1,
     hiddenProvisions:  [],
     fiscal:            null,
