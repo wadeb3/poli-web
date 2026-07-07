@@ -2403,6 +2403,23 @@ const stripBillMarkdown = text =>
 // Fields not yet available (sentiment, fiscal, hiddenProvisions) get sensible
 // defaults — they'll be populated as the data pipeline matures.
 // ─────────────────────────────────────────────────────────────────────────────
+// Normalise party names from AI output (full names) to partyOf() codes
+const PARTY_NAME_MAP = {
+  "australian labor party": "ALP", "labor": "ALP", "alp": "ALP",
+  "liberal party": "LIB", "liberal": "LIB", "lib": "LIB",
+  "national party": "NAT", "nationals": "NAT", "nat": "NAT",
+  "liberal national party": "LNP", "lnp": "LNP",
+  "australian greens": "Greens", "greens": "Greens", "grn": "Greens",
+  "one nation": "ONP", "pauline hanson": "ONP", "onp": "ONP",
+  "independent": "IND", "ind": "IND", "teal": "IND",
+  "katter's australian party": "OTH", "kap": "OTH",
+  "jacqui lambie network": "OTH", "jln": "OTH",
+  "united australia party": "OTH", "uap": "OTH",
+  "centre alliance": "OTH",
+};
+const normaliseParty = name =>
+  PARTY_NAME_MAP[(name || "").toLowerCase()] || name;
+
 function adaptBill(row) {
   // Use AI-classified category if available, fall back to chamber
   const category = row.category || (row.originating_chamber === "senate" ? "Senate" : "House");
@@ -2446,7 +2463,14 @@ function adaptBill(row) {
              ? stripBillMarkdown(row.means_plain)
              : "Plain-English analysis pending.",
     currentStageIndex: stageMap[row.status] ?? 1,
-    hiddenProvisions:  [],
+    provisions:        row.provisions       || [],
+    cohorts:           row.cohorts          || [],
+    arguments:         row.arguments        || { for: [], against: [] },
+    hiddenProvisions:  row.hidden_provisions|| [],
+    partyPositions: (row.party_positions || []).map(p => ({
+      ...p,
+      party: normaliseParty(p.party),
+    })),
     fiscal:            null,
     // Build a timeline from the scraped stages array
     timeline: (row.stages || []).map(s => {
@@ -2748,7 +2772,7 @@ function PoliAppInner() {
 
   useEffect(() => {
     supabase.from("bills")
-      .select("*")
+      .select("id,title,originating_chamber,sponsor,sponsor_party,portfolio,summary_aph,summary_plain,means_plain,category,status,act_citation,introduced_date,assent_date,stages,parlinfo_url,updated_at,provisions,cohorts,arguments,hidden_provisions,party_positions")
       .order("introduced_date", { ascending: false })
       .then(({ data, error }) => {
         if (error) { setBillsError(error.message); }
