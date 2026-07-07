@@ -53,16 +53,33 @@ export function MPDossier({ members, initialParty = null, initialQuery = "", dat
       (!chamber || m.chamber === chamber) &&
       (!party || m.party === party)
     );
-    // For Senate show states, for House show electorates
-    const entries = base.map(m =>
-      m.chamber === "Senate"
-        ? { label: m.state, value: m.state }
-        : { label: `${m.electorate}${m.state ? ` · ${m.state}` : ""}`, value: m.electorate }
-    ).filter(e => e.value);
-    // Deduplicate by value
-    const seen = new Set();
-    return entries.filter(e => { if (seen.has(e.value)) return false; seen.add(e.value); return true; })
-      .sort((a, b) => a.label.localeCompare(b.label));
+
+    // Senate entries — unique states, grouped at top
+    const senatStates = chamber !== "House"
+      ? [...new Set(base.filter(m => m.chamber === "Senate").map(m => m.state).filter(Boolean))]
+          .sort()
+          .map(s => ({ label: s, value: s, group: "senate" }))
+      : [];
+
+    // House entries — "Electorate · State" but only when state differs from electorate name
+    const houseElectorates = chamber !== "Senate"
+      ? (() => {
+          const seen = new Set();
+          return base
+            .filter(m => m.chamber === "House" && m.electorate)
+            .map(m => {
+              const label = m.state && m.state !== m.electorate
+                ? `${m.electorate} · ${m.state}`
+                : m.electorate;
+              return { label, value: m.electorate, group: "house" };
+            })
+            .filter(e => { if (seen.has(e.value)) return false; seen.add(e.value); return true; })
+            .sort((a, b) => a.label.localeCompare(b.label));
+        })()
+      : [];
+
+    // States first, then electorates
+    return [...senatStates, ...houseElectorates];
   }, [members, chamber, party]);
 
   const filtered = useMemo(() => {
@@ -134,7 +151,23 @@ export function MPDossier({ members, initialParty = null, initialQuery = "", dat
           <select value={electorate || ""} onChange={e => setElectorate(e.target.value || null)}
             aria-label="Filter by electorate" style={{ ...selectStyle, width: "100%" }}>
             <option value="">{chamber === "Senate" ? "All states" : "All electorates"}</option>
-            {electorates.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
+            {(() => {
+              const states = electorates.filter(e => e.group === "senate");
+              const houses = electorates.filter(e => e.group === "house");
+              if (states.length && houses.length) {
+                return (
+                  <>
+                    <optgroup label="States">
+                      {states.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
+                    </optgroup>
+                    <optgroup label="Electorates">
+                      {houses.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
+                    </optgroup>
+                  </>
+                );
+              }
+              return electorates.map(e => <option key={e.value} value={e.value}>{e.label}</option>);
+            })()}
           </select>
         </div>
 

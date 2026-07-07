@@ -117,15 +117,16 @@ export function VotingRecord({ mpId, fallbackRecords = [] }) {
   const [activeYear, setActiveYear] = useState("y0");
   const [shown, setShown] = useState(10);
 
-  // Reset pagination when year changes
-  const handleYear = (key) => { setActiveYear(key); setShown(10); };
+  // Reset when switching members
+  useEffect(() => { setActiveYear("y0"); setShown(10); }, [mpId]);
 
   const bucket     = YEAR_BUCKETS.find(b => b.key === activeYear) || YEAR_BUCKETS[0];
   const filtered   = fallbackRecords.filter(bucket.test);
   const visible    = filtered.slice(0, shown);
   const hasMore    = filtered.length > shown;
 
-  // Count per bucket for badge
+  // Reset pagination when year changes
+  const handleYear = (key) => { setActiveYear(key); setShown(10); };
   const counts = {};
   YEAR_BUCKETS.forEach(b => { counts[b.key] = fallbackRecords.filter(b.test).length; });
 
@@ -184,7 +185,7 @@ export function VotingRecord({ mpId, fallbackRecords = [] }) {
       ) : (
         <>
           {visible.map((r, i) => (
-            <PolicyRow key={`${r.policyId}-${i}`} record={r} mpId={mpId}
+            <PolicyRow key={`${mpId}-${r.policyId}-${i}`} record={r} mpId={mpId}
               last={i === visible.length - 1 && !hasMore} />
           ))}
           {hasMore && (
