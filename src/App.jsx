@@ -2681,7 +2681,31 @@ function V5PageWrapper({ title, sub, children }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN APP SHELL · v6.2
 // ─────────────────────────────────────────────────────────────────────────────
+// ── Top-level error boundary ──────────────────────────────────────────────────
+import { Component } from "react";
+class AppErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(e) { return { error: e }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 32, fontFamily: "monospace", fontSize: 13, background: "#fff3f3", minHeight: "100vh" }}>
+          <h2 style={{ color: "#B3372B", marginBottom: 16 }}>Poli crashed — debugging info:</h2>
+          <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", background: "#fff", padding: 16, border: "1px solid #EFCBC4", borderRadius: 8 }}>
+            {this.state.error.message}{"\n\n"}{this.state.error.stack}
+          </pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function PoliApp() {
+  return <AppErrorBoundary><PoliAppInner /></AppErrorBoundary>;
+}
+
+function PoliAppInner() {
   // ── Boot / tour ──
   const [booting, setBooting]     = useState(true);
   const [showIntro, setShowIntro] = useState(true);
