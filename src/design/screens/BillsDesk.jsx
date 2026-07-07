@@ -126,45 +126,48 @@ export function BillsDesk({ bills, votes = {}, onVote, alerts = [], onToggleAler
             ))}
           </div>
 
-          {/* Category pills — compound on top of chamber, do not clear it */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-            {availableCategories.map(c => {
-              const active = category === c;
-              return (
-                <button key={c} onClick={() => setCategory(active ? null : c)}
-                  style={{
-                    padding: "3px 9px", borderRadius: 99, border: `1px solid ${active ? C.accent : C.border}`,
-                    background: active ? C.accentSoft : "transparent",
-                    color: active ? C.accentText : C.mid,
-                    fontSize: 10.5, fontWeight: 600, cursor: "pointer",
-                    fontFamily: "inherit", transition: "all 0.15s",
-                  }}>
-                  {c}
-                </button>
-              );
-            })}
-          </div>
+          {/* Category dropdown — same pattern as MP dossier */}
+          <select
+            value={category || ""}
+            onChange={e => setCategory(e.target.value || null)}
+            aria-label="Filter by category"
+            style={{
+              width: "100%", padding: "7px 10px", borderRadius: RADIUS.control,
+              border: `1px solid ${C.border}`, background: C.white, color: category ? C.ink : C.faint,
+              fontFamily: "inherit", fontSize: 12, cursor: "pointer",
+              outline: "none", appearance: "none", WebkitAppearance: "none",
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23A39C94' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+              backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center",
+              paddingRight: 26,
+            }}>
+            <option value="">All categories</option>
+            {availableCategories.map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
         </div>
+
+        {/* Bill rows — compact */}
         {filtered.map(b => {
           const active = b.id === selected?.id;
           return (
             <button key={b.id} role="option" aria-selected={active} onClick={() => setSelectedId(b.id)} style={{
-              display: "block", width: "100%", textAlign: "left", padding: "14px 18px",
+              display: "block", width: "100%", textAlign: "left", padding: "9px 14px",
               background: active ? C.accentSoft : "transparent",
               border: "none", borderBottom: `1px solid ${C.border}`,
               boxShadow: active ? `inset 3px 0 0 ${C.accent}` : "none",
               cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s",
             }}>
-              <div style={{ ...TYPE.h3, fontSize: 15.5, color: C.ink, marginBottom: 5, lineHeight: 1.3 }}>{b.title}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.faint }}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: C.ink, marginBottom: 4, lineHeight: 1.35 }}>{b.title}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10 }}>
                 <StatusChip status={b.status} />
                 <BillTypeChip title={b.title} />
-                <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, marginLeft: "auto", color: b.support > 50 ? C.green : b.oppose > 50 ? C.red : C.mid }}>
+                <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, marginLeft: "auto", color: b.support > 50 ? C.green : b.oppose > 50 ? C.red : C.faint }}>
                   {b.support}%
                 </span>
                 {b.hiddenProvisions?.length > 0 && (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: C.amber, fontWeight: 600 }}>
-                    <IconEye size={12} />{b.hiddenProvisions.length}
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 2, color: C.amber, fontWeight: 600 }}>
+                    <IconEye size={11} />{b.hiddenProvisions.length}
                   </span>
                 )}
               </div>
