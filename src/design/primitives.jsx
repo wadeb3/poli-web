@@ -113,11 +113,33 @@ export function PartyChip({ party, showName = false }) {
 /** @param {{ status: string }} props */
 export function StatusChip({ status }) {
   const cfg = {
-    Active:      { color: C.green, label: "Active law" },
-    Proposed:    { color: C.amber, label: "Proposed" },
-    Legislation: { color: C.blue,  label: "In parliament" },
-  }[status] || { color: C.faint, label: status };
+    Active:      { color: C.green,  label: "Active law" },
+    Assented:    { color: C.green,  label: "Assented" },
+    Passed:      { color: C.blue,   label: "Passed" },
+    Lapsed:      { color: C.faint,  label: "Lapsed" },
+    Negatived:   { color: C.red,    label: "Negatived" },
+    Withdrawn:   { color: C.faint,  label: "Withdrawn" },
+    Proposed:    { color: C.amber,  label: "Proposed" },
+    Legislation: { color: C.blue,   label: "In parliament" },
+  }[status] || { color: C.faint, label: status || "Unknown" };
   return <Chip color={cfg.color} dot tone="tint">{cfg.label}</Chip>;
+}
+
+/** Infer whether a bill is an amendment, repeal, appropriation or new law from its title */
+export function BillTypeChip({ title }) {
+  if (!title) return null;
+  const t = title.toLowerCase();
+  let label, color;
+  if (t.includes("appropriation") || t.includes("supply bill")) {
+    label = "Appropriation"; color = C.purple;
+  } else if (t.includes("repeal")) {
+    label = "Repeal"; color = C.red;
+  } else if (t.includes("amendment")) {
+    label = "Amendment"; color = C.amber;
+  } else {
+    label = "New bill"; color = C.blue;
+  }
+  return <Chip color={color} tone="tint">{label}</Chip>;
 }
 
 /**

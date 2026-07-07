@@ -13,7 +13,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useState } from "react";
 import { C, TYPE, RADIUS, LAYOUT, FONT } from "../tokens.js";
-import { Chip, PartyChip, StatusChip, SentimentBar, Button, Rule } from "../primitives.jsx";
+import { Chip, PartyChip, StatusChip, BillTypeChip, SentimentBar, Button, Rule } from "../primitives.jsx";
 import { SourceBadge, EmptyState } from "../states.jsx";
 import { BillList } from "./BillCard.jsx";
 import { BillDetail } from "./BillDetail.jsx";
@@ -156,8 +156,9 @@ export function BillsDesk({ bills, votes = {}, onVote, alerts = [], onToggleAler
               cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s",
             }}>
               <div style={{ ...TYPE.h3, fontSize: 15.5, color: C.ink, marginBottom: 5, lineHeight: 1.3 }}>{b.title}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: C.faint }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.faint }}>
                 <StatusChip status={b.status} />
+                <BillTypeChip title={b.title} />
                 <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, marginLeft: "auto", color: b.support > 50 ? C.green : b.oppose > 50 ? C.red : C.mid }}>
                   {b.support}%
                 </span>
@@ -212,6 +213,7 @@ function BriefingPane({ bill, dataState, vote, onVote, alertOn, onToggleAlert })
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <StatusChip status={bill.status} />
+          <BillTypeChip title={bill.title} />
           {bill.party && bill.party !== "OTH" && <PartyChip party={bill.party} showName />}
           <Chip>{bill.category}</Chip>
         </div>
