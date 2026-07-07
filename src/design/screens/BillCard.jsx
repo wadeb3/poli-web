@@ -99,7 +99,7 @@ export function BillCard({ bill, vote = null, onVote, alertOn = false, onToggleA
           <span style={{ ...TYPE.overline, fontSize: 10, color: C.accentText }}>What This Means For You</span>
           <span style={{ fontSize: 10, color: C.faint, marginLeft: "auto" }}>Non-partisan · AI summary →</span>
         </div>
-        <p style={{ ...TYPE.sm, color: C.ink, margin: 0 }}>{bill.means}</p>
+        <p style={{ ...TYPE.sm, color: C.ink, margin: 0 }}>{bill.means || bill.plain || "Summary pending."}</p>
 
         {/* Full parliamentary summary — collapsible */}
         {bill.plain && bill.plain !== "Plain-English summary pending — check back soon." && (

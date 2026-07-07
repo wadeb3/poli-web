@@ -217,23 +217,22 @@ function BriefingPane({ bill, dataState, vote, onVote, alertOn, onToggleAlert })
         </div>
       </div>
 
-      <h2 style={{ ...TYPE.hero, fontSize: 28, color: C.ink, margin: "0 0 16px" }}>{bill.title}</h2>
+      <h2 style={{ ...TYPE.hero, fontSize: 28, color: C.ink, margin: "0 0 8px" }}>{bill.title}</h2>
 
-      <SentimentBar support={bill.support} neutral={bill.neutral} oppose={bill.oppose} height={7} />
-
-      {/* What This Means For You — primary display, accent panel */}
-      <div style={{ background: C.surface, borderRadius: RADIUS.panel, padding: "12px 14px", margin: "16px 0 0", borderLeft: `3px solid ${C.accent}` }}>
+      {/* What This Means For You — primary summary, positioned where plain was */}
+      <div style={{ background: C.surface, borderRadius: RADIUS.panel, padding: "12px 14px", margin: "0 0 16px", borderLeft: `3px solid ${C.accent}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
           <span style={{ color: C.accentText }}><IconSparkle size={13} /></span>
           <span style={{ ...TYPE.overline, fontSize: 10, color: C.accentText }}>What This Means For You</span>
           <span style={{ fontSize: 10, color: C.faint, marginLeft: "auto" }}>Non-partisan · AI summary →</span>
         </div>
-        <p style={{ ...TYPE.sm, color: C.ink, margin: 0 }}>{bill.means}</p>
-        {/* Full parliamentary summary — collapsible */}
-        {bill.plain && bill.plain !== "Plain-English summary pending — check back soon." && (
+        <p style={{ ...TYPE.body, fontSize: 14.5, color: C.ink, margin: 0, maxWidth: 640 }}>{bill.means || bill.plain || "Summary pending."}</p>
+        {bill.plain && bill.plain !== "Plain-English summary pending — check back soon." && bill.plain !== bill.means && (
           <FullSummaryExpand plain={bill.plain} />
         )}
       </div>
+
+      <SentimentBar support={bill.support} neutral={bill.neutral} oppose={bill.oppose} height={7} />
 
       <div style={{ display: "flex", gap: 8, alignItems: "center", margin: "16px 0 4px" }}>
         {vote ? (

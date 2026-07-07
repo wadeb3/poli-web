@@ -2448,6 +2448,16 @@ function adaptBill(row) {
     currentStageIndex: stageMap[row.status] ?? 1,
     hiddenProvisions:  [],
     fiscal:            null,
+    // Build a timeline from the scraped stages array
+    timeline: (row.stages || []).map(s => {
+      const dateMatch = s.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})/);
+      const date = dateMatch
+        ? (() => { try { const d = new Date(dateMatch[1].split("/").reverse().join("-")); return d.toLocaleDateString("en-AU", { day:"numeric", month:"short", year:"numeric" }); } catch { return dateMatch[1]; } })()
+        : "Pending";
+      return { date, stage: s.replace(/\s*\d{1,2}\/\d{1,2}\/\d{2,4}/, "").trim(), chamber: row.originating_chamber === "senate" ? "Senate" : "House", note: "" };
+    }),
+    // Source link to APH parlinfo page
+    sources: row.parlinfo_url ? [{ label: "APH ParlInfo", url: row.parlinfo_url }] : [],
     meta: {
       lastUpdated:          row.updated_at,
       billNumber:           row.act_citation || row.id,

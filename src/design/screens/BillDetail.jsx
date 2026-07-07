@@ -300,7 +300,7 @@ function Debate({ bill }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 10 }}>
         <div>
           <Overline color={C.green} mb={8}>Arguments for</Overline>
-          {bill.arguments?.for.map((a, i) => (
+          {bill.arguments?.for?.map((a, i) => (
             <div key={i} style={{ background: C.greenSoft, border: `1px solid ${C.greenMid}`, borderRadius: RADIUS.control, padding: "10px 12px", marginBottom: 8 }}>
               <div style={{ fontSize: 12, color: C.ink, lineHeight: 1.55 }}>{a}</div>
             </div>
@@ -308,7 +308,7 @@ function Debate({ bill }) {
         </div>
         <div>
           <Overline color={C.red} mb={8}>Arguments against</Overline>
-          {bill.arguments?.against.map((a, i) => (
+          {bill.arguments?.against?.map((a, i) => (
             <div key={i} style={{ background: C.redSoft, border: `1px solid ${C.redMid}`, borderRadius: RADIUS.control, padding: "10px 12px", marginBottom: 8 }}>
               <div style={{ fontSize: 12, color: C.ink, lineHeight: 1.55 }}>{a}</div>
             </div>
