@@ -12,7 +12,7 @@
 //
 // Data shape identical to POLICIES entries in App.jsx.
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState } from "react";
+import { useState, Component } from "react";
 import { C, TYPE, RADIUS, FONT, alpha } from "../tokens.js";
 import { Chip, PartyChip } from "../primitives.jsx";
 import { IconEye, IconExternal } from "../icons.jsx";
@@ -35,8 +35,31 @@ const Overline = ({ children, color = C.faint, mb = 10 }) => (
   <div style={{ ...TYPE.overline, fontSize: 10, color, marginBottom: mb }}>{children}</div>
 );
 
-/** @param {{ bill: import("./BillCard.jsx").Bill }} props */
+class BillDetailErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ margin: "14px 0", padding: "16px 18px", background: "#FFF3F3", border: "1px solid #EFCBC4", borderRadius: 8, fontFamily: "monospace", fontSize: 12, color: "#B3372B" }}>
+          <strong>BillDetail crashed — error logged below for debugging:</strong>
+          <pre style={{ margin: "8px 0 0", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{this.state.error.message}{"\n"}{this.state.error.stack}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export function BillDetail({ bill }) {
+  return (
+    <BillDetailErrorBoundary>
+      <BillDetailInner bill={bill} />
+    </BillDetailErrorBoundary>
+  );
+}
+
+function BillDetailInner({ bill }) {
   const [section, setSection] = useState("overview");
   const hidden = bill.hiddenProvisions || [];
   const highCount = hidden.filter(h => h.severity === "high").length;
