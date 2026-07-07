@@ -221,10 +221,15 @@ function Overview({ bill }) {
             <span style={{ fontSize: 16 }}>💰</span>
           </div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.ink, marginBottom: 4 }}>Donation transparency — coming soon</div>
-            <p style={{ fontSize: 12, color: C.mid, margin: 0, lineHeight: 1.6 }}>
-              Poli will surface AEC-disclosed donations from groups with financial interests in this policy area. This helps you understand who funds advocacy around this legislation.
+            <div style={{ fontSize: 13, fontWeight: 600, color: C.ink, marginBottom: 4 }}>Donation transparency</div>
+            <p style={{ fontSize: 12, color: C.mid, margin: "0 0 10px", lineHeight: 1.6 }}>
+              Explore AEC-disclosed donations from groups with financial interests in policy areas related to this bill.
+              Poli shows correlation, not causation.
             </p>
+            <a href="#" onClick={e => { e.preventDefault(); window.poliNavigate?.("mymp", "donations"); }}
+              style={{ fontSize: 11, fontWeight: 600, color: C.accentText, textDecoration: "none" }}>
+              View Party Donations explorer →
+            </a>
           </div>
         </div>
       )}
