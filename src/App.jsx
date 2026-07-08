@@ -2949,6 +2949,7 @@ function PoliAppInner() {
         <>
           <PageHeader title="Parties" sub="Federal political parties — seats, positions, and financial transparency." />
           <PartiesExplorer
+            supabase={supabase}
             onViewDonations={code => { setDonationParty(code); navigate("mymp", "donations"); }}
           />
         </>
