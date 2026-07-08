@@ -110,7 +110,10 @@ const fmtAmount = n => n >= 1_000_000
     ? `$${(n / 1_000).toFixed(0)}k`
     : `$${n}`;
 
-// ── Party Financials subcomponent ────────────────────────────────────────────
+// Australian federal election years
+const ELECTION_YEARS = new Set(["2025-26","2024-25","2021-22","2018-19","2015-16","2012-13","2009-10","2006-07","2003-04","2001-02"]);
+
+// ── Party Financials — grouped column chart ───────────────────────────────────
 function PartyFinancials({ partyCode, supabase }) {
   const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -119,154 +122,199 @@ function PartyFinancials({ partyCode, supabase }) {
     if (!supabase || !partyCode) return;
     setLoading(true);
     supabase.from("party_returns")
-      .select("financial_year,total_receipts,total_payments,surplus,closing_balance")
+      .select("financial_year,total_receipts,total_payments,surplus")
       .eq("party", partyCode)
-      .order("financial_year", { ascending: false })
-      .limit(5)
-      .then(({ data }) => {
-        setReturns(data || []);
-        setLoading(false);
-      });
+      .order("financial_year", { ascending: true })
+      .limit(10)
+      .then(({ data }) => { setReturns(data || []); setLoading(false); });
   }, [partyCode, supabase]);
 
   if (loading) return <div style={{ fontSize: 11, color: C.faint, padding: "8px 0" }}>Loading financials…</div>;
   if (!returns.length) return null;
 
-  const latest = returns[0];
+  const latest = returns[returns.length - 1];
+  const maxVal = Math.max(...returns.flatMap(r => [r.total_receipts || 0, r.total_payments || 0])) || 1;
+  const chartH = 80;
 
   return (
     <div style={{ marginBottom: 20 }}>
       <div style={{ fontSize: 10, fontWeight: 700, color: C.faint, textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 10 }}>
         Party finances · {latest.financial_year}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
+
+      {/* Summary tiles */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
         {[
           { label: "Total income",      value: latest.total_receipts, color: C.green },
           { label: "Total expenditure", value: latest.total_payments, color: C.red },
-          { label: "Surplus / deficit", value: latest.surplus, color: latest.surplus >= 0 ? C.green : C.red },
+          { label: "Surplus / deficit", value: latest.surplus,        color: (latest.surplus || 0) >= 0 ? C.green : C.red },
         ].map(s => (
           <div key={s.label} style={{ background: C.surface, borderRadius: RADIUS.control, padding: "10px 12px" }}>
             <div style={{ fontSize: 10, color: C.faint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{s.label}</div>
             <div style={{ fontSize: 13, fontWeight: 700, color: s.color, fontVariantNumeric: "tabular-nums" }}>
-              {s.value >= 0 ? "" : "−"}{fmtAmount(Math.abs(s.value || 0))}
+              {(s.value || 0) < 0 ? "−" : ""}{fmtAmount(Math.abs(s.value || 0))}
             </div>
           </div>
         ))}
       </div>
-      {/* Year-on-year trend bars */}
+
+      {/* Grouped column chart */}
       {returns.length > 1 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {returns.map(r => {
-            const maxVal = Math.max(...returns.map(x => x.total_receipts || 0));
-            return (
-              <div key={r.financial_year} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 10, color: C.faint, width: 48, flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{r.financial_year}</span>
-                <div style={{ flex: 1, height: 4, background: C.border, borderRadius: 99, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${((r.total_receipts || 0) / maxVal) * 100}%`, background: C.green, borderRadius: 99 }} />
+        <div>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: chartH, borderBottom: `1px solid ${C.border}`, paddingBottom: 0 }}>
+            {returns.map(r => {
+              const incPct  = ((r.total_receipts || 0) / maxVal) * 100;
+              const expPct  = ((r.total_payments || 0) / maxVal) * 100;
+              const isElec  = ELECTION_YEARS.has(r.financial_year);
+              return (
+                <div key={r.financial_year} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 0, position: "relative" }}>
+                  {/* Election year star */}
+                  {isElec && (
+                    <div title="Election year" style={{ position: "absolute", top: -14, fontSize: 9, color: C.amber, fontWeight: 700 }}>✦</div>
+                  )}
+                  {/* Column pair */}
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 1, width: "100%", height: chartH }}>
+                    <div title={`Income: ${fmtAmount(r.total_receipts || 0)}`}
+                      style={{ flex: 1, height: `${incPct}%`, background: C.green, borderRadius: "2px 2px 0 0", opacity: 0.85, minHeight: 2 }} />
+                    <div title={`Expenditure: ${fmtAmount(r.total_payments || 0)}`}
+                      style={{ flex: 1, height: `${expPct}%`, background: C.red, borderRadius: "2px 2px 0 0", opacity: 0.75, minHeight: 2 }} />
+                  </div>
                 </div>
-                <span style={{ fontSize: 10, color: C.mid, fontVariantNumeric: "tabular-nums", width: 48, textAlign: "right" }}>{fmtAmount(r.total_receipts || 0)}</span>
+              );
+            })}
+          </div>
+          {/* X-axis labels */}
+          <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+            {returns.map(r => (
+              <div key={r.financial_year} style={{ flex: 1, fontSize: 9, color: C.faint, textAlign: "center", fontVariantNumeric: "tabular-nums", overflow: "hidden" }}>
+                {r.financial_year.slice(2, 5)}{r.financial_year.slice(-2)}
               </div>
-            );
-          })}
+            ))}
+          </div>
+          {/* Legend */}
+          <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
+            {[{ color: C.green, label: "Income" }, { color: C.red, label: "Expenditure" }].map(l => (
+              <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{ width: 8, height: 8, borderRadius: 2, background: l.color }} />
+                <span style={{ fontSize: 10, color: C.faint }}>{l.label}</span>
+              </div>
+            ))}
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: 9, color: C.amber, fontWeight: 700 }}>✦</span>
+              <span style={{ fontSize: 10, color: C.faint }}>Election year</span>
+            </div>
+          </div>
+          <div style={{ marginTop: 6, fontSize: 10, color: C.faint }}>
+            Source: AEC Transparency Register · Party Returns · Self-reported annual
+          </div>
         </div>
       )}
     </div>
   );
 }
 function TopDonors({ partyCode, partyColor, supabase, onViewAll }) {
-  const [donors, setDonors]   = useState([]);
-  const [total, setTotal]     = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [year, setYear]       = useState(null);  // null = all years
-  const [years, setYears]     = useState([]);
+  const [allDonations, setAllDonations] = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [year, setYear]                 = useState(null); // null = all, "older" = pre-recent
 
   useEffect(() => {
     if (!supabase || !partyCode) return;
     setLoading(true);
-
-    let q = supabase
+    supabase
       .from("donations")
       .select("donor_name, amount, financial_year, donor_type")
       .eq("party", partyCode)
-      .order("amount", { ascending: false });
-
-    if (year) q = q.eq("financial_year", year);
-
-    q.limit(200).then(({ data, error }) => {
-      if (error || !data) { setLoading(false); return; }
-
-      // Aggregate by donor name (same donor may have multiple rows)
-      const agg = {};
-      data.forEach(r => {
-        const key = r.donor_name;
-        if (!agg[key]) agg[key] = { donor_name: key, amount: 0, donor_type: r.donor_type, financial_year: r.financial_year };
-        agg[key].amount += r.amount || 0;
+      .order("amount", { ascending: false })
+      .limit(2000)
+      .then(({ data }) => {
+        setAllDonations(data || []);
+        setLoading(false);
       });
+  }, [partyCode, supabase]);
 
-      const sorted = Object.values(agg).sort((a, b) => b.amount - a.amount);
-      setDonors(sorted.slice(0, 10));
-      setTotal(sorted.reduce((s, d) => s + d.amount, 0));
+  // Build year buckets — recent 6 years + "Older"
+  const allYears = [...new Set(allDonations.map(r => r.financial_year))].sort().reverse();
+  const recentYears = allYears.slice(0, 6);
+  const olderYears  = allYears.slice(6);
+  const hasOlder    = olderYears.length > 0;
 
-      // Build year list from data
-      const ys = [...new Set(data.map(r => r.financial_year))].sort().reverse();
-      setYears(ys);
-      setLoading(false);
-    });
-  }, [partyCode, year, supabase]);
+  // Filter donations by selected year bucket
+  const filtered = allDonations.filter(r => {
+    if (!year)           return true;
+    if (year === "older") return olderYears.includes(r.financial_year);
+    return r.financial_year === year;
+  });
 
+  // Aggregate by donor name
+  const agg = {};
+  filtered.forEach(r => {
+    const k = r.donor_name;
+    if (!agg[k]) agg[k] = { donor_name: k, amount: 0, donor_type: r.donor_type };
+    agg[k].amount += r.amount || 0;
+  });
+  const donors   = Object.values(agg).sort((a, b) => b.amount - a.amount).slice(0, 10);
+  const total    = donors.reduce((s, d) => s + d.amount, 0);
   const maxAmount = donors[0]?.amount || 1;
+
+  const pillStyle = (active) => ({
+    padding: "2px 8px", borderRadius: 99,
+    border: `1px solid ${active ? C.accent : C.border}`,
+    background: active ? C.accentSoft : "transparent",
+    color: active ? C.accentText : C.faint,
+    fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+    flexShrink: 0,
+  });
 
   return (
     <div style={{ marginBottom: 20 }}>
-      {/* Header row */}
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 10 }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
         <div style={{ fontSize: 10, fontWeight: 700, color: C.faint, textTransform: "uppercase", letterSpacing: "0.09em" }}>
           Top donors
         </div>
-        {/* Year filter pills */}
-        <div style={{ display: "flex", gap: 4, marginLeft: 4 }}>
-          {[null, ...years].map(y => (
-            <button key={y ?? "all"} onClick={() => setYear(y)}
-              style={{ padding: "2px 8px", borderRadius: 99, border: `1px solid ${year === y ? C.accent : C.border}`, background: year === y ? C.accentSoft : "transparent", color: year === y ? C.accentText : C.faint, fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-              {y ?? "All years"}
-            </button>
-          ))}
-        </div>
         {total > 0 && (
-          <span style={{ marginLeft: "auto", fontSize: 10, color: C.faint, fontVariantNumeric: "tabular-nums" }}>
+          <span style={{ fontSize: 10, color: C.faint, fontVariantNumeric: "tabular-nums", marginLeft: "auto" }}>
             {fmtAmount(total)} total
           </span>
         )}
       </div>
 
+      {/* Year pills — always visible, never disappear */}
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 10 }}>
+        <button onClick={() => setYear(null)} style={pillStyle(!year)}>All years</button>
+        {recentYears.map(y => (
+          <button key={y} onClick={() => setYear(y)} style={pillStyle(year === y)}>{y}</button>
+        ))}
+        {hasOlder && (
+          <button onClick={() => setYear("older")} style={pillStyle(year === "older")}>
+            Older ({olderYears.length})
+          </button>
+        )}
+      </div>
+
       {/* Donor rows */}
       {loading ? (
-        <div style={{ fontSize: 11, color: C.faint, padding: "12px 0" }}>Loading donors…</div>
+        <div style={{ fontSize: 11, color: C.faint, padding: "8px 0" }}>Loading donors…</div>
       ) : donors.length === 0 ? (
-        <div style={{ fontSize: 11, color: C.faint, padding: "12px 0" }}>No disclosed donations on record for this party.</div>
+        <div style={{ fontSize: 11, color: C.faint, padding: "8px 0" }}>No disclosed donations on record.</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {donors.map((d, i) => (
             <div key={d.donor_name} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                {/* Rank */}
-                <span style={{ fontSize: 10, color: C.faint, fontVariantNumeric: "tabular-nums", width: 14, flexShrink: 0, textAlign: "right" }}>{i + 1}</span>
-                {/* Name */}
+                <span style={{ fontSize: 10, color: C.faint, width: 14, flexShrink: 0, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{i + 1}</span>
                 <span style={{ fontSize: 12, fontWeight: 500, color: C.ink, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {d.donor_name}
                 </span>
-                {/* Type badge */}
                 {d.donor_type && d.donor_type !== "Other" && (
                   <span style={{ fontSize: 9, color: C.faint, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, padding: "1px 5px", flexShrink: 0 }}>
                     {d.donor_type}
                   </span>
                 )}
-                {/* Amount */}
                 <span style={{ fontSize: 11, fontWeight: 700, color: C.ink, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
                   {fmtAmount(d.amount)}
                 </span>
               </div>
-              {/* Bar */}
               <div style={{ marginLeft: 22, height: 3, borderRadius: 99, background: C.border, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${(d.amount / maxAmount) * 100}%`, background: partyColor, borderRadius: 99 }} />
               </div>
@@ -275,16 +323,11 @@ function TopDonors({ partyCode, partyColor, supabase, onViewAll }) {
         </div>
       )}
 
-      {/* View all link */}
-      {donors.length > 0 && (
-        <button onClick={onViewAll}
-          style={{ marginTop: 10, fontSize: 11, fontWeight: 600, color: C.accentText, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0 }}>
-          View full donation history →
-        </button>
-      )}
-
-      {/* Disclaimer */}
-      <div style={{ marginTop: 8, fontSize: 10, color: C.faint, lineHeight: 1.5 }}>
+      <button onClick={onViewAll}
+        style={{ marginTop: 10, fontSize: 11, fontWeight: 600, color: C.accentText, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0 }}>
+        View full donation history →
+      </button>
+      <div style={{ marginTop: 6, fontSize: 10, color: C.faint, lineHeight: 1.5 }}>
         AEC-disclosed donations only. Poli shows correlation, not causation.
       </div>
     </div>
@@ -292,7 +335,7 @@ function TopDonors({ partyCode, partyColor, supabase, onViewAll }) {
 }
 
 export function PartiesExplorer({ onViewDonations, supabase }) {
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState("ALP"); // default to governing party
   const party = PARTIES.find(p => p.code === selected);
 
   return (
@@ -355,7 +398,10 @@ export function PartiesExplorer({ onViewDonations, supabase }) {
 
             {/* About */}
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: C.faint, textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 8 }}>About</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: C.faint, textTransform: "uppercase", letterSpacing: "0.09em" }}>About</div>
+                <span style={{ fontSize: 10, color: C.faint }}>· Seats and leadership current as of 48th Parliament · 2025</span>
+              </div>
               <p style={{ fontSize: 13, color: C.mid, lineHeight: 1.65, margin: 0 }}>{party.blurb}</p>
             </div>
 

@@ -41,7 +41,7 @@ export function DonationsExplorer({ supabase, initialParty = null }) {
   const [year, setYear]             = useState(null);
   const [donorType, setDonorType]   = useState(null);
   const [query, setQuery]           = useState("");
-  const [sortBy, setSortBy]         = useState("amount");
+  const [sortBy, setSortBy]         = useState("year");
   const [expanded, setExpanded]     = useState(null);
 
   useEffect(() => {
@@ -71,9 +71,10 @@ export function DonationsExplorer({ supabase, initialParty = null }) {
       rows = rows.filter(d => d.donor_name?.toLowerCase().includes(q) || d.party_raw?.toLowerCase().includes(q));
     }
     return [...rows].sort((a, b) =>
-      sortBy === "amount" ? b.amount - a.amount :
-      sortBy === "name"   ? a.donor_name?.localeCompare(b.donor_name || "") :
-      (b.donation_date || "").localeCompare(a.donation_date || "")
+      sortBy === "year"   ? (b.financial_year || "").localeCompare(a.financial_year || "") || (b.amount - a.amount)
+      : sortBy === "amount" ? b.amount - a.amount
+      : sortBy === "name"   ? a.donor_name?.localeCompare(b.donor_name || "")
+      : (b.donation_date || "").localeCompare(a.donation_date || "")
     );
   }, [donations, party, year, donorType, query, sortBy]);
 
@@ -125,7 +126,8 @@ export function DonationsExplorer({ supabase, initialParty = null }) {
 
         {/* Sort */}
         <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={selectStyle}>
-          <option value="amount">Sort: Amount</option>
+          <option value="year">Sort: Year (newest first)</option>
+          <option value="amount">Sort: Amount (largest first)</option>
           <option value="name">Sort: Donor name</option>
           <option value="date">Sort: Date</option>
         </select>
