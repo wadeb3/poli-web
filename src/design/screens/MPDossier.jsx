@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { C, TYPE, RADIUS, LAYOUT, partyOf } from "../tokens.js";
 import { Chip, Button, Rule } from "../primitives.jsx";
 import { SourceBadge, EmptyState } from "../states.jsx";
-import { MPProfileHeader, VotingRecord, SaidVsDid } from "./MPProfile.jsx";
+import { MPProfileHeader, VotingRecord, SaidVsDid, MPFinancialDisclosure } from "./MPProfile.jsx";
 import { IconSearch, IconChevron, IconPerson } from "../icons.jsx";
 
 /**
@@ -24,7 +24,7 @@ import { IconSearch, IconChevron, IconPerson } from "../icons.jsx";
  * @property {{said: string, did: string, consistent: boolean, source?: string}} [saidVsDid]
  */
 
-export function MPDossier({ members, initialParty = null, initialQuery = "", initialSelectedId = null, dataState = "sample", onContact }) {
+export function MPDossier({ members, initialParty = null, initialQuery = "", initialSelectedId = null, dataState = "sample", onContact, supabase }) {
   const [wide, setWide] = useState(typeof window !== "undefined" && window.innerWidth >= 900);
   const [query, setQuery] = useState(initialQuery);
   const [chamber, setChamber] = useState(null); // null = all, "House", "Senate"
@@ -223,6 +223,7 @@ export function MPDossier({ members, initialParty = null, initialQuery = "", ini
       <MPProfileHeader mp={selected} alignment={selected.alignment || null} dataState={dataState}
         onContact={onContact ? () => onContact(selected) : undefined} />
       <VotingRecord mpId={selected.id} fallbackRecords={selected.records || []} />
+      <MPFinancialDisclosure mpName={selected.name} supabase={supabase} />
       {selected.saidVsDid && (
         <SaidVsDid said={selected.saidVsDid.said} did={selected.saidVsDid.did}
           consistent={selected.saidVsDid.consistent} source={selected.saidVsDid.source} />

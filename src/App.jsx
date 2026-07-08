@@ -18,6 +18,7 @@ import { CommandPalette, usePaletteShortcut } from "./design/CommandPalette.jsx"
 import { HomeFront } from "./design/screens/HomeFront.jsx";
 import { PartiesExplorer } from "./design/screens/PartiesExplorer.jsx";
 import { DonationsExplorer } from "./design/screens/DonationsExplorer.jsx";
+import { ThirdPartyExplorer } from "./design/screens/ThirdPartyExplorer.jsx";
 import { BillsDesk } from "./design/screens/BillsDesk.jsx";
 import { MPDossier } from "./design/screens/MPDossier.jsx";
 import { VoteBallot } from "./design/screens/VoteBallot.jsx";
@@ -2931,7 +2932,12 @@ function PoliAppInner() {
           <CabinetCards />
         </V5PageWrapper>
       );
-      // default: map
+      if (s === "thirds") return (
+        <>
+          <PageHeader title="Third Parties" sub="Organisations spending on political campaigning outside the party system — AEC-disclosed." />
+          <ThirdPartyExplorer supabase={supabase} />
+        </>
+      );
       return (
         <>
           <PageHeader title="Parliament" sub="Who holds the floor — 48th Parliament composition. Click a party to meet its members." />
@@ -2983,6 +2989,7 @@ function PoliAppInner() {
               initialParty={mpParty}
               initialSelectedId={selectedMemberId}
               initialQuery={savedPostcode}
+              supabase={supabase}
               dataState={membersError ? "cached" : "live"}
               onContact={() => {}}
             />

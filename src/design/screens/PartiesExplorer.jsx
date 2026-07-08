@@ -110,7 +110,69 @@ const fmtAmount = n => n >= 1_000_000
     ? `$${(n / 1_000).toFixed(0)}k`
     : `$${n}`;
 
-// ── Top donors subcomponent ───────────────────────────────────────────────────
+// ── Party Financials subcomponent ────────────────────────────────────────────
+function PartyFinancials({ partyCode, supabase }) {
+  const [returns, setReturns] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!supabase || !partyCode) return;
+    setLoading(true);
+    supabase.from("party_returns")
+      .select("financial_year,total_receipts,total_payments,surplus,closing_balance")
+      .eq("party", partyCode)
+      .order("financial_year", { ascending: false })
+      .limit(5)
+      .then(({ data }) => {
+        setReturns(data || []);
+        setLoading(false);
+      });
+  }, [partyCode, supabase]);
+
+  if (loading) return <div style={{ fontSize: 11, color: C.faint, padding: "8px 0" }}>Loading financials…</div>;
+  if (!returns.length) return null;
+
+  const latest = returns[0];
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: C.faint, textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 10 }}>
+        Party finances · {latest.financial_year}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
+        {[
+          { label: "Total income",      value: latest.total_receipts, color: C.green },
+          { label: "Total expenditure", value: latest.total_payments, color: C.red },
+          { label: "Surplus / deficit", value: latest.surplus, color: latest.surplus >= 0 ? C.green : C.red },
+        ].map(s => (
+          <div key={s.label} style={{ background: C.surface, borderRadius: RADIUS.control, padding: "10px 12px" }}>
+            <div style={{ fontSize: 10, color: C.faint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{s.label}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: s.color, fontVariantNumeric: "tabular-nums" }}>
+              {s.value >= 0 ? "" : "−"}{fmtAmount(Math.abs(s.value || 0))}
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* Year-on-year trend bars */}
+      {returns.length > 1 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {returns.map(r => {
+            const maxVal = Math.max(...returns.map(x => x.total_receipts || 0));
+            return (
+              <div key={r.financial_year} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 10, color: C.faint, width: 48, flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{r.financial_year}</span>
+                <div style={{ flex: 1, height: 4, background: C.border, borderRadius: 99, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${((r.total_receipts || 0) / maxVal) * 100}%`, background: C.green, borderRadius: 99 }} />
+                </div>
+                <span style={{ fontSize: 10, color: C.mid, fontVariantNumeric: "tabular-nums", width: 48, textAlign: "right" }}>{fmtAmount(r.total_receipts || 0)}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 function TopDonors({ partyCode, partyColor, supabase, onViewAll }) {
   const [donors, setDonors]   = useState([]);
   const [total, setTotal]     = useState(0);
@@ -300,7 +362,14 @@ export function PartiesExplorer({ onViewDonations, supabase }) {
             {/* Divider */}
             <div style={{ borderTop: `1px solid ${C.border}`, marginBottom: 16 }} />
 
-            {/* Top donors — live from Supabase */}
+            {/* Party financials — live from party_returns */}
+            <PartyFinancials
+              key={`fin-${party.code}`}
+              partyCode={party.code}
+              supabase={supabase}
+            />
+
+            {/* Top donors — live from donations */}
             <TopDonors
               key={party.code}
               partyCode={party.code}

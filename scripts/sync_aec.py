@@ -322,9 +322,13 @@ def main():
 
     parser = argparse.ArgumentParser(description="Sync AEC annual donation data to Supabase.")
     parser.add_argument("--year",     help="Only import a specific year e.g. 2024-25")
-    parser.add_argument("--clear",    action="store_true", help="Clear existing donations first")
+    parser.add_argument("--clear",    action="store_true", help="Clear existing data first")
     parser.add_argument("--dry-run",  action="store_true", help="Parse and print rows without writing to Supabase")
     parser.add_argument("--list",     action="store_true", help="List ZIP contents and exit")
+    parser.add_argument("--all",      action="store_true", help="Sync all tables: donations + party returns + MP returns + third parties")
+    parser.add_argument("--parties",  action="store_true", help="Sync party financial returns only")
+    parser.add_argument("--mps",      action="store_true", help="Sync MP financial disclosure returns only")
+    parser.add_argument("--thirds",   action="store_true", help="Sync significant third party returns only")
     args = parser.parse_args()
 
     print("\n═══ AEC Annual Donor Sync ═══")
@@ -339,42 +343,284 @@ def main():
                 print(f"  {name:50s} {info.file_size:>10,} bytes")
         return
 
-    csv_text, csv_name = find_donor_csv(zip_bytes)
-    rows = parse_donations_csv(csv_text, filter_year=args.year)
+    # Determine which tables to sync
+    run_donations = not any([args.parties, args.mps, args.thirds]) or args.all
+    run_parties   = args.parties or args.all
+    run_mps       = args.mps or args.all
+    run_thirds    = args.thirds or args.all
 
-    print(f"\n  Parsed {len(rows)} donation records from {csv_name}" +
-          (f" for {args.year}" if args.year else ""))
+    # ── Donations Made ──
+    if run_donations:
+        csv_text, csv_name = find_donor_csv(zip_bytes)
+        rows = parse_donations_csv(csv_text, filter_year=args.year)
 
-    if rows:
-        years = sorted(set(r["financial_year"] for r in rows))
-        total = sum(r["amount"] for r in rows)
-        parties = {}
-        for r in rows:
-            parties[r["party"]] = parties.get(r["party"], 0) + r["amount"]
-        print(f"  Years: {', '.join(years)}")
-        print(f"  Total disclosed: ${total:,.0f}")
-        print(f"  By party:")
-        for party, amt in sorted(parties.items(), key=lambda x: -x[1]):
-            print(f"    {party:8s}  ${amt:>12,.0f}")
+        print(f"\n  Parsed {len(rows)} donation records from {csv_name}" +
+              (f" for {args.year}" if args.year else ""))
 
-        if args.dry_run:
-            print(f"\n  DRY RUN — first 5 rows:")
-            for r in rows[:5]:
-                print(f"    {r['donor_name'][:40]:40s} → {r['party']:6s}  ${r['amount']:>10,.0f}  {r['financial_year']}")
-            print(f"\n  DRY RUN complete — {len(rows)} rows parsed, nothing written to Supabase.")
-            return
+        if rows:
+            years = sorted(set(r["financial_year"] for r in rows))
+            total = sum(r["amount"] for r in rows)
+            parties = {}
+            for r in rows:
+                parties[r["party"]] = parties.get(r["party"], 0) + r["amount"]
+            print(f"  Years: {', '.join(years)}")
+            print(f"  Total disclosed: ${total:,.0f}")
+            print(f"  By party:")
+            for p, amt in sorted(parties.items(), key=lambda x: -x[1]):
+                print(f"    {p:8s}  ${amt:>12,.0f}")
 
-    if args.clear:
-        print("\n  Clearing existing donations…")
-        requests.delete(
-            f"{SUPABASE_URL}/rest/v1/donations",
-            headers={**SB_HEADERS, "Prefer": "return=minimal"},
-            params={"id": "gte.0"},
-            timeout=30,
-        )
+            if args.dry_run:
+                print(f"\n  DRY RUN — first 5 rows:")
+                for r in rows[:5]:
+                    print(f"    {r['donor_name'][:40]:40s} → {r['party']:6s}  ${r['amount']:>10,.0f}  {r['financial_year']}")
+                print(f"\n  DRY RUN complete — nothing written to Supabase.")
+                return
 
-    upsert_donations(rows)
+        if args.clear:
+            clear_table("donations")
+
+        upsert_donations(rows)
+
+    # ── Party Returns ──
+    if run_parties:
+        sync_party_returns(zip_bytes, clear=args.clear)
+
+    # ── MP Returns ──
+    if run_mps:
+        sync_mp_returns(zip_bytes, clear=args.clear)
+
+    # ── Third Party Returns ──
+    if run_thirds:
+        sync_third_party_returns(zip_bytes, clear=args.clear)
+
     print("\n✅ AEC sync complete.")
+
+
+def parse_numeric(val):
+    """Parse a dollar value string to float."""
+    if not val:
+        return 0.0
+    try:
+        return float(re.sub(r"[^0-9.]", "", val))
+    except ValueError:
+        return 0.0
+
+
+def get_csv_from_zip(zip_bytes, *targets):
+    """
+    Extract a specific CSV from the ZIP by trying target filenames in order.
+    Returns (csv_text, filename) or (None, None).
+    """
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+        names = zf.namelist()
+        for target in targets:
+            if target in names:
+                with zf.open(target) as f:
+                    return f.read().decode("utf-8-sig", errors="replace"), target
+        # Partial match fallback
+        for target in targets:
+            for name in names:
+                if target.lower() in name.lower():
+                    with zf.open(name) as f:
+                        return f.read().decode("utf-8-sig", errors="replace"), name
+    return None, None
+
+
+def upsert_table(table, rows, batch_size=500):
+    """Generic batch upsert to any Supabase table."""
+    if not rows:
+        print(f"  No rows to upsert for {table}.")
+        return 0
+    total = 0
+    for i in range(0, len(rows), batch_size):
+        batch = rows[i:i+batch_size]
+        resp = requests.post(
+            f"{SUPABASE_URL}/rest/v1/{table}",
+            headers=SB_HEADERS,
+            json=batch,
+            timeout=60,
+        )
+        if resp.status_code not in (200, 201):
+            print(f"  ⚠ {table} batch {i//batch_size+1} failed: {resp.status_code} {resp.text[:200]}")
+        else:
+            total += len(batch)
+    print(f"  ✅ {total} rows → {table}")
+    return total
+
+
+def clear_table(table):
+    """Delete all rows from a Supabase table."""
+    requests.delete(
+        f"{SUPABASE_URL}/rest/v1/{table}",
+        headers={**SB_HEADERS, "Prefer": "return=minimal"},
+        params={"id": "gte.0"},
+        timeout=30,
+    )
+    print(f"  Cleared {table}")
+
+
+# ── Party Returns ─────────────────────────────────────────────────────────────
+def sync_party_returns(zip_bytes, clear=False):
+    """
+    Parse Party Returns.csv — annual financial summary per party.
+    Columns: Financial Year, Party Name, Total Receipts, Total Payments,
+             Opening Balance, Closing Balance
+    """
+    print("\n── Party Returns ──")
+    csv_text, fname = get_csv_from_zip(zip_bytes, "Party Returns.csv", "AnnualPoliticalParty.csv")
+    if not csv_text:
+        print("  ⚠ Party Returns CSV not found in ZIP")
+        return
+
+    reader = csv.DictReader(io.StringIO(csv_text))
+    headers = reader.fieldnames or []
+    print(f"  Headers: {headers}")
+
+    def col(row, *cands):
+        for c in cands:
+            for h in headers:
+                if c.lower() in h.lower():
+                    v = row.get(h, "").strip()
+                    if v: return v
+        return ""
+
+    rows = []
+    for r in reader:
+        party_raw = col(r, "Party Name", "Name", "Party")
+        year      = col(r, "Financial Year", "Year")
+        receipts  = parse_numeric(col(r, "Total Receipts", "Receipts", "Total Income"))
+        payments  = parse_numeric(col(r, "Total Payments", "Payments", "Total Expenditure", "Total Expenses"))
+        opening   = parse_numeric(col(r, "Opening Balance", "Opening"))
+        closing   = parse_numeric(col(r, "Closing Balance", "Closing"))
+
+        if not party_raw or not year:
+            continue
+
+        rows.append({
+            "party":           normalise_party(party_raw),
+            "party_raw":       party_raw[:200],
+            "financial_year":  year,
+            "total_receipts":  receipts,
+            "total_payments":  payments,
+            "surplus":         receipts - payments,
+            "opening_balance": opening,
+            "closing_balance": closing,
+        })
+
+    print(f"  Parsed {len(rows)} party return records")
+    if clear:
+        clear_table("party_returns")
+    upsert_table("party_returns", rows)
+
+
+# ── MP Returns ────────────────────────────────────────────────────────────────
+def sync_mp_returns(zip_bytes, clear=False):
+    """
+    Parse MemberOfParliamentReturns.csv — individual MP financial disclosures.
+    Columns: Financial Year, Name, Party, Chamber, Total Receipts, Total Debts, etc.
+    """
+    print("\n── MP Returns ──")
+    csv_text, fname = get_csv_from_zip(zip_bytes,
+        "MemberOfParliamentReturns.csv",
+        "Member Of Parliament Returns.csv",
+        "MemberOfParliament.csv")
+    if not csv_text:
+        print("  ⚠ MP Returns CSV not found in ZIP")
+        return
+
+    reader = csv.DictReader(io.StringIO(csv_text))
+    headers = reader.fieldnames or []
+    print(f"  Headers: {headers}")
+
+    def col(row, *cands):
+        for c in cands:
+            for h in headers:
+                if c.lower() in h.lower():
+                    v = row.get(h, "").strip()
+                    if v: return v
+        return ""
+
+    rows = []
+    for r in reader:
+        name      = col(r, "Name", "Member Name", "Senator Name", "MP Name")
+        party_raw = col(r, "Party", "Political Party", "Party Name")
+        chamber   = col(r, "Chamber", "House", "Type")
+        year      = col(r, "Financial Year", "Year")
+        receipts  = parse_numeric(col(r, "Total Receipts", "Receipts", "Total Income", "Total Value of Receipts"))
+        debts     = parse_numeric(col(r, "Total Debts", "Debts", "Total Value of Debts"))
+        benefits  = parse_numeric(col(r, "Total Benefits", "Benefits", "Total Value of Benefits"))
+
+        if not name or not year:
+            continue
+
+        rows.append({
+            "mp_name":        name[:200],
+            "party":          normalise_party(party_raw),
+            "party_raw":      party_raw[:200],
+            "chamber":        chamber[:50] if chamber else None,
+            "financial_year": year,
+            "total_receipts": receipts,
+            "total_debts":    debts,
+            "total_benefits": benefits,
+        })
+
+    print(f"  Parsed {len(rows)} MP return records")
+    if clear:
+        clear_table("mp_returns")
+    upsert_table("mp_returns", rows)
+
+
+# ── Significant Third Party Returns ──────────────────────────────────────────
+def sync_third_party_returns(zip_bytes, clear=False):
+    """
+    Parse Significant Third Party Returns.csv — external campaign spenders.
+    These are organisations that spend on political campaigning without
+    being a registered party (unions, industry groups, advocacy orgs).
+    """
+    print("\n── Third Party Returns ──")
+    csv_text, fname = get_csv_from_zip(zip_bytes,
+        "Significant Third Party Returns.csv",
+        "SignificantThirdPartyReturns.csv",
+        "Third Party Returns.csv")
+    if not csv_text:
+        print("  ⚠ Third Party Returns CSV not found in ZIP")
+        return
+
+    reader = csv.DictReader(io.StringIO(csv_text))
+    headers = reader.fieldnames or []
+    print(f"  Headers: {headers}")
+
+    def col(row, *cands):
+        for c in cands:
+            for h in headers:
+                if c.lower() in h.lower():
+                    v = row.get(h, "").strip()
+                    if v: return v
+        return ""
+
+    rows = []
+    for r in reader:
+        name      = col(r, "Name", "Entity Name", "Organisation Name", "Third Party Name")
+        year      = col(r, "Financial Year", "Year")
+        receipts  = parse_numeric(col(r, "Total Receipts", "Receipts", "Total Income"))
+        payments  = parse_numeric(col(r, "Total Payments", "Payments", "Total Expenditure"))
+        electoral = parse_numeric(col(r, "Electoral Expenditure", "Electoral", "Campaign Expenditure"))
+
+        if not name or not year:
+            continue
+
+        rows.append({
+            "entity_name":            name[:200],
+            "financial_year":         year,
+            "total_receipts":         receipts,
+            "total_payments":         payments,
+            "electoral_expenditure":  electoral,
+        })
+
+    print(f"  Parsed {len(rows)} third party return records")
+    if clear:
+        clear_table("third_party_returns")
+    upsert_table("third_party_returns", rows)
 
 
 if __name__ == "__main__":

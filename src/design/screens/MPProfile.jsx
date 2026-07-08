@@ -364,6 +364,61 @@ function PolicyRow({ record, mpId, last }) {
   );
 }
 
+
+// ── MP Financial Disclosure ───────────────────────────────────────────────────
+export function MPFinancialDisclosure({ mpName, supabase }) {
+  const [returns, setReturns] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!supabase || !mpName) return;
+    setLoading(true);
+    const surname = mpName.split(" ").slice(-1)[0];
+    supabase.from("mp_returns")
+      .select("financial_year,total_receipts,total_debts,total_benefits,mp_name")
+      .ilike("mp_name", `%${surname}%`)
+      .order("financial_year", { ascending: false })
+      .limit(10)
+      .then(({ data }) => {
+        const firstName = mpName.split(" ")[0].toLowerCase();
+        const filtered = (data || []).filter(r =>
+          r.mp_name?.toLowerCase().includes(firstName)
+        );
+        setReturns(filtered.slice(0, 5));
+        setLoading(false);
+      });
+  }, [mpName, supabase]);
+
+  if (loading || !returns.length) return null;
+
+  const latest = returns[0];
+  const fmtVal = n => n > 0 ? `$${Number(n).toLocaleString("en-AU")}` : "Nil";
+
+  return (
+    <Card style={{ marginTop: 12 }}>
+      <div style={{ fontSize:10, fontWeight:700, color:C.faint, textTransform:"uppercase", letterSpacing:"0.09em", marginBottom:10 }}>
+        AEC financial disclosure · {latest.financial_year}
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:8, marginBottom:8 }}>
+        {[
+          { label:"Receipts",  value:latest.total_receipts, color:C.ink },
+          { label:"Debts",     value:latest.total_debts,    color:latest.total_debts > 0 ? C.amber : C.faint },
+          { label:"Benefits",  value:latest.total_benefits, color:C.ink },
+        ].map(s => (
+          <div key={s.label} style={{ background:C.surface, borderRadius:RADIUS.control, padding:"10px 12px" }}>
+            <div style={{ fontSize:10, color:C.faint, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>{s.label}</div>
+            <div style={{ fontSize:12, fontWeight:700, color:s.color, fontVariantNumeric:"tabular-nums" }}>{fmtVal(s.value || 0)}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize:10, color:C.faint, lineHeight:1.5 }}>
+        AEC-disclosed returns only. Figures are self-reported. 
+        <a href="https://transparency.aec.gov.au" target="_blank" rel="noreferrer" style={{ color:C.accentText }}>AEC Transparency Register ↗</a>
+      </div>
+    </Card>
+  );
+}
+
 // ── Said vs Did ───────────────────────────────────────────────────────────────
 
 export function SaidVsDid({ said, did, consistent, source }) {
