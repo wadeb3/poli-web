@@ -121,33 +121,66 @@ function PartyFinancials({ partyCode, supabase }) {
   useEffect(() => {
     if (!supabase || !partyCode) return;
     setLoading(true);
+    // Fetch all rows — multiple per year (state branches), aggregate client-side
     supabase.from("party_returns")
       .select("financial_year,total_receipts,total_payments,surplus")
       .eq("party", partyCode)
-      .order("financial_year", { ascending: true })
-      .limit(10)
-      .then(({ data }) => { setReturns(data || []); setLoading(false); });
+      .limit(500)
+      .then(({ data }) => {
+        if (!data?.length) { setLoading(false); return; }
+
+        // Normalise year format: "1998-1999" → "1998-99", "2024-25" stays
+        const normYear = y => {
+          if (!y) return y;
+          const parts = y.split("-");
+          if (parts.length === 2 && parts[1].length === 4) {
+            return `${parts[0]}-${parts[1].slice(2)}`;
+          }
+          return y;
+        };
+
+        // Aggregate by normalised year
+        const agg = {};
+        data.forEach(r => {
+          const yr = normYear(r.financial_year);
+          if (!agg[yr]) agg[yr] = { financial_year: yr, total_receipts: 0, total_payments: 0 };
+          agg[yr].total_receipts += r.total_receipts || 0;
+          agg[yr].total_payments += r.total_payments || 0;
+        });
+
+        // Sort chronologically, take 6 most recent
+        const sorted = Object.values(agg)
+          .sort((a, b) => {
+            // Extract start year for reliable numeric sort
+            const ya = parseInt(a.financial_year.split("-")[0]);
+            const yb = parseInt(b.financial_year.split("-")[0]);
+            return ya - yb;
+          });
+
+        const recent = sorted.slice(-6).map(r => ({
+          ...r,
+          surplus: r.total_receipts - r.total_payments,
+        }));
+
+        setReturns(recent);
+        setLoading(false);
+      });
   }, [partyCode, supabase]);
 
   if (loading) return <div style={{ fontSize: 11, color: C.faint, padding: "8px 0" }}>Loading financials…</div>;
   if (!returns.length) return null;
 
-  // Show most recent 6 years, ascending left to right
-  const chartData = returns.slice(-6);
+  // returns is already aggregated, sorted, and sliced to 6 most recent
+  const chartData = returns;
   const latest = chartData[chartData.length - 1];
   const maxVal = Math.max(...chartData.flatMap(r => [r.total_receipts || 0, r.total_payments || 0])) || 1;
   const chartH = 80;
 
-  // Format year label: "2024-25" → "24-25"
+  // Format year label: "2024-25" → "24-25", "1998-99" → "98-99"
   const fmtYear = y => {
     if (!y) return "";
     const parts = y.split("-");
-    if (parts.length === 2) {
-      // Handle both "2024-25" and "2024-2025"
-      const end = parts[1].length === 4 ? parts[1].slice(2) : parts[1];
-      return `${parts[0].slice(2)}-${end}`;
-    }
-    return y.slice(-5);
+    return parts.length === 2 ? `${parts[0].slice(-2)}-${parts[1]}` : y;
   };
 
   return (
