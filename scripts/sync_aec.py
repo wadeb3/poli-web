@@ -79,7 +79,38 @@ PARTY_MAP = {
 def normalise_party(raw):
     if not raw:
         return "OTH"
-    return PARTY_MAP.get(raw.strip().lower(), "OTH")
+    key = raw.strip().lower()
+
+    # Exact matches first
+    exact = PARTY_MAP.get(key)
+    if exact:
+        return exact
+
+    # Partial / contains matching for state branches and variations
+    if "labor" in key or "labour" in key:
+        return "ALP"
+    if "liberal national" in key or "lnp" in key:
+        return "LNP"
+    if "liberal" in key:
+        return "LIB"
+    if "national party" in key or "nationals" in key or "the nationals" in key:
+        return "NAT"
+    if "greens" in key or "green party" in key:
+        return "Greens"
+    if "one nation" in key or "pauline hanson" in key:
+        return "ONP"
+    if "independent" in key:
+        return "IND"
+    if "united australia" in key or "uap" in key:
+        return "OTH"
+    if "lambie" in key or "jln" in key:
+        return "OTH"
+    if "katter" in key or "kap" in key:
+        return "OTH"
+    if "centre alliance" in key or "nick xenophon" in key:
+        return "OTH"
+
+    return "OTH"
 
 
 # ── Donor type classification ─────────────────────────────────────────────────
@@ -127,29 +158,61 @@ def download_aec_zip():
 def find_donor_csv(zip_bytes):
     """
     Find the annual donor donations CSV inside the AEC ZIP.
-    AEC zips contain multiple CSVs — we want the one about
-    donations made (not receipts).
+
+    The AEC ZIP (AllAnnualData) contains multiple CSVs:
+      - AnnualDonor.csv             — donor returns (who donated)
+      - AnnualDonorDonationsMade.csv — donations made details (to whom, how much)
+      - AnnualDetailedReceipts.csv   — party receipts
+      - AnnualPoliticalParty.csv     — party returns
+      - etc.
+
+    We want AnnualDonorDonationsMade — the "Donations Made Details" tab
+    visible on the AEC website, which has:
+      Financial Year, DonorName, DonationMadeTo, Date, Amount
     """
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
         names = zf.namelist()
-        print(f"  ZIP contains: {names}")
-        # Look for the donations made CSV — AEC naming varies by year
-        target = None
+        print(f"  ZIP contains {len(names)} files:")
+        for n in names:
+            print(f"    {n}")
+
+        # Priority order — exact filename first
+        targets = [
+            "Donations Made.csv",
+            "AnnualDonorDonationsMade.csv",
+            "AnnualDonor_DonationsMade.csv",
+            "DonationsMade.csv",
+        ]
+        # Try exact names first
+        for t in targets:
+            if t in names:
+                print(f"  ✓ Using: {t}")
+                with zf.open(t) as f:
+                    return f.read().decode("utf-8-sig", errors="replace"), t
+
+        # Fall back: any CSV with "donations made" or "made" in the name
         for name in names:
             n = name.lower()
-            if ("donor" in n or "donation" in n) and n.endswith(".csv"):
-                target = name
-                break
-        if not target:
-            # Fall back to first CSV
-            csvs = [n for n in names if n.endswith(".csv")]
-            if csvs:
-                target = csvs[0]
-        if not target:
-            raise Exception("No CSV found in AEC ZIP")
-        print(f"  Using CSV: {target}")
-        with zf.open(target) as f:
-            return f.read().decode("utf-8-sig", errors="replace")
+            if "donations made" in n and n.endswith(".csv"):
+                print(f"  ✓ Using (fallback match): {name}")
+                with zf.open(name) as f:
+                    return f.read().decode("utf-8-sig", errors="replace"), name
+
+        # Last resort: any donor CSV
+        for name in names:
+            n = name.lower()
+            if "donor" in n and n.endswith(".csv"):
+                print(f"  ⚠ Using (last resort): {name}")
+                with zf.open(name) as f:
+                    return f.read().decode("utf-8-sig", errors="replace"), name
+
+        # List all CSVs so the user can identify the right one
+        csvs = [n for n in names if n.lower().endswith(".csv")]
+        raise Exception(
+            f"Could not find donor donations CSV in ZIP.\n"
+            f"Available CSVs: {csvs}\n"
+            f"Re-run with --list to see all files."
+        )
 
 
 def parse_donations_csv(csv_text, filter_year=None):
@@ -171,9 +234,16 @@ def parse_donations_csv(csv_text, filter_year=None):
 
     rows = []
     for r in reader:
-        donor  = col(r, "DonorName", "Donor Name", "Name")
-        to     = col(r, "DonationMadeTo", "Donation Made To", "Recipient", "Party")
-        amt    = col(r, "Amount", "Total Amount", "Value")
+        # Actual AEC "Donations Made.csv" headers:
+        #   Financial Year | Name | Donation Received From | Date | Value
+        # Where:
+        #   Name                  = the donor making the donation
+        #   Donation Received From = the party/entity receiving it
+        #   Value                 = dollar amount
+        donor  = col(r, "Name", "DonorName", "Donor Name", "Donor")
+        to     = col(r, "Donation Received From", "DonationMadeTo", "Donation Made To",
+                        "Recipient", "Received From", "Party")
+        amt    = col(r, "Value", "Amount", "Total Amount")
         date   = col(r, "Date", "DonationDate", "Donation Date")
         year   = col(r, "Financial Year", "FinancialYear", "Year")
 
@@ -251,30 +321,57 @@ def main():
         sys.exit(1)
 
     parser = argparse.ArgumentParser(description="Sync AEC annual donation data to Supabase.")
-    parser.add_argument("--year",  help="Only import a specific year e.g. 2024-25")
-    parser.add_argument("--clear", action="store_true", help="Clear existing donations first")
+    parser.add_argument("--year",     help="Only import a specific year e.g. 2024-25")
+    parser.add_argument("--clear",    action="store_true", help="Clear existing donations first")
+    parser.add_argument("--dry-run",  action="store_true", help="Parse and print rows without writing to Supabase")
+    parser.add_argument("--list",     action="store_true", help="List ZIP contents and exit")
     args = parser.parse_args()
 
     print("\n═══ AEC Annual Donor Sync ═══")
 
+    zip_bytes = download_aec_zip()
+
+    if args.list:
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+            print("\nZIP contents:")
+            for name in zf.namelist():
+                info = zf.getinfo(name)
+                print(f"  {name:50s} {info.file_size:>10,} bytes")
+        return
+
+    csv_text, csv_name = find_donor_csv(zip_bytes)
+    rows = parse_donations_csv(csv_text, filter_year=args.year)
+
+    print(f"\n  Parsed {len(rows)} donation records from {csv_name}" +
+          (f" for {args.year}" if args.year else ""))
+
+    if rows:
+        years = sorted(set(r["financial_year"] for r in rows))
+        total = sum(r["amount"] for r in rows)
+        parties = {}
+        for r in rows:
+            parties[r["party"]] = parties.get(r["party"], 0) + r["amount"]
+        print(f"  Years: {', '.join(years)}")
+        print(f"  Total disclosed: ${total:,.0f}")
+        print(f"  By party:")
+        for party, amt in sorted(parties.items(), key=lambda x: -x[1]):
+            print(f"    {party:8s}  ${amt:>12,.0f}")
+
+        if args.dry_run:
+            print(f"\n  DRY RUN — first 5 rows:")
+            for r in rows[:5]:
+                print(f"    {r['donor_name'][:40]:40s} → {r['party']:6s}  ${r['amount']:>10,.0f}  {r['financial_year']}")
+            print(f"\n  DRY RUN complete — {len(rows)} rows parsed, nothing written to Supabase.")
+            return
+
     if args.clear:
-        print("  Clearing existing donations…")
+        print("\n  Clearing existing donations…")
         requests.delete(
             f"{SUPABASE_URL}/rest/v1/donations",
             headers={**SB_HEADERS, "Prefer": "return=minimal"},
             params={"id": "gte.0"},
             timeout=30,
         )
-
-    zip_bytes  = download_aec_zip()
-    csv_text   = find_donor_csv(zip_bytes)
-    rows       = parse_donations_csv(csv_text, filter_year=args.year)
-
-    print(f"  Parsed {len(rows)} donation records" + (f" for {args.year}" if args.year else ""))
-    if rows:
-        years = sorted(set(r["financial_year"] for r in rows))
-        print(f"  Years covered: {', '.join(years)}")
-        print(f"  Total value: ${sum(r['amount'] for r in rows):,.0f}")
 
     upsert_donations(rows)
     print("\n✅ AEC sync complete.")
