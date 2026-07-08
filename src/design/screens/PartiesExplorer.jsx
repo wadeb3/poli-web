@@ -132,9 +132,23 @@ function PartyFinancials({ partyCode, supabase }) {
   if (loading) return <div style={{ fontSize: 11, color: C.faint, padding: "8px 0" }}>Loading financials…</div>;
   if (!returns.length) return null;
 
-  const latest = returns[returns.length - 1];
-  const maxVal = Math.max(...returns.flatMap(r => [r.total_receipts || 0, r.total_payments || 0])) || 1;
+  // Show most recent 6 years, ascending left to right
+  const chartData = returns.slice(-6);
+  const latest = chartData[chartData.length - 1];
+  const maxVal = Math.max(...chartData.flatMap(r => [r.total_receipts || 0, r.total_payments || 0])) || 1;
   const chartH = 80;
+
+  // Format year label: "2024-25" → "24-25"
+  const fmtYear = y => {
+    if (!y) return "";
+    const parts = y.split("-");
+    if (parts.length === 2) {
+      // Handle both "2024-25" and "2024-2025"
+      const end = parts[1].length === 4 ? parts[1].slice(2) : parts[1];
+      return `${parts[0].slice(2)}-${end}`;
+    }
+    return y.slice(-5);
+  };
 
   return (
     <div style={{ marginBottom: 20 }}>
@@ -159,40 +173,43 @@ function PartyFinancials({ partyCode, supabase }) {
       </div>
 
       {/* Grouped column chart */}
-      {returns.length > 1 && (
+      {chartData.length > 1 && (
         <div>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: chartH, borderBottom: `1px solid ${C.border}`, paddingBottom: 0 }}>
-            {returns.map(r => {
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: chartH, borderBottom: `1px solid ${C.border}` }}>
+            {chartData.map(r => {
               const incPct  = ((r.total_receipts || 0) / maxVal) * 100;
               const expPct  = ((r.total_payments || 0) / maxVal) * 100;
               const isElec  = ELECTION_YEARS.has(r.financial_year);
+              const isLatest = r.financial_year === latest.financial_year;
               return (
-                <div key={r.financial_year} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 0, position: "relative" }}>
-                  {/* Election year star */}
+                <div key={r.financial_year} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}>
                   {isElec && (
                     <div title="Election year" style={{ position: "absolute", top: -14, fontSize: 9, color: C.amber, fontWeight: 700 }}>✦</div>
                   )}
-                  {/* Column pair */}
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: 1, width: "100%", height: chartH }}>
-                    <div title={`Income: ${fmtAmount(r.total_receipts || 0)}`}
-                      style={{ flex: 1, height: `${incPct}%`, background: C.green, borderRadius: "2px 2px 0 0", opacity: 0.85, minHeight: 2 }} />
-                    <div title={`Expenditure: ${fmtAmount(r.total_payments || 0)}`}
-                      style={{ flex: 1, height: `${expPct}%`, background: C.red, borderRadius: "2px 2px 0 0", opacity: 0.75, minHeight: 2 }} />
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 2, width: "100%", height: chartH }}>
+                    <div
+                      title={`Income ${r.financial_year}: ${fmtAmount(r.total_receipts || 0)}`}
+                      style={{ flex: 1, height: `${incPct}%`, background: C.green, borderRadius: "2px 2px 0 0", minHeight: 2, opacity: isLatest ? 1 : 0.6 }}
+                    />
+                    <div
+                      title={`Expenditure ${r.financial_year}: ${fmtAmount(r.total_payments || 0)}`}
+                      style={{ flex: 1, height: `${expPct}%`, background: C.red, borderRadius: "2px 2px 0 0", minHeight: 2, opacity: isLatest ? 1 : 0.6 }}
+                    />
                   </div>
                 </div>
               );
             })}
           </div>
           {/* X-axis labels */}
-          <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-            {returns.map(r => (
-              <div key={r.financial_year} style={{ flex: 1, fontSize: 9, color: C.faint, textAlign: "center", fontVariantNumeric: "tabular-nums", overflow: "hidden" }}>
-                {r.financial_year.slice(2, 5)}{r.financial_year.slice(-2)}
+          <div style={{ display: "flex", gap: 8, marginTop: 5 }}>
+            {chartData.map(r => (
+              <div key={r.financial_year} style={{ flex: 1, fontSize: 9, color: r.financial_year === latest.financial_year ? C.mid : C.faint, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
+                {fmtYear(r.financial_year)}
               </div>
             ))}
           </div>
           {/* Legend */}
-          <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
+          <div style={{ display: "flex", gap: 14, marginTop: 8, alignItems: "center" }}>
             {[{ color: C.green, label: "Income" }, { color: C.red, label: "Expenditure" }].map(l => (
               <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <div style={{ width: 8, height: 8, borderRadius: 2, background: l.color }} />
