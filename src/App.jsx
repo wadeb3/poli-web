@@ -2741,6 +2741,7 @@ function PoliAppInner() {
 
   // ── Postcode — persisted across Home and My Representatives ──
   const [donationParty, setDonationParty] = useState(null);
+  const [savedPostcode, setSavedPostcode] = useState("");
   const [mode, toggleMode] = useTheme();
 
   // ── Navigation ──
