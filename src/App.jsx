@@ -15,6 +15,7 @@ import { Sidebar, BottomBar, SubNav, PageHeader } from "./design/Nav.jsx";
 import { CommandPalette, usePaletteShortcut } from "./design/CommandPalette.jsx";
 
 // ── v6 screens ────────────────────────────────────────────────────────────────
+import { HomeFront } from "./design/screens/HomeFront.jsx";
 import { usePolling } from "./lib/usePolling.js";
 import { PartiesExplorer } from "./design/screens/PartiesExplorer.jsx";
 import { DonationsExplorer } from "./design/screens/DonationsExplorer.jsx";
