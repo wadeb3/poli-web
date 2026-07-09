@@ -42,7 +42,6 @@ export function DonationsExplorer({ supabase, initialParty = null }) {
   const [donorType, setDonorType]   = useState(null);
   const [query, setQuery]           = useState("");
   const [sortBy, setSortBy]         = useState("year");
-  const [expanded, setExpanded]     = useState(null);
 
   useEffect(() => {
     if (!supabase) return;
@@ -149,7 +148,7 @@ export function DonationsExplorer({ supabase, initialParty = null }) {
       <div style={{ flex: 1, background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, overflow: "hidden", display: "flex", flexDirection: "column" }}>
 
         {/* Table header */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(120px,15%) minmax(80px,10%) minmax(70px,9%) minmax(70px,9%)", gap: 0, padding: "8px 14px", borderBottom: `1px solid ${C.border}`, background: C.surface, flexShrink: 0 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 140px 100px 80px 100px", padding: "8px 14px", borderBottom: `1px solid ${C.border}`, background: C.surface, flexShrink: 0 }}>
           {["Donor", "Recipient", "Type", "Year", "Amount"].map((h, i) => (
             <div key={h} style={{ fontSize: 10, fontWeight: 700, color: C.faint, textTransform: "uppercase", letterSpacing: "0.08em", textAlign: i === 4 ? "right" : "left" }}>{h}</div>
           ))}
@@ -167,40 +166,49 @@ export function DonationsExplorer({ supabase, initialParty = null }) {
             </div>
           ) : filtered.length === 0 ? (
             <div style={{ padding: 24, textAlign: "center", fontSize: 12, color: C.faint }}>No donations match your filters.</div>
-          ) : filtered.map((d, i) => (
-            <div key={d.id || i}
-              onClick={() => setExpanded(expanded === i ? null : i)}
-              style={{ display: "grid", gridTemplateColumns: "1fr minmax(120px,15%) minmax(80px,10%) minmax(70px,9%) minmax(70px,9%)", gap: 0, padding: "8px 14px", borderBottom: `1px solid ${C.border}`, cursor: "pointer", background: expanded === i ? C.accentSoft : i % 2 === 0 ? C.white : C.paper, alignItems: "center" }}
-              onMouseEnter={e => { if (expanded !== i) e.currentTarget.style.background = C.surface; }}
-              onMouseLeave={e => { e.currentTarget.style.background = expanded === i ? C.accentSoft : i % 2 === 0 ? C.white : C.paper; }}>
+          ) : (() => {
+            const maxAmt = filtered[0]?.amount || 1;
+            return filtered.map((d, i) => (
+              <div key={d.id || i}
+                style={{ display: "grid", gridTemplateColumns: "1fr 140px 100px 80px 100px", padding: "8px 14px", borderBottom: `1px solid ${C.border}`, background: i % 2 === 0 ? C.white : C.paper, alignItems: "center" }}
+                onMouseEnter={e => e.currentTarget.style.background = C.surface}
+                onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? C.white : C.paper}>
 
-              {/* Donor name */}
-              <div style={{ fontSize: 12, fontWeight: 500, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 8 }}>
-                {d.donor_name}
-              </div>
+                {/* Donor name + proportional bar */}
+                <div style={{ paddingRight: 12, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 500, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {d.donor_name}
+                  </div>
+                  <div style={{ marginTop: 4, height: 3, borderRadius: 99, background: C.border, overflow: "hidden", maxWidth: 220 }}>
+                    <div style={{ height: "100%", width: `${((d.amount || 0) / maxAmt) * 100}%`, background: C.accent, borderRadius: 99 }} />
+                  </div>
+                </div>
 
-              {/* Party */}
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ width: 8, height: 8, borderRadius: 2, background: PARTY_COLORS[d.party] || "#ccc", flexShrink: 0 }} />
-                <span style={{ fontSize: 11, color: C.mid }}>{PARTY_LABELS[d.party] || d.party_raw?.slice(0, 20) || "Unknown"}</span>
-              </div>
+                {/* Recipient party */}
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: 2, background: PARTY_COLORS[d.party] || "#ccc", flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, color: C.mid, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {PARTY_LABELS[d.party] || d.party_raw?.slice(0, 20) || "Unknown"}
+                  </span>
+                </div>
 
-              {/* Donor type */}
-              <div style={{ fontSize: 11, color: C.faint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {d.donor_type || "—"}
-              </div>
+                {/* Donor type */}
+                <div style={{ fontSize: 11, color: C.faint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {d.donor_type || "—"}
+                </div>
 
-              {/* Year */}
-              <div style={{ fontSize: 11, color: C.faint, fontVariantNumeric: "tabular-nums" }}>
-                {d.financial_year || "—"}
-              </div>
+                {/* Year */}
+                <div style={{ fontSize: 11, color: C.faint, fontVariantNumeric: "tabular-nums" }}>
+                  {d.financial_year || "—"}
+                </div>
 
-              {/* Amount */}
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.ink, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-                {fmtAmount(d.amount)}
+                {/* Amount */}
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.ink, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                  {fmtAmount(d.amount)}
+                </div>
               </div>
-            </div>
-          ))}
+            ));
+          })()}
         </div>
       </div>
 

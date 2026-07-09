@@ -92,9 +92,9 @@ export function ThirdPartyExplorer({ supabase }) {
 
       {/* Table */}
       <div style={{ flex: 1, background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 120px 120px 120px", padding: "8px 14px", borderBottom: `1px solid ${C.border}`, background: C.surface, flexShrink: 0 }}>
-          {["Organisation", "Electoral spend", "Total receipts", "Total payments"].map((h, i) => (
-            <div key={h} style={{ fontSize: 10, fontWeight: 700, color: C.faint, textTransform: "uppercase", letterSpacing: "0.08em", textAlign: i > 0 ? "right" : "left" }}>{h}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 120px 120px 120px", padding: "8px 14px", borderBottom: `1px solid ${C.border}`, background: C.surface, flexShrink: 0 }}>
+          {["Organisation", "Year", "Electoral spend", "Total receipts", "Total payments"].map((h, i) => (
+            <div key={h} style={{ fontSize: 10, fontWeight: 700, color: C.faint, textTransform: "uppercase", letterSpacing: "0.08em", textAlign: i > 1 ? "right" : "left" }}>{h}</div>
           ))}
         </div>
 
@@ -107,23 +107,36 @@ export function ThirdPartyExplorer({ supabase }) {
             </div>
           ) : filtered.map((r, i) => (
             <div key={`${r.entity_name}-${r.financial_year}`}
-              style={{ display: "grid", gridTemplateColumns: "1fr 120px 120px 120px", padding: "8px 14px", borderBottom: `1px solid ${C.border}`, background: i % 2 === 0 ? C.white : C.paper, alignItems: "center" }}>
-              <div>
+              style={{ display: "grid", gridTemplateColumns: "1fr 80px 120px 120px 120px", padding: "8px 14px", borderBottom: `1px solid ${C.border}`, background: i % 2 === 0 ? C.white : C.paper, alignItems: "center" }}
+              onMouseEnter={e => e.currentTarget.style.background = C.surface}
+              onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? C.white : C.paper}>
+
+              {/* Name + proportional bar */}
+              <div style={{ paddingRight: 12, minWidth: 0 }}>
                 <div style={{ fontSize: 12, fontWeight: 500, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.entity_name}</div>
-                {/* Electoral spend bar */}
                 {r.electoral_expenditure > 0 && (
-                  <div style={{ marginTop: 3, height: 3, borderRadius: 99, background: C.border, overflow: "hidden", maxWidth: 200 }}>
+                  <div style={{ marginTop: 4, height: 3, borderRadius: 99, background: C.border, overflow: "hidden", maxWidth: 220 }}>
                     <div style={{ height: "100%", width: `${((r.electoral_expenditure || 0) / maxElectoral) * 100}%`, background: C.accent, borderRadius: 99 }} />
                   </div>
                 )}
-                <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>{r.financial_year}</div>
               </div>
+
+              {/* Year */}
+              <div style={{ fontSize: 11, color: C.faint, fontVariantNumeric: "tabular-nums" }}>
+                {r.financial_year || "—"}
+              </div>
+
+              {/* Electoral spend */}
               <div style={{ fontSize: 12, fontWeight: 700, color: r.electoral_expenditure > 0 ? C.ink : C.faint, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
                 {r.electoral_expenditure > 0 ? fmtAmount(r.electoral_expenditure) : "—"}
               </div>
+
+              {/* Total receipts */}
               <div style={{ fontSize: 11, color: C.mid, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
                 {r.total_receipts > 0 ? fmtAmount(r.total_receipts) : "—"}
               </div>
+
+              {/* Total payments */}
               <div style={{ fontSize: 11, color: C.mid, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
                 {r.total_payments > 0 ? fmtAmount(r.total_payments) : "—"}
               </div>
