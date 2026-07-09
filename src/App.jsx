@@ -10,7 +10,7 @@ import { supabase } from "./lib/supabaseClient.js";
 // ── v6 design system ──────────────────────────────────────────────────────────
 import { C as Cv6, LAYOUT, FONT } from "./design/tokens.js";
 import { useTheme, ThemeToggle } from "./design/theme.jsx";
-import { Logo } from "./design/Logo.jsx";
+import { Logo, LogoIcon } from "./design/Logo.jsx";
 import { Sidebar, BottomBar, SubNav, PageHeader } from "./design/Nav.jsx";
 import { CommandPalette, usePaletteShortcut } from "./design/CommandPalette.jsx";
 
@@ -2598,13 +2598,11 @@ function SplashScreen() {
         @keyframes splashOut { from { opacity:1; } to { opacity:0; visibility:hidden; } }
         @keyframes dotPulse { 0%,80%,100% { transform:scale(0.6); opacity:0.35; } 40% { transform:scale(1); opacity:1; } }
       `}</style>
-      <div style={{ fontFamily:"'Manrope',Helvetica,Arial,sans-serif", fontSize:52, fontWeight:800, letterSpacing:"-0.01em", lineHeight:1, color:"#17171a", display:"inline-flex", alignItems:"baseline", marginBottom:28 }}>
-        Pol
-        <span style={{ position:"relative", display:"inline-block" }}>
-          {"ı"}
-          <span style={{ position:"absolute", top:"0.228em", left:"50%", transform:"translateX(-50%)", width:"0.24em", height:"0.24em", borderRadius:"50%", background:"#7C3AED", display:"block" }} />
-        </span>
-      </div>
+      <svg width="138" height="90" viewBox="0 0 184 120" xmlns="http://www.w3.org/2000/svg" style={{ display:"block", marginBottom:24 }}>
+        <defs><style>{"@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@800&display=swap');"}</style></defs>
+        <text x="6" y="86.4" fontFamily="Manrope,Helvetica,Arial,sans-serif" fontSize="96" fontWeight="800" letterSpacing="-1" fill="#17171a">Polı</text>
+        <circle cx="165.18" cy="36.40" r="11.50" fill="#7C3AED"/>
+      </svg>
       <div style={{ display:"flex", gap:7 }}>
         {[0,1,2].map(i => (
           <span key={i} style={{ width:7, height:7, borderRadius:"50%", background:"#7C3AED", display:"inline-block", animation:`dotPulse 1.1s ${i*0.15}s infinite ease-in-out` }} />
@@ -3077,7 +3075,7 @@ function PoliAppInner() {
           {/* Mobile top bar */}
           {!wide && (
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px 4px" }}>
-              <Logo size={26} />
+              <Logo height={26} />
               <ThemeToggle mode={mode} onToggle={toggleMode} />
             </div>
           )}

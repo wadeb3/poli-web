@@ -1,109 +1,112 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// POLI LOGO · v2 · updated to match brand identity system
+// POLI LOGO · v5 · Direct from designer SVG files
 //
-// Wordmark spec (from Poli Logo.dc.html):
-//   · Typeface: Manrope, weight 800
-//   · Text: "Pol" + dotless i (ı) + purple dot
-//   · Letter spacing: -0.01em
-//   · Dot: width/height 0.24em, positioned at top 0.228em from top of glyph
-//   · Dot colour light: #7C3AED  |  dark: #A855F7
+// All coordinates copied verbatim from the exported SVG files:
+//   poli-wordmark-ink.svg / poli-wordmark-white.svg
+//   poli-icon-ink.svg / poli-icon-white.svg / poli-icon-accent.svg
 //
-// Two exports:
-//   <Logo>     — full wordmark "Poli"
-//   <LogoMark> — standalone dot-i mark for collapsed sidebar / small contexts
+// Wordmark viewBox: 0 0 184 120
+//   text  x=6 y=86.4 font-size=96 font-weight=800 letter-spacing=-1
+//   dot   cx=165.18 cy=36.40 r=11.50
+//
+// Icon viewBox: 0 0 1024 1024
+//   text  x=322.9 y=596.8 font-size=245.8 letter-spacing=-18.43
+//   dot   cx=674.9 cy=468.8 r=29.4
 // ─────────────────────────────────────────────────────────────────────────────
-import { C } from "./tokens.js";
 
-// Manrope 800 — loaded once via a style tag injected into <head>
+// Load Manrope 800 once
 const FONT_URL = "https://fonts.googleapis.com/css2?family=Manrope:wght@800&display=swap";
 if (typeof document !== "undefined" && !document.querySelector(`link[href="${FONT_URL}"]`)) {
-  const link = document.createElement("link");
-  link.rel  = "stylesheet";
-  link.href = FONT_URL;
+  const link = Object.assign(document.createElement("link"), { rel: "stylesheet", href: FONT_URL });
   document.head.appendChild(link);
 }
 
-const LOGO_FONT = "'Manrope', -apple-system, Helvetica, Arial, sans-serif";
-
 /**
- * Full wordmark — "Poli" with signature purple dot on the i.
- * @param {{ size?: number, dark?: boolean }} props
- * @param size  font-size in px (default 28)
- * @param dark  use dark-mode colours (white text, lighter dot)
+ * Full "Poli" wordmark. Coordinates from poli-wordmark-ink/white.svg.
+ * @param {{ height?: number, dark?: boolean }} props
  */
-export function Logo({ size = 28, dark = false }) {
-  const color    = dark ? "#ffffff" : C.ink;
-  const dotColor = dark ? "#A855F7" : "#7C3AED";
-
-  // Dot sizing follows the brand spec: 0.24em × 0.24em, top at 0.228em
-  const dotEm   = 0.24;
-  const topEm   = 0.228;
+export function Logo({ height = 32, dark = false }) {
+  const textColor = dark ? "#FFFFFF" : "#17171A";
+  const dotColor  = dark ? "#A855F7" : "#7C3AED";
+  // viewBox is 184×120, scale height to match
+  const width = Math.round(height * (184 / 120));
 
   return (
-    <span
+    <svg
+      width={width}
+      height={height}
+      viewBox="0 0 184 120"
+      xmlns="http://www.w3.org/2000/svg"
       aria-label="Poli"
       role="img"
-      style={{
-        fontFamily: LOGO_FONT,
-        fontSize: size,
-        fontWeight: 800,
-        letterSpacing: "-0.01em",
-        lineHeight: 1,
-        color,
-        display: "inline-flex",
-        alignItems: "baseline",
-        userSelect: "none",
-      }}
+      style={{ display: "block", overflow: "visible" }}
     >
-      Pol
-      <span style={{ position: "relative", display: "inline-block" }}>
-        {/* Dotless i — no native dot */}
-        ı
-        {/* Brand dot */}
-        <span
-          aria-hidden
-          style={{
-            position: "absolute",
-            top: `${topEm}em`,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width:  `${dotEm}em`,
-            height: `${dotEm}em`,
-            borderRadius: "50%",
-            background: dotColor,
-            display: "block",
-          }}
-        />
-      </span>
-    </span>
+      <defs>
+        <style>{`@import url('${FONT_URL}');`}</style>
+      </defs>
+      <text
+        x="6"
+        y="86.4"
+        fontFamily="Manrope, Helvetica, Arial, sans-serif"
+        fontSize="96"
+        fontWeight="800"
+        letterSpacing="-1"
+        fill={textColor}
+      >
+        Polı
+      </text>
+      <circle cx="165.18" cy="36.40" r="11.50" fill={dotColor} />
+    </svg>
   );
 }
 
 /**
- * Standalone mark — dot above a minimal stem, no text.
- * Used in collapsed sidebar rail, favicon contexts, app icons.
- * @param {{ size?: number, dark?: boolean }} props
+ * Icon mark — square format with rounded corners.
+ * Coordinates from poli-icon-ink/white/accent.svg.
+ * @param {{ size?: number, variant?: "ink"|"white"|"accent" }} props
  */
-export function LogoMark({ size = 22, dark = false }) {
-  const stemColor = dark ? "#ffffff" : C.ink;
-  const dotColor  = dark ? "#A855F7" : "#7C3AED";
+export function LogoIcon({ size = 32, variant = "ink" }) {
+  const configs = {
+    ink:    { bg: "#17171A", text: "#FFFFFF", dot: "#A855F7" },
+    white:  { bg: "#FFFFFF", text: "#17171A", dot: "#7C3AED" },
+    accent: { bg: "#7C3AED", text: "#FFFFFF", dot: "#17171A" },
+  };
+  const { bg, text, dot } = configs[variant] || configs.ink;
 
   return (
     <svg
-      width={size * 0.57}
+      width={size}
       height={size}
-      viewBox="0 0 200 350"
+      viewBox="0 0 1024 1024"
+      xmlns="http://www.w3.org/2000/svg"
       aria-label="Poli"
       role="img"
       style={{ display: "block" }}
     >
-      {/* Stem of the i */}
-      <path
-        d="M68 156 a32 32 0 0 1 64 0 v148 c0 8 4 14 14 18 6 2.4 10 6 10 12 0 8-6 12-14 12 h-84 c-8 0-14-4-14-12 0-6 4-9.6 10-12 10-4 14-10 14-18 Z"
-        fill={stemColor}
-      />
-      {/* Brand dot */}
-      <circle cx="100" cy="50" r="46" fill={dotColor} />
+      <defs>
+        <style>{`@import url('${FONT_URL}');`}</style>
+      </defs>
+      <rect width="1024" height="1024" rx="232" fill={bg} />
+      <text
+        x="322.9"
+        y="596.8"
+        fontFamily="Manrope, Helvetica, Arial, sans-serif"
+        fontSize="245.8"
+        fontWeight="800"
+        letterSpacing="-18.43"
+        fill={text}
+      >
+        Polı
+      </text>
+      <circle cx="674.9" cy="468.8" r="29.4" fill={dot} />
     </svg>
   );
+}
+
+/**
+ * Collapsed sidebar mark — uses LogoIcon at small size.
+ * @param {{ size?: number, dark?: boolean }} props
+ */
+export function LogoMark({ size = 24, dark = false }) {
+  return <LogoIcon size={size} variant={dark ? "ink" : "white"} />;
 }
