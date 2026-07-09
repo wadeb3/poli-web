@@ -256,6 +256,45 @@ function BriefingPane({ bill, dataState, vote, onVote, alertOn, onToggleAlert })
         )}
       </div>
 
+      {/* Stage tracker — compact, right under the summary */}
+      {(() => {
+        const STAGES = ["Introduced", "Second reading", "Committee", "Third reading", "Royal Assent"];
+        const cur = bill.currentStageIndex ?? 0;
+        return (
+          <div style={{ display: "flex", alignItems: "center", marginBottom: 14 }}>
+            {STAGES.map((stage, i) => {
+              const passed  = i < cur;
+              const current = i === cur;
+              return (
+                <div key={stage} style={{ display: "flex", alignItems: "center", flex: i < STAGES.length - 1 ? 1 : "none" }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, flexShrink: 0 }}>
+                    <div style={{
+                      width: 14, height: 14, borderRadius: "50%",
+                      background: passed ? C.green : current ? C.accent : C.surfaceB,
+                      border: current ? `2px solid ${C.accentDark}` : "none",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 7, fontWeight: 700, color: "#fff",
+                    }}>
+                      {(passed || current) ? "✓" : ""}
+                    </div>
+                    <div style={{
+                      fontSize: 8, lineHeight: 1.3, textAlign: "center", maxWidth: 42,
+                      fontWeight: current ? 700 : 400,
+                      color: passed ? C.green : current ? C.accentText : C.faint,
+                    }}>
+                      {stage}
+                    </div>
+                  </div>
+                  {i < STAGES.length - 1 && (
+                    <div style={{ flex: 1, height: 1.5, background: passed ? C.green : C.border, marginBottom: 14, minWidth: 4 }} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
       <SentimentBar support={bill.support} neutral={bill.neutral} oppose={bill.oppose} height={7} />
 
       {/* Live sentiment counts */}

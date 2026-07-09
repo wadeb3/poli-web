@@ -135,45 +135,6 @@ function Overview({ bill }) {
         </div>
       )}
 
-      {/* Stage tracker — compact inline, surfaces Parliament tab data */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
-          {STAGES.map((stage, i) => {
-            const cur = bill.currentStageIndex ?? 0;
-            const passed  = i < cur;
-            const current = i === cur;
-            const future  = i > cur;
-            return (
-              <div key={stage} style={{ display: "flex", alignItems: "center", flex: i < STAGES.length - 1 ? "1" : "none" }}>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                  {/* Node */}
-                  <div style={{
-                    width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
-                    background: passed ? C.green : current ? C.accent : C.surfaceB,
-                    border: current ? `2px solid ${C.accentDark}` : "none",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 9, fontWeight: 700, color: passed || current ? "#fff" : C.faint,
-                  }}>
-                    {passed ? "✓" : i + 1}
-                  </div>
-                  {/* Label */}
-                  <div style={{
-                    fontSize: 9, fontWeight: current ? 700 : 400, lineHeight: 1.3,
-                    textAlign: "center", maxWidth: 52,
-                    color: passed ? C.green : current ? C.accentText : C.faint,
-                  }}>
-                    {stage}
-                  </div>
-                </div>
-                {/* Connector line */}
-                {i < STAGES.length - 1 && (
-                  <div style={{ flex: 1, height: 2, background: passed ? C.green : C.border, marginBottom: 18, minWidth: 8 }} />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
       {/* Fiscal impact */}
       {bill.fiscal?.budgetImpact && (
         <div style={{ background: C.accentSoft, border: `1px solid ${C.accentMid}`, borderRadius: RADIUS.panel, padding: "14px 16px", marginBottom: 16 }}>
