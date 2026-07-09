@@ -2591,20 +2591,23 @@ function SplashScreen() {
     <div style={{
       position:"fixed", inset:0, zIndex:300, background:"#FBFAF8",
       display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-      fontFamily:"Inter,sans-serif", animation:"splashOut 0.4s ease 1.1s forwards",
+      animation:"splashOut 0.4s ease 1.1s forwards",
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@800&display=swap');
         @keyframes splashOut { from { opacity:1; } to { opacity:0; visibility:hidden; } }
         @keyframes dotPulse { 0%,80%,100% { transform:scale(0.6); opacity:0.35; } 40% { transform:scale(1); opacity:1; } }
       `}</style>
-      <svg width={130} height={46} viewBox="0 0 130 46" style={{ display:"block", marginBottom:22 }}>
-        <text x="0" y="34" fontFamily="Inter,-apple-system,sans-serif" fontWeight="600" fontSize="34" fill="#211D1A" letterSpacing="-0.025em">Poli</text>
-        <circle cx="54" cy="8" r="3.6" fill="#6E49C9" />
-      </svg>
+      <div style={{ fontFamily:"'Manrope',Helvetica,Arial,sans-serif", fontSize:52, fontWeight:800, letterSpacing:"-0.01em", lineHeight:1, color:"#17171a", display:"inline-flex", alignItems:"baseline", marginBottom:28 }}>
+        Pol
+        <span style={{ position:"relative", display:"inline-block" }}>
+          {"ı"}
+          <span style={{ position:"absolute", top:"0.228em", left:"50%", transform:"translateX(-50%)", width:"0.24em", height:"0.24em", borderRadius:"50%", background:"#7C3AED", display:"block" }} />
+        </span>
+      </div>
       <div style={{ display:"flex", gap:7 }}>
         {[0,1,2].map(i => (
-          <span key={i} style={{ width:8, height:8, borderRadius:"50%", background:"#6E49C9", display:"inline-block", animation:`dotPulse 1.1s ${i*0.15}s infinite ease-in-out` }} />
+          <span key={i} style={{ width:7, height:7, borderRadius:"50%", background:"#7C3AED", display:"inline-block", animation:`dotPulse 1.1s ${i*0.15}s infinite ease-in-out` }} />
         ))}
       </div>
     </div>
