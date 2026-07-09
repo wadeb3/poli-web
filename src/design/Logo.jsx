@@ -1,34 +1,93 @@
-// Poli logo components — SVG embedded directly from designer files.
-// Do not modify coordinates or colours.
+// Poli wordmark — Manrope 800, dotless ı, purple dot above.
+// Spec: Manrope 800, letter-spacing -0.01em, dot #7C3AED (#A855F7 dark).
+
+const FONT = "https://fonts.googleapis.com/css2?family=Manrope:wght@800&display=swap";
 
 export function Logo({ height = 32, dark = false }) {
-  if (dark) return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 184 120" height={height} width={height * (184/120)} aria-label="Poli" role="img">
-      <text x="6" y="86.4" fontFamily="Manrope, Helvetica, Arial, sans-serif" fontSize="96" fontWeight="800" letterSpacing="-1" fill="#FFFFFF">Polı</text>
-      <circle cx="165.18" cy="36.40" r="11.50" fill="#A855F7"/>
-    </svg>
-  );
+  const color    = dark ? "#FFFFFF" : "#17171A";
+  const dotColor = dark ? "#A855F7" : "#7C3AED";
+  const fontSize = height * 1.2;
+
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 184 120" height={height} width={height * (184/120)} aria-label="Poli" role="img">
-      <text x="6" y="86.4" fontFamily="Manrope, Helvetica, Arial, sans-serif" fontSize="96" fontWeight="800" letterSpacing="-1" fill="#17171A">Polı</text>
-      <circle cx="165.18" cy="36.40" r="11.50" fill="#7C3AED"/>
-    </svg>
+    <>
+      <link rel="stylesheet" href={FONT} />
+      <span
+        aria-label="Poli"
+        style={{
+          fontFamily: "'Manrope', sans-serif",
+          fontWeight: 800,
+          fontSize,
+          letterSpacing: "-0.01em",
+          color,
+          lineHeight: 1,
+          display: "inline-flex",
+          alignItems: "baseline",
+          userSelect: "none",
+        }}
+      >
+        Pol
+        <span style={{ position: "relative", display: "inline-block", lineHeight: 1 }}>
+          ı
+          <span
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: "50%",
+              transform: "translateX(-50%)",
+              bottom: "100%",
+              marginBottom: fontSize * 0.05,
+              width:  fontSize * 0.18,
+              height: fontSize * 0.18,
+              borderRadius: "50%",
+              background: dotColor,
+              display: "block",
+            }}
+          />
+        </span>
+      </span>
+    </>
   );
 }
 
 export function LogoMark({ size = 32, dark = false }) {
-  if (dark) return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width={size} height={size} aria-label="Poli" role="img">
-      <rect width="1024" height="1024" rx="232" fill="#17171A"/>
-      <text x="322.9" y="596.8" fontFamily="Manrope, Helvetica, Arial, sans-serif" fontSize="245.8" fontWeight="800" letterSpacing="-18.43" fill="#FFFFFF">Polı</text>
-      <circle cx="674.9" cy="468.8" r="29.4" fill="#A855F7"/>
-    </svg>
-  );
+  const color    = dark ? "#FFFFFF" : "#17171A";
+  const dotColor = dark ? "#A855F7" : "#7C3AED";
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width={size} height={size} aria-label="Poli" role="img">
-      <rect width="1024" height="1024" rx="232" fill="#FFFFFF"/>
-      <text x="322.9" y="596.8" fontFamily="Manrope, Helvetica, Arial, sans-serif" fontSize="245.8" fontWeight="800" letterSpacing="-18.43" fill="#17171A">Polı</text>
-      <circle cx="674.9" cy="468.8" r="29.4" fill="#7C3AED"/>
-    </svg>
+    <>
+      <link rel="stylesheet" href={FONT} />
+      <span
+        aria-label="Poli"
+        style={{
+          fontFamily: "'Manrope', sans-serif",
+          fontWeight: 800,
+          fontSize: size * 1.2,
+          letterSpacing: "-0.03em",
+          color,
+          lineHeight: 1,
+          display: "inline-flex",
+          alignItems: "baseline",
+          userSelect: "none",
+        }}
+      >
+        <span style={{ position: "relative", display: "inline-block", lineHeight: 1 }}>
+          ı
+          <span
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: "50%",
+              transform: "translateX(-50%)",
+              bottom: "100%",
+              marginBottom: size * 0.06,
+              width:  size * 0.22,
+              height: size * 0.22,
+              borderRadius: "50%",
+              background: dotColor,
+              display: "block",
+            }}
+          />
+        </span>
+      </span>
+    </>
   );
 }
