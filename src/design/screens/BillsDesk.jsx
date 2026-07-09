@@ -250,7 +250,7 @@ function BriefingPane({ bill, dataState, vote, onVote, alertOn, onToggleAlert })
           <span style={{ ...TYPE.overline, fontSize: 10, color: C.accentText }}>What This Means For You</span>
           <span style={{ fontSize: 10, color: C.faint, marginLeft: "auto" }}>Non-partisan · AI summary →</span>
         </div>
-        <p style={{ fontFamily: FONT.ui, fontSize: 13, lineHeight: 1.6, fontWeight: 400, color: C.ink, margin: 0, maxWidth: "min(640px, 100%)" }}>{bill.means || bill.plain || "Summary pending."}</p>
+        <p style={{ fontFamily: FONT.ui, fontSize: 13, lineHeight: 1.6, fontWeight: 400, color: C.ink, margin: 0 }}>{bill.means || bill.plain || "Summary pending."}</p>
         {bill.plain && bill.plain !== "Plain-English summary pending — check back soon." && bill.plain !== bill.means && (
           <FullSummaryExpand plain={bill.plain} />
         )}
