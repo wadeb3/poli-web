@@ -174,6 +174,8 @@ function Overview({ bill }) {
           })}
         </div>
       </div>
+      {/* Fiscal impact */}
+      {bill.fiscal?.budgetImpact && (
         <div style={{ background: C.accentSoft, border: `1px solid ${C.accentMid}`, borderRadius: RADIUS.panel, padding: "14px 16px", marginBottom: 16 }}>
           <Overline color={C.accentText} mb={8}>Fiscal impact</Overline>
           <div style={{ fontFamily: FONT.display, fontSize: 13, color: C.ink, marginBottom: 4 }}>{bill.fiscal.budgetImpact}</div>
