@@ -149,7 +149,7 @@ export function DonationsExplorer({ supabase, initialParty = null }) {
       <div style={{ flex: 1, background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, overflow: "hidden", display: "flex", flexDirection: "column" }}>
 
         {/* Table header */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 140px 100px 90px 80px", gap: 0, padding: "8px 14px", borderBottom: `1px solid ${C.border}`, background: C.surface, flexShrink: 0 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr minmax(120px,15%) minmax(80px,10%) minmax(70px,9%) minmax(70px,9%)", gap: 0, padding: "8px 14px", borderBottom: `1px solid ${C.border}`, background: C.surface, flexShrink: 0 }}>
           {["Donor", "Recipient", "Type", "Year", "Amount"].map((h, i) => (
             <div key={h} style={{ fontSize: 10, fontWeight: 700, color: C.faint, textTransform: "uppercase", letterSpacing: "0.08em", textAlign: i === 4 ? "right" : "left" }}>{h}</div>
           ))}
@@ -170,7 +170,7 @@ export function DonationsExplorer({ supabase, initialParty = null }) {
           ) : filtered.map((d, i) => (
             <div key={d.id || i}
               onClick={() => setExpanded(expanded === i ? null : i)}
-              style={{ display: "grid", gridTemplateColumns: "1fr 140px 100px 90px 80px", gap: 0, padding: "8px 14px", borderBottom: `1px solid ${C.border}`, cursor: "pointer", background: expanded === i ? C.accentSoft : i % 2 === 0 ? C.white : C.paper, alignItems: "center" }}
+              style={{ display: "grid", gridTemplateColumns: "1fr minmax(120px,15%) minmax(80px,10%) minmax(70px,9%) minmax(70px,9%)", gap: 0, padding: "8px 14px", borderBottom: `1px solid ${C.border}`, cursor: "pointer", background: expanded === i ? C.accentSoft : i % 2 === 0 ? C.white : C.paper, alignItems: "center" }}
               onMouseEnter={e => { if (expanded !== i) e.currentTarget.style.background = C.surface; }}
               onMouseLeave={e => { e.currentTarget.style.background = expanded === i ? C.accentSoft : i % 2 === 0 ? C.white : C.paper; }}>
 

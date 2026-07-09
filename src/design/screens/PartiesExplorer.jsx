@@ -392,7 +392,7 @@ export function PartiesExplorer({ onViewDonations, supabase }) {
     <div style={{ display: "flex", gap: 12, height: "calc(100vh - 140px)", overflow: "hidden" }}>
 
       {/* Party list */}
-      <div style={{ width: 220, flexShrink: 0, background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, overflowY: "auto" }}>
+      <div style={{ width: "clamp(180px, 16vw, 260px)", flexShrink: 0, background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, overflowY: "auto" }}>
         <div style={{ padding: "12px 14px 8px", borderBottom: `1px solid ${C.border}`, fontSize: 10, fontWeight: 700, color: C.faint, textTransform: "uppercase", letterSpacing: "0.09em" }}>
           Federal parties
         </div>

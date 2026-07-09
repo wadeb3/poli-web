@@ -77,7 +77,7 @@ export function BillsDesk({ bills, votes = {}, onVote, alerts = [], onToggleAler
   return (
     <div style={{ display: "flex", gap: 0, alignItems: "flex-start", border: `1px solid ${C.border}`, borderRadius: RADIUS.card, background: C.white, overflow: "hidden" }}>
       {/* LEDGER — master list */}
-      <div role="listbox" aria-label="Bills" style={{ width: LAYOUT.deskListWidth, flexShrink: 0, borderRight: `1px solid ${C.border}`, maxHeight: "calc(100vh - 140px)", overflowY: "auto" }}>
+      <div role="listbox" aria-label="Bills" style={{ width: "clamp(280px, 25vw, 420px)", flexShrink: 0, borderRight: `1px solid ${C.border}`, maxHeight: "calc(100vh - 140px)", overflowY: "auto" }}>
         <div style={{ padding: "14px 18px 10px", position: "sticky", top: 0, background: C.white, borderBottom: `1px solid ${C.border}`, zIndex: 1 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
             <span style={{ ...TYPE.overline, color: C.ink }}>Bills</span>
@@ -250,7 +250,7 @@ function BriefingPane({ bill, dataState, vote, onVote, alertOn, onToggleAlert })
           <span style={{ ...TYPE.overline, fontSize: 10, color: C.accentText }}>What This Means For You</span>
           <span style={{ fontSize: 10, color: C.faint, marginLeft: "auto" }}>Non-partisan · AI summary →</span>
         </div>
-        <p style={{ fontFamily: FONT.ui, fontSize: 13, lineHeight: 1.6, fontWeight: 400, color: C.ink, margin: 0, maxWidth: 640 }}>{bill.means || bill.plain || "Summary pending."}</p>
+        <p style={{ fontFamily: FONT.ui, fontSize: 13, lineHeight: 1.6, fontWeight: 400, color: C.ink, margin: 0, maxWidth: "min(640px, 100%)" }}>{bill.means || bill.plain || "Summary pending."}</p>
         {bill.plain && bill.plain !== "Plain-English summary pending — check back soon." && bill.plain !== bill.means && (
           <FullSummaryExpand plain={bill.plain} />
         )}

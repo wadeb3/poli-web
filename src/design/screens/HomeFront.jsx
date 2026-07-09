@@ -62,7 +62,7 @@ export function HomeFront({
       </div>
 
       {/* Main 3-column grid — all headers outside cards so containers align */}
-      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "minmax(0,1.4fr) minmax(0,1fr) minmax(0,0.9fr)", gap: 10, minHeight: 0, overflow: "hidden" }}>
+      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "minmax(0,1.4fr) minmax(0,1fr) minmax(0,0.9fr)", gap: "clamp(8px, 1vw, 16px)", minHeight: 0, overflow: "hidden" }}>
 
         {/* ── COL 1: Recent Bills ────────────────────────────────────── */}
         <div style={{ display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>

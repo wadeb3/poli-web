@@ -67,7 +67,7 @@ export function Sidebar({ active, activeSub, onNavigate, footer, footerCollapsed
 
   return (
     <nav aria-label="Primary" style={{
-      width: collapsed ? LAYOUT.sidebarCollapsed : LAYOUT.sidebarWidth,
+      width: collapsed ? LAYOUT.sidebarCollapsed : "clamp(200px, 18vw, 280px)",
       flexShrink: 0, position: "sticky", top: 0,
       height: "100vh", display: "flex", flexDirection: "column",
       background: C.paper, borderRight: `1px solid ${C.border}`,

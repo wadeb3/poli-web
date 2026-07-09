@@ -104,7 +104,7 @@ export const LAYOUT = {
   sidebarWidth: 240,
   sidebarCollapsed: 68, // icon rail — same glyph language as the mobile bottom bar
   bottomBarHeight: 60,
-  contentMax: 1140,
+  contentMax: "100%",   // fill available width — screens handle their own constraints
   readableMax: 680,
   deskListWidth: 340, // two-pane bill desk: list column
 };

@@ -251,7 +251,7 @@ export function MPDossier({ members, initialParty = null, initialQuery = "", ini
 
   return (
     <div style={{ display: "flex", border: `1px solid ${C.border}`, borderRadius: RADIUS.card, background: C.white, overflow: "hidden", alignItems: "stretch" }}>
-      <div style={{ width: LAYOUT.deskListWidth, flexShrink: 0, borderRight: `1px solid ${C.border}`, maxHeight: "calc(100vh - 140px)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <div style={{ width: "clamp(240px, 22vw, 360px)", flexShrink: 0, borderRight: `1px solid ${C.border}`, maxHeight: "calc(100vh - 140px)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
         {ledger}
       </div>
       <div style={{ flex: 1, minWidth: 0, maxHeight: "calc(100vh - 140px)", overflowY: "auto", padding: "20px 24px", background: C.paper }}>

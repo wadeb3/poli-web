@@ -3071,7 +3071,7 @@ function PoliAppInner() {
           )}
           {!wide && <SubNav tab={tab} activeSub={sub} onSelect={setSub} />}
 
-          <div style={{ maxWidth:LAYOUT.contentMax, margin:"0 auto", padding: wide ? "28px 32px" : "12px 16px" }}>
+          <div style={{ maxWidth: LAYOUT.contentMax, margin: "0 auto", padding: wide ? "28px clamp(24px, 3vw, 48px)" : "12px 16px" }}>
             {renderContent()}
           </div>
         </main>
