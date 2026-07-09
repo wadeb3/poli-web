@@ -258,17 +258,26 @@ function BriefingPane({ bill, dataState, vote, onVote, alertOn, onToggleAlert })
 
       <SentimentBar support={bill.support} neutral={bill.neutral} oppose={bill.oppose} height={7} />
 
-      <div style={{ display: "flex", gap: 8, alignItems: "center", margin: "16px 0 4px" }}>
+      {/* Live sentiment counts */}
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.faint, margin: "4px 0 12px", fontVariantNumeric: "tabular-nums" }}>
+        <span style={{ color: bill.support > 0 ? C.green : C.faint, fontWeight: bill.support > 0 ? 600 : 400 }}>{bill.support || 0}% support</span>
+        <span>{bill.totalVotes > 0 ? `${bill.totalVotes.toLocaleString()} votes` : "Be the first to vote"}</span>
+        <span style={{ color: bill.oppose > 0 ? C.red : C.faint, fontWeight: bill.oppose > 0 ? 600 : 400 }}>{bill.oppose || 0}% oppose</span>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
         {vote ? (
           <>
             <Chip color={vote === "support" ? C.green : C.red} tone="tint" dot>You {vote}</Chip>
-            <Button variant="ghost" size="sm" onClick={() => onVote?.(bill.id, null)}>Change</Button>
+            <Button variant="ghost" size="sm" onClick={() => onVote?.(bill.id, vote === "support" ? "oppose" : "support")}>
+              Switch to {vote === "support" ? "Oppose" : "Support"}
+            </Button>
           </>
         ) : (
           <>
             <Button variant="support" size="sm" onClick={() => onVote?.(bill.id, "support")}>Support</Button>
             <Button variant="oppose" size="sm" onClick={() => onVote?.(bill.id, "oppose")}>Oppose</Button>
-            <span style={{ fontSize: 11, color: C.faint, marginLeft: 4 }}>Anonymous · shapes the public sentiment data</span>
+            <span style={{ fontSize: 11, color: C.faint, marginLeft: 4 }}>Anonymous · shapes community sentiment</span>
           </>
         )}
       </div>

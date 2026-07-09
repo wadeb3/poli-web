@@ -15,7 +15,7 @@ import { Sidebar, BottomBar, SubNav, PageHeader } from "./design/Nav.jsx";
 import { CommandPalette, usePaletteShortcut } from "./design/CommandPalette.jsx";
 
 // ── v6 screens ────────────────────────────────────────────────────────────────
-import { HomeFront } from "./design/screens/HomeFront.jsx";
+import { usePolling } from "./lib/usePolling.js";
 import { PartiesExplorer } from "./design/screens/PartiesExplorer.jsx";
 import { DonationsExplorer } from "./design/screens/DonationsExplorer.jsx";
 import { ThirdPartyExplorer } from "./design/screens/ThirdPartyExplorer.jsx";
@@ -2761,8 +2761,9 @@ function PoliAppInner() {
   }, []);
 
   // ── App state ──
-  const [votes, setVotes]   = useState({});
-  const [alerts, setAlerts] = useState([1,3]);
+  // ── Community polling — anonymous votes + live sentiment ──
+  const { votes, castVote, fetchSentiment, mergeSentiment } = usePolling(supabase);
+  const onVote = castVote;
   const [xp, setXp]         = useState(75);
   const [streak]            = useState(4);
 
@@ -2785,7 +2786,12 @@ function PoliAppInner() {
       .order("introduced_date", { ascending: false })
       .then(({ data, error }) => {
         if (error) { setBillsError(error.message); }
-        else { setLiveBills((data || []).map(adaptBill)); }
+        else {
+          const adapted = (data || []).map(adaptBill);
+          setLiveBills(adapted);
+          // Fetch live sentiment for all bills
+          fetchSentiment(adapted.map(b => b.id));
+        }
         setBillsLoading(false);
       });
   }, []);
@@ -2822,8 +2828,8 @@ function PoliAppInner() {
     setSub("mp");
   };
 
-  const onVote = (id, pos) => setVotes(v => ({ ...v, [id]: pos }));
-  const toggleAlert = id => setAlerts(a => a.includes(id) ? a.filter(x=>x!==id) : [...a,id]);
+  const [alerts, setAlerts] = useState([]);
+  const toggleAlert = id => setAlerts(a => a.includes(id) ? a.filter(x => x !== id) : [...a, id]);
 
   // ── CommandPalette index ──
   const paletteItems = useMemo(() => [
@@ -2877,7 +2883,7 @@ function PoliAppInner() {
     // HOME
     if (tab === "home") return (
       <HomeFront
-        bills={billsLoading ? [] : liveBills}
+        bills={billsLoading ? [] : mergeSentiment(liveBills)}
         members={membersLoading ? [] : members}
         divisions={recentDivisions}
         onOpenBill={(id, section) => {
@@ -2915,7 +2921,7 @@ function PoliAppInner() {
           <PageHeader title="Bill Tracker"
             sub={billsLoading ? "Loading bills from Supabase…" : billsError ? "Couldn't load live data." : `${liveBills.length} bills from the 48th Parliament — translated into plain English.`} />
           <BillsDesk
-            bills={billsLoading || billsError ? POLICIES : liveBills}
+            bills={billsLoading || billsError ? POLICIES : mergeSentiment(liveBills)}
             dataState={billsLoading ? "cached" : billsError ? "cached" : "live"}
             loading={billsLoading}
             initialSelectedId={selectedBillId}
@@ -2931,12 +2937,6 @@ function PoliAppInner() {
         <V5PageWrapper title="Cabinet" sub="Who holds what role in the Albanese government.">
           <CabinetCards />
         </V5PageWrapper>
-      );
-      if (s === "thirds") return (
-        <>
-          <PageHeader title="Third Parties" sub="Organisations spending on political campaigning outside the party system — AEC-disclosed." />
-          <ThirdPartyExplorer supabase={supabase} />
-        </>
       );
       return (
         <>
@@ -2958,6 +2958,14 @@ function PoliAppInner() {
             supabase={supabase}
             onViewDonations={code => { setDonationParty(code); navigate("mymp", "donations"); }}
           />
+        </>
+      );
+
+      // Third Parties sub
+      if (s === "thirds") return (
+        <>
+          <PageHeader title="Third Parties" sub="Organisations spending on political campaigning outside the party system — AEC-disclosed." />
+          <ThirdPartyExplorer supabase={supabase} />
         </>
       );
 
