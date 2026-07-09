@@ -19,7 +19,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState } from "react";
 import { C, TYPE, RADIUS, LAYOUT } from "./tokens.js";
-import { Logo, LogoMark, LogoIcon } from "./Logo.jsx";
+import { Logo, LogoMark } from "./Logo.jsx";
 import { IconHome, IconBill, IconParliament, IconPerson, IconVote, IconLearn, IconChevron } from "./icons.jsx";
 
 /**
@@ -83,7 +83,7 @@ export function Sidebar({ active, activeSub, onNavigate, footer, footerCollapsed
       }}>
         <button onClick={() => onNavigate("home")} aria-label="Poli home"
           style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
-          {collapsed ? <LogoIcon size={28} variant="white" /> : <Logo height={28} />}
+          {collapsed ? <LogoMark size={28} /> : <Logo height={28} />}
         </button>
         <button onClick={toggle}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed}
@@ -135,7 +135,7 @@ export function Sidebar({ active, activeSub, onNavigate, footer, footerCollapsed
       <div style={{ padding: collapsed ? "12px 0 0" : "12px 12px 0", borderTop: `1px solid ${C.border}`, display: collapsed ? "flex" : "block", justifyContent: "center" }}>
         {collapsed ? (footerCollapsed || null) : (footer || (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ opacity: 0.35 }}><LogoIcon size={16} variant="white" /></span>
+            <span style={{ opacity: 0.35 }}><LogoMark size={16} /></span>
             <span style={{ fontSize: 10.5, color: C.faint, lineHeight: 1.4 }}>
               Independent & non-partisan.<br />No ads. Method disclosed.
             </span>
