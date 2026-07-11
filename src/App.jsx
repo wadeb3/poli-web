@@ -1439,265 +1439,6 @@ function CabinetCards() {
   );
 }
 
-// ── Parliament Map ────────────────────────────────────────────────────────────
-// ── My MP Tab (enhanced with contact) ────────────────────────────────────────
-function MyMPTab({ userVotes, initialPostcode, initialView }) {
-  const [query, setQuery]       = useState(initialPostcode||"");
-  const [result, setResult]     = useState(initialPostcode?findElectorate(initialPostcode):null);
-  const [searched, setSearched] = useState(!!initialPostcode);
-  const [loading, setLoading]   = useState(false);
-  const [showContact, setShowContact] = useState(false);
-  const [liveMp, setLiveMp]           = useState(null);
-  const [liveMpLoading, setLiveMpLoading] = useState(false);
-  // activeView driven by initialView prop from shell sub-nav, or local state
-  const [activeView, setActiveView] = useState(initialView||"mp");
-  useEffect(() => { if (initialView) setActiveView(initialView); }, [initialView]);
-
-  // Sample electorate data (name/margin) can go stale the moment an election
-  // happens — so once we know which electorate someone's in, we look up who
-  // is ACTUALLY currently sitting there from live Supabase data, rather than
-  // trusting the hardcoded sample MP name.
-  useEffect(() => {
-    if (!result) { setLiveMp(null); return; }
-    let cancelled = false;
-    setLiveMpLoading(true);
-    supabase
-      .from("mps")
-      .select("*")
-      .eq("chamber", "representatives")
-      .ilike("electorate", result.electorate)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        setLiveMp(error ? null : data);
-        setLiveMpLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [result]);
-
-  const doSearch = q => {
-    if (!q.trim()||q.trim().length<3) return;
-    setLoading(true); setSearched(false);
-    setTimeout(()=>{ setResult(findElectorate(q)); setSearched(true); setLoading(false); },500);
-  };
-
-  // Display name/party come from live data when we have it (current), falling
-  // back to the sample data only if the live lookup hasn't found a match.
-  const displayName  = liveMp?.name  || result?.mp.name;
-  const displayParty = liveMp?.party || result?.mp.party;
-  const mpColor = result?(PARTY_COLOR[displayParty]||C.mid):C.accent;
-  const isStale = result && !liveMpLoading && !liveMp; // sample electorate but no live match found
-
-  // Full adapted live member (with .records) when we have one — ContactModal
-  // needs the real voting history, not just the corrected name/party.
-  const liveMemberAdapted = liveMp ? adaptMember(liveMp) : null;
-
-  return (
-    <div>
-      {showContact && result && (
-        <ContactModal
-          mp={{ ...result.mp, name: displayName, party: displayParty, records: liveMemberAdapted?.records || [] }}
-          onClose={() => setShowContact(false)}
-        />
-      )}
-
-      {/* Search */}
-      <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"22px 24px", marginBottom:16 }}>
-        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:4 }}>Find your representative</div>
-        <p style={{ fontSize:13, color:C.mid, margin:"0 0 16px", lineHeight:1.6 }}>Enter your suburb, postcode, or electorate name.</p>
-        <div style={{ display:"flex", gap:8, maxWidth:480 }}>
-          <input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSearch(query)} placeholder="e.g. Brunswick, 3056, Kooyong…"
-            style={{ flex:1, padding:"11px 14px", borderRadius:10, border:`1px solid ${C.border}`, fontSize:13, color:C.ink, background:C.surface, outline:"none" }} />
-          <button onClick={()=>doSearch(query)} style={{ padding:"11px 20px", borderRadius:10, background:C.accent, border:"none", cursor:"pointer", fontSize:13, fontWeight:600, color:"#fff", flexShrink:0 }}>
-            {loading?"…":"Search"}
-          </button>
-        </div>
-        <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:10 }}>
-          {["Melbourne","Newtown","North Sydney","Brisbane","Fremantle","Canberra"].map(s=>(
-            <button key={s} onClick={()=>{setQuery(s);doSearch(s);}} style={{ padding:"4px 10px", borderRadius:99, border:`1px solid ${C.border}`, background:C.surface, fontSize:11, fontWeight:500, color:C.mid, cursor:"pointer" }}>{s}</button>
-          ))}
-        </div>
-        <div style={{ marginTop:10, fontSize:11, color:C.faint }}>Currently covers ~19 sample electorates — full national postcode coverage is a planned upgrade.</div>
-      </div>
-
-
-      {loading && <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"32px", textAlign:"center" }}><div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.faint }}>Looking up your electorate…</div></div>}
-      {searched&&!loading&&!result && <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"28px 24px", textAlign:"center" }}><div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:8 }}>Electorate not found</div><p style={{ fontSize:13, color:C.mid, margin:0 }}>Try a postcode, suburb name, or electorate name.</p></div>}
-
-      {result && !loading && activeView==="mp" && (
-        <div style={{ maxWidth:820, margin:"0 auto" }}>
-          {liveMpLoading && (
-            <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"32px", textAlign:"center" }}>
-              <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.faint }}>Loading your MP's record…</div>
-            </div>
-          )}
-
-          {!liveMpLoading && (
-            <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"28px 28px 24px" }}>
-
-              {/* ── Tags row ── */}
-              <div style={{ display:"flex", gap:8, marginBottom:18, flexWrap:"wrap" }}>
-                <span style={{ padding:"3px 10px", borderRadius:99, fontSize:11, fontWeight:700, background:`${mpColor}0D`, color:mpColor, border:`1px solid ${mpColor}30` }}>{result.state}</span>
-                <span style={{ padding:"3px 10px", borderRadius:99, fontSize:11, color:C.mid, background:C.surface, border:`1px solid ${C.border}` }}>House of Representatives</span>
-                {liveMp && (
-                  <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 10px", borderRadius:99, fontSize:11, fontWeight:600, color:C.green, background:C.greenSoft }}>
-                    <span style={{ width:5, height:5, borderRadius:"50%", background:C.green, display:"inline-block" }} /> Live data
-                  </span>
-                )}
-              </div>
-
-              {/* ── Profile header ── */}
-              <div style={{ display:"flex", gap:18, alignItems:"flex-start", marginBottom:6 }}>
-                <div style={{ width:64, height:64, borderRadius:16, background:`${mpColor}15`, border:`1px solid ${mpColor}30`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  <span style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:mpColor }}>{displayName?.split(" ").map(n=>n[0]).join("").slice(0,2)}</span>
-                </div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:4, lineHeight:1.15 }}>{displayName}</div>
-                  <div style={{ fontSize:13, color:C.mid, marginBottom:8 }}>{liveMp ? `Member for ${result.electorate}` : result.mp.role}</div>
-                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
-                    <PartyPill party={displayParty} />
-                    {/* Office badges */}
-                    {(() => {
-                      const offices = liveMp?.offices ? (Array.isArray(liveMp.offices) ? liveMp.offices : []).map(o => typeof o === "string" ? o : (o?.name || o?.position || o?.title)).filter(Boolean) : [];
-                      return offices.map((o, i) => (
-                        <span key={i} style={{ fontSize:10, fontWeight:600, color:C.blue, background:C.blueSoft, border:`1px solid ${C.blue}20`, padding:"3px 9px", borderRadius:99 }}>{o}</span>
-                      ));
-                    })()}
-                  </div>
-                </div>
-              </div>
-
-              <Divider my={18} />
-
-              {/* ── Stat tiles — matching senator card layout ── */}
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:10, marginBottom:20 }}>
-                <div style={{ background:C.surface, borderRadius:12, padding:"14px 16px" }}>
-                  <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:mpColor }}>{result.electorate}</div>
-                  <div style={{ fontSize:11, color:C.faint, marginTop:3 }}>Electorate</div>
-                </div>
-                <div style={{ background:C.surface, borderRadius:12, padding:"14px 16px" }}>
-                  <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink }}>{result.state}</div>
-                  <div style={{ fontSize:11, color:C.faint, marginTop:3 }}>State</div>
-                </div>
-                {liveMp?.votes_attended != null && liveMp?.votes_possible > 0 && (
-                  <div style={{ background:C.surface, borderRadius:12, padding:"14px 16px" }}>
-                    <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink }}>{Math.round((liveMp.votes_attended / liveMp.votes_possible) * 100)}%</div>
-                    <div style={{ fontSize:11, color:C.faint, marginTop:3 }}>Voting attendance</div>
-                  </div>
-                )}
-                {liveMp?.rebellions != null && (
-                  <div style={{ background:liveMp.rebellions > 0 ? C.amberSoft : C.surface, border:liveMp.rebellions > 0 ? `1px solid ${C.amber}22` : "none", borderRadius:12, padding:"14px 16px" }}>
-                    <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:liveMp.rebellions > 0 ? C.amber : C.ink }}>{liveMp.rebellions}</div>
-                    <div style={{ fontSize:11, color:C.faint, marginTop:3 }}>Party rebellions</div>
-                  </div>
-                )}
-              </div>
-
-              {/* ── Contact button ── */}
-              <button onClick={()=>setShowContact(true)} style={{ width:"100%", padding:"13px", borderRadius:12, background:C.accent, border:"none", cursor:"pointer", fontSize:13, fontWeight:700, color:"#fff", marginBottom:20 }}>
-                ✉️ Write to {displayName?.split(" ")[0]}
-              </button>
-
-              {isStale && (
-                <div style={{ background:C.amberSoft, border:`1px solid ${C.amber}33`, borderRadius:12, padding:"12px 16px", marginBottom:20, fontSize:12, color:C.mid, lineHeight:1.5 }}>
-                  ⚠ Couldn't find a live match for this electorate in Supabase — showing sample data, which may be outdated since the last election.
-                </div>
-              )}
-
-              {/* ── Voting record — reusing SenatorCard's internal layout ── */}
-              {liveMp && (() => {
-                const positions = Array.isArray(liveMp.policy_positions)
-                  ? liveMp.policy_positions.filter(p => p.voted && p.agreement != null && isSubstantivePolicy(p))
-                  : [];
-                const byRecency = [...positions].sort((a, b) => new Date(b.last_edited_at || 0) - new Date(a.last_edited_at || 0));
-                const recentFor     = byRecency.filter(p => p.agreement >= 70).slice(0, 3);
-                const recentAgainst = byRecency.filter(p => p.agreement <= 30).slice(0, 3);
-                const allByRecency = Array.isArray(liveMp.policy_positions)
-                  ? [...liveMp.policy_positions].filter(p => p.voted && p.agreement != null).sort((a, b) => new Date(b.last_edited_at || 0) - new Date(a.last_edited_at || 0))
-                  : [];
-
-                const PolicyRow = ({ p }) => {
-                  const year = policyYear(p);
-                  const cat = agreementCategory(p.agreement);
-                  return (
-                    <div style={{ background:C.surface, borderRadius:"0 12px 12px 0", borderLeft:`3px solid ${cat.color}`, padding:"12px 14px", marginBottom:8 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10, marginBottom:6 }}>
-                        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, lineHeight:1.35 }}>{titleCase(p.name)}</div>
-                        {year && <span style={{ fontSize:10, color:C.faint, flexShrink:0, background:C.white, border:`1px solid ${C.border}`, padding:"2px 7px", borderRadius:99 }}>{year}</span>}
-                      </div>
-                      <span style={{ display:"inline-block", fontSize:10, fontWeight:700, color:cat.color, background:`${cat.color}12`, border:`1px solid ${cat.color}28`, padding:"3px 10px", borderRadius:99 }}>{cat.label}</span>
-                    </div>
-                  );
-                };
-
-                return (
-                  <>
-                    <Divider my={18} />
-                    <SectionLabel>How they vote</SectionLabel>
-
-                    {positions.length > 0 ? (
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
-                        <div>
-                          <SectionLabel color={C.green}>Recent votes for</SectionLabel>
-                          {recentFor.length > 0
-                            ? recentFor.map(p => <PolicyRow key={p.id} p={p} />)
-                            : <div style={{ fontSize:11, color:C.faint, fontStyle:"italic", padding:"8px 0" }}>No strong recent support positions</div>
-                          }
-                        </div>
-                        <div>
-                          <SectionLabel color={C.red}>Recent votes against</SectionLabel>
-                          {recentAgainst.length > 0
-                            ? recentAgainst.map(p => <PolicyRow key={p.id} p={p} />)
-                            : <div style={{ fontSize:11, color:C.faint, fontStyle:"italic", padding:"8px 0" }}>No strong recent opposition positions</div>
-                          }
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ background:C.surface, borderRadius:12, padding:"18px", textAlign:"center" }}>
-                        <span style={{ fontSize:12, color:C.faint }}>No policy voting data available yet</span>
-                      </div>
-                    )}
-
-                    {allByRecency.length > 0 && <ExpandableFullRecord items={allByRecency} PolicyRow={PolicyRow} />}
-                  </>
-                );
-              })()}
-
-              {!liveMp && !isStale && (
-                <div style={{ background:C.surface, borderRadius:12, padding:"18px", textAlign:"center" }}>
-                  <span style={{ fontSize:12, color:C.faint }}>No live voting record found for this electorate yet.</span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {result && !loading && activeView==="senators" && (
-        <div>
-          <SenatorTracker stateOverride={result.state} />
-        </div>
-      )}
-
-      {result && !loading && activeView==="comparison" && (
-        <ElectorateComparison electorateOverride={result.electorate} />
-      )}
-
-      {!searched && !loading && (
-        <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"22px 20px" }}>
-          <SectionLabel>How it works</SectionLabel>
-          {[["01","Enter your suburb or postcode"],["02","See your federal MP and their party"],["03","Check how they voted on every tracked policy"],["04","Compare their record to your own positions"],["05","Write to them directly from the app"]].map(([n,t])=>(
-            <div key={n} style={{ display:"flex", gap:14, alignItems:"center", marginBottom:12 }}>
-              <span style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.accent, width:28, flexShrink:0 }}>{n}</span>
-              <span style={{ fontSize:13, color:C.mid }}>{t}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Shared expandable full voting record ─────────────────────────────────────
 function ExpandableFullRecord({ items, PolicyRow }) {
   const [expanded, setExpanded] = useState(false);
@@ -2719,6 +2460,10 @@ function PoliAppInner() {
 
   const [selectedBillId, setSelectedBillId] = useState(null);
   const [selectedMemberId, setSelectedMemberId] = useState(null);
+  // Which MP the Contact modal is currently open for — null means closed.
+  // Set via MPDossier's onContact; members already carry .records (adaptMember
+  // ran on them once, on fetch), so no extra lookup is needed here.
+  const [contactMp, setContactMp] = useState(null);
 
   const navigate = (t, s) => {
     setTab(t);
@@ -2910,9 +2655,10 @@ function PoliAppInner() {
               initialQuery={savedPostcode}
               supabase={supabase}
               dataState={membersError ? "cached" : "live"}
-              onContact={() => {}}
+              onContact={(m) => setContactMp(m)}
             />
           )}
+          {contactMp && <ContactModal mp={contactMp} onClose={() => setContactMp(null)} />}
         </>
       );
     }
