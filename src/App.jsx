@@ -951,23 +951,48 @@ function PolicyDetail({ policy }) {
 }
 
 // ── MP Contact Tool ───────────────────────────────────────────────────────────
-function ContactModal({ mp, userVotes, onClose }) {
+// Rebuilt on real data only: mp.records is the MP's live, TVFY-sourced voting
+// history (via adaptMember). We deliberately do NOT try to compare it against
+// the specific live bill the user voted on — there's no reliable link yet
+// between Poli's bills table and TVFY's policy IDs, and faking that match by
+// title would risk misattributing a vote. Once that link exists, alignment
+// scoring can come back; until then this only asserts what's actually sourced.
+function ContactModal({ mp, onClose }) {
   const [sent, setSent]       = useState(false);
-  const [selPolicy, setSelPolicy] = useState(null);
+  const [selRecord, setSelRecord] = useState(null);
   const [customMsg, setCustomMsg] = useState("");
+  const [copyFailed, setCopyFailed] = useState(false);
 
-  const templates = POLICIES.filter(p => userVotes?.[p.id]).map(p => {
-    const uv  = userVotes[p.id];
-    const mpv = mp.votes?.[p.id];
-    const aligned = (mpv==="aye"&&uv==="support")||(mpv==="nay"&&uv==="oppose");
-    return { policy:p, uv, mpv, aligned };
-  });
+  const records = (mp.records || []).filter(r => r.vote === "for" || r.vote === "against");
+  const voteCounts = records.reduce((acc, r) => { acc[r.vote] = (acc[r.vote]||0)+1; return acc; }, {});
 
-  const getTemplate = (item) => `Dear ${mp.name.split(" ")[0]},\n\nI am writing as your constituent regarding the ${item.policy.title}.\n\nI ${item.uv} this policy because ${item.policy.means.toLowerCase()}\n\n${item.aligned ? `I was pleased to see that you also ${item.mpv==="aye"?"supported":"opposed"} this measure.` : `However, I note that you voted to ${item.mpv==="aye"?"support":"oppose"} this policy, which does not reflect my view as a constituent.`}\n\nI would welcome your response on this matter.\n\nYours sincerely,\n[Your name]\n[Your suburb]`;
+  const getTemplate = (r) => `Dear ${mp.name.split(" ")[0]},
+
+I am writing as your constituent regarding your voting record on "${r.billTitle}"${r.date && r.date !== "Date unknown" ? ` (${r.date})` : ""}.
+
+Public records show you voted ${r.vote === "for" ? "in favour of" : "against"} this measure${r.label ? ` — recorded as "${r.label}"` : ""}. I'd welcome hearing more about your reasoning, and would like to share my own view as a constituent.
+
+I would appreciate a response on this matter.
+
+Yours sincerely,
+[Your name]
+[Your suburb]`;
 
   useEffect(() => {
-    if (templates.length > 0) { setSelPolicy(templates[0]); setCustomMsg(getTemplate(templates[0])); }
+    if (records.length > 0) { setSelRecord(records[0]); setCustomMsg(getTemplate(records[0])); }
   }, []);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(customMsg);
+      setSent(true);
+    } catch {
+      // Clipboard API blocked/unavailable — still let them proceed, the text is
+      // right there in the textarea to select and copy manually.
+      setCopyFailed(true);
+      setSent(true);
+    }
+  };
 
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
@@ -976,36 +1001,63 @@ function ContactModal({ mp, userVotes, onClose }) {
           <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink }}>Contact {mp.name.split(" ")[0]}</div>
           <button onClick={onClose} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, padding:"6px 10px", cursor:"pointer", fontSize:13, color:C.mid }}>✕</button>
         </div>
+
         {!sent ? (
           <>
-            {templates.length > 0 && (
+            {records.length === 0 ? (
+              <div style={{ background:C.surface, borderRadius:10, padding:"14px", marginBottom:16, fontSize:12, color:C.mid, lineHeight:1.6 }}>
+                We don't have a synced voting record for {mp.name} yet, so we can't prefill specifics. You can still write a general message below.
+              </div>
+            ) : (
               <>
-                <SectionLabel>Select a policy to write about</SectionLabel>
-                <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:16 }}>
-                  {templates.map((t,i) => (
-                    <button key={i} onClick={()=>{setSelPolicy(t);setCustomMsg(getTemplate(t));}} style={{ padding:"10px 14px", borderRadius:10, border:`1.5px solid ${selPolicy===t?C.accent:C.border}`, background:selPolicy===t?C.accentSoft:C.surface, cursor:"pointer", fontSize:12, fontWeight:600, color:selPolicy===t?C.accent:C.ink, textAlign:"left", display:"flex", justifyContent:"space-between" }}>
-                      <span>{t.policy.title}</span>
-                      <span style={{ fontSize:10, color:t.aligned?C.green:C.red, fontWeight:700 }}>{t.aligned?"✓ Aligned":"✗ Disagrees"}</span>
+                {/* Clean summary — contrasts for vs against at a glance, real counts only */}
+                <SectionLabel>Voting record summary</SectionLabel>
+                <div style={{ display:"flex", gap:10, marginBottom:16 }}>
+                  <div style={{ flex:1, background:C.greenSoft, border:`1px solid ${C.greenMid}`, borderRadius:10, padding:"10px 12px", textAlign:"center" }}>
+                    <div style={{ fontFamily:"'Inter',sans-serif", fontSize:18, color:C.green }}>{voteCounts.for || 0}</div>
+                    <div style={{ fontSize:10, color:C.mid, textTransform:"uppercase", letterSpacing:"0.06em" }}>Votes for</div>
+                  </div>
+                  <div style={{ flex:1, background:C.redSoft, border:`1px solid ${C.redMid}`, borderRadius:10, padding:"10px 12px", textAlign:"center" }}>
+                    <div style={{ fontFamily:"'Inter',sans-serif", fontSize:18, color:C.red }}>{voteCounts.against || 0}</div>
+                    <div style={{ fontSize:10, color:C.mid, textTransform:"uppercase", letterSpacing:"0.06em" }}>Votes against</div>
+                  </div>
+                </div>
+
+                <SectionLabel>Select a vote to raise</SectionLabel>
+                <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:16, maxHeight:220, overflowY:"auto" }}>
+                  {records.slice(0, 12).map((r,i) => (
+                    <button key={i} onClick={()=>{setSelRecord(r);setCustomMsg(getTemplate(r));}}
+                      style={{ padding:"10px 14px", borderRadius:10, border:`1.5px solid ${selRecord===r?C.accent:C.border}`, background:selRecord===r?C.accentSoft:C.surface, cursor:"pointer", fontSize:12, fontWeight:600, color:selRecord===r?C.accent:C.ink, textAlign:"left", display:"flex", justifyContent:"space-between", gap:10 }}>
+                      <span style={{ flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.billTitle}</span>
+                      <span style={{ fontSize:10, color:r.vote==="for"?C.green:C.red, fontWeight:700, flexShrink:0 }}>{r.vote==="for"?"✓ Voted for":"✗ Voted against"}</span>
                     </button>
                   ))}
                 </div>
               </>
             )}
+
             <SectionLabel>Your message</SectionLabel>
             <textarea value={customMsg} onChange={e=>setCustomMsg(e.target.value)} rows={10}
               style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1px solid ${C.border}`, fontSize:12, color:C.ink, lineHeight:1.6, resize:"vertical", outline:"none", fontFamily:"Inter,sans-serif", marginBottom:12 }} />
             <div style={{ background:C.blueSoft, borderRadius:10, padding:"10px 12px", marginBottom:16, fontSize:11, color:C.blue, lineHeight:1.5 }}>
               📧 This drafts an email for you to send directly. Poli does not send emails on your behalf.
             </div>
-            <button onClick={()=>setSent(true)} style={{ width:"100%", padding:"13px", borderRadius:12, background:C.accent, border:"none", cursor:"pointer", fontSize:13, fontWeight:700, color:"#fff" }}>
+            <button onClick={handleCopy} style={{ width:"100%", padding:"13px", borderRadius:12, background:C.accent, border:"none", cursor:"pointer", fontSize:13, fontWeight:700, color:"#fff" }}>
               Copy message ↗
             </button>
           </>
         ) : (
           <div style={{ textAlign:"center", padding:"32px 0" }}>
             <div style={{ fontSize:13, marginBottom:12 }}>✉️</div>
-            <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:8 }}>Message ready to send</div>
-            <p style={{ fontSize:13, color:C.mid, lineHeight:1.6, marginBottom:20 }}>Paste this into an email to {mp.name}'s parliamentary office. MP office emails follow the format: [FirstName.LastName]@aph.gov.au</p>
+            <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:8 }}>
+              {copyFailed ? "Message ready — copy it manually" : "Copied to your clipboard"}
+            </div>
+            <p style={{ fontSize:13, color:C.mid, lineHeight:1.6, marginBottom:20 }}>
+              {copyFailed
+                ? "Your browser blocked automatic copying — select the text above and copy it manually, then "
+                : "Paste this into an email to "}
+              {mp.name}'s parliamentary office. MP office emails follow the format: [FirstName.LastName]@aph.gov.au
+            </p>
             <button onClick={onClose} style={{ padding:"10px 24px", borderRadius:99, border:`1px solid ${C.border}`, background:"none", cursor:"pointer", fontSize:13, color:C.mid }}>Done</button>
           </div>
         )}
@@ -1015,16 +1067,29 @@ function ContactModal({ mp, userVotes, onClose }) {
 }
 
 // ── Bill Alerts Tab ───────────────────────────────────────────────────────────
-function AlertsTab({ alerts, onToggleAlert }) {
-  const tracked = POLICIES.filter(p => alerts.includes(p.id));
-  const FAKE_FEED = [
-    { policyId:1, date:"2 hrs ago",  event:"Passed Senate Committee", note:"Senate Economics Committee recommended with minor amendments. Third reading expected next week." },
-    { policyId:3, date:"1 day ago",  event:"Second reading debate",   note:"Debate resumed after recess. 4 senators have now spoken. Vote expected within 2 sitting weeks." },
-    { policyId:5, date:"3 days ago", event:"New polling",             note:"Support dropped 2pts to 39% following media coverage of coal export ban provisions." },
-  ].filter(f => alerts.includes(f.policyId));
+// bills — pass live bills (with dataState); falls back to POLICIES only while
+// loading/on error, same fallback pattern BillsDesk already uses.
+function AlertsTab({ alerts, onToggleAlert, bills, dataState = "sample" }) {
+  const tracked = (bills || []).filter(p => alerts.includes(p.id));
+
+  // Real "recent updates" derived from each tracked bill's own timeline —
+  // no fabricated events. A bill only appears here if it actually has stage
+  // history; the most recent stage becomes the update line, bills sorted by
+  // last-updated so the newest genuine change surfaces first.
+  const recentUpdates = tracked
+    .filter(p => p.timeline?.length)
+    .map(p => ({ bill: p, latest: p.timeline[p.timeline.length - 1] }))
+    .sort((a, b) => new Date(b.bill.meta?.lastUpdated || 0) - new Date(a.bill.meta?.lastUpdated || 0))
+    .slice(0, 5);
 
   return (
     <div>
+      {dataState !== "live" && (
+        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12, fontSize:11, fontWeight:600, color:dataState==="cached"?C.amber:C.faint }}>
+          <span style={{ width:6, height:6, borderRadius:99, background:dataState==="cached"?C.amber:C.faint }} />
+          {dataState==="cached" ? "Couldn't reach live bill data — showing last known" : "Sample data"}
+        </div>
+      )}
       <div style={{ background:C.accentSoft, border:`1px solid ${C.accentMid}`, borderRadius:16, padding:"14px 16px", marginBottom:20 }}>
         <div style={{ fontSize:13, fontWeight:600, color:C.accent, marginBottom:4 }}>Bill progress alerts</div>
         <p style={{ fontSize:12, color:C.mid, margin:0, lineHeight:1.5 }}>Track bills you care about. Tap 🔔 on any policy card to add it here. You'll see updates when bills advance, pass, or polling changes significantly.</p>
@@ -1038,22 +1103,19 @@ function AlertsTab({ alerts, onToggleAlert }) {
         </div>
       ) : (
         <>
-          {FAKE_FEED.length > 0 && (
+          {recentUpdates.length > 0 && (
             <>
               <SectionLabel>Recent updates</SectionLabel>
-              {FAKE_FEED.map((f,i) => {
-                const pol = POLICIES.find(p=>p.id===f.policyId);
-                return (
-                  <div key={i} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:14, padding:"14px 16px", marginBottom:10 }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                      <span style={{ fontSize:11, fontWeight:700, color:C.accent, background:C.accentSoft, padding:"2px 8px", borderRadius:99 }}>{f.event}</span>
-                      <span style={{ fontSize:10, color:C.faint }}>{f.date}</span>
-                    </div>
-                    <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:4 }}>{pol?.title}</div>
-                    <div style={{ fontSize:12, color:C.mid, lineHeight:1.5 }}>{f.note}</div>
+              {recentUpdates.map(({ bill, latest }, i) => (
+                <div key={i} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:14, padding:"14px 16px", marginBottom:10 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                    <span style={{ fontSize:11, fontWeight:700, color:C.accent, background:C.accentSoft, padding:"2px 8px", borderRadius:99 }}>{latest.stage}</span>
+                    <span style={{ fontSize:10, color:C.faint }}>{latest.date}</span>
                   </div>
-                );
-              })}
+                  <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:4 }}>{bill.title}</div>
+                  {latest.note && <div style={{ fontSize:12, color:C.mid, lineHeight:1.5 }}>{latest.note}</div>}
+                </div>
+              ))}
               <Divider my={16} />
             </>
           )}
@@ -1232,78 +1294,6 @@ function BudgetTracker() {
   );
 }
 
-// ── Community Deliberation ────────────────────────────────────────────────────
-function DeliberationTab() {
-  const [selPolicy, setSelPolicy] = useState(POLICIES[0]);
-  const [response, setResponse]   = useState("");
-  const [submitted, setSubmitted] = useState({});
-
-  const THEMES = {
-    1:[{ theme:"Renter protections first", count:312, pct:41 },{ theme:"Supply is the real problem", count:228, pct:30 },{ theme:"Needs stronger enforcement", count:152, pct:20 },{ theme:"Other", count:68, pct:9 }],
-    2:[{ theme:"Study is reasonable, no rush", count:198, pct:45 },{ theme:"Too expensive, renewables are cheaper", count:156, pct:36 },{ theme:"Needed for energy security", count:62, pct:14 },{ theme:"Other", count:22, pct:5 }],
-    3:[{ theme:"Remove all negative gearing", count:267, pct:51 },{ theme:"Grandfathering is fair", count:189, pct:36 },{ theme:"Will reduce rental supply", count:55, pct:10 },{ theme:"Other", count:14, pct:3 }],
-    5:[{ theme:"Must act faster on climate", count:445, pct:58 },{ theme:"2035 is too fast", count:234, pct:30 },{ theme:"Keep coal for export only", count:78, pct:10 },{ theme:"Other", count:17, pct:2 }],
-  };
-
-  const themes = THEMES[selPolicy.id] || [{ theme:"No responses yet", count:0, pct:100 }];
-  const done   = submitted[selPolicy.id];
-
-  return (
-    <div>
-      <div style={{ display:"grid", gridTemplateColumns:"320px 1fr", gap:16, alignItems:"start" }}>
-      <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"20px" }}>
-        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:4 }}>Community deliberation</div>
-        <p style={{ fontSize:13, color:C.mid, margin:"0 0 14px", lineHeight:1.5 }}>Beyond support or oppose — what do Australians actually think the solution should be? Anonymous free-text responses are clustered into themes by AI.</p>
-        <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-          {POLICIES.slice(0,4).map(p => (
-            <button key={p.id} onClick={()=>setSelPolicy(p)} style={{ padding:"10px 14px", borderRadius:10, border:`1.5px solid ${selPolicy.id===p.id?C.accent:C.border}`, background:selPolicy.id===p.id?C.accentSoft:C.surface, cursor:"pointer", fontSize:12, fontWeight:600, color:selPolicy.id===p.id?C.accent:C.ink, textAlign:"left" }}>
-              {p.title}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-      {/* Community themes */}
-      <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"18px 20px", marginBottom:14 }}>
-        <SectionLabel>Community themes — {selPolicy.title}</SectionLabel>
-        {themes.map((t,i) => (
-          <div key={i} style={{ marginBottom:12 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:4 }}>
-              <span style={{ color:C.ink, fontWeight:500 }}>{t.theme}</span>
-              <span style={{ color:C.faint, fontSize:11 }}>{t.count} responses</span>
-            </div>
-            <div style={{ height:6, background:C.border, borderRadius:99, overflow:"hidden" }}>
-              <div style={{ width:`${t.pct}%`, height:"100%", background: i===0?C.accent:i===1?C.blue:i===2?C.green:C.faint, borderRadius:99, transition:"width 0.6s" }} />
-            </div>
-            <div style={{ fontSize:10, color:C.faint, marginTop:2 }}>{t.pct}%</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Submit response */}
-      {!done ? (
-        <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"18px 20px" }}>
-          <SectionLabel>Add your view</SectionLabel>
-          <p style={{ fontSize:13, color:C.mid, margin:"0 0 12px", lineHeight:1.5 }}>What do you think the right approach is? Anonymous. Max 200 characters.</p>
-          <textarea value={response} onChange={e=>setResponse(e.target.value.slice(0,200))} placeholder="e.g. We need to build more homes before capping rents, otherwise landlords will just sell up..." rows={3}
-            style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1px solid ${C.border}`, fontSize:13, color:C.ink, lineHeight:1.6, resize:"none", outline:"none", fontFamily:"Inter,sans-serif", marginBottom:8 }} />
-          <div style={{ fontSize:10, color:C.faint, marginBottom:10, textAlign:"right" }}>{response.length}/200</div>
-          <button onClick={()=>{if(response.trim())setSubmitted(s=>({...s,[selPolicy.id]:true}));}} disabled={!response.trim()} style={{ width:"100%", padding:"11px", borderRadius:10, background:response.trim()?C.accent:"#ccc", border:"none", cursor:response.trim()?"pointer":"not-allowed", fontSize:13, fontWeight:600, color:"#fff" }}>
-            Submit anonymously
-          </button>
-        </div>
-      ) : (
-        <div style={{ background:C.greenSoft, border:`1px solid ${C.greenMid}`, borderRadius:16, padding:"18px 20px", textAlign:"center" }}>
-          <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.green, marginBottom:6 }}>Response recorded</div>
-          <p style={{ fontSize:13, color:C.mid, margin:0, lineHeight:1.5 }}>Your response will be clustered with similar views in the next AI analysis run (every 24 hours).</p>
-        </div>
-      )}
-      </div>
-      </div>
-    </div>
-  );
-}
 
 // ── Cabinet Cards component ───────────────────────────────────────────────────
 
@@ -1498,9 +1488,18 @@ function MyMPTab({ userVotes, initialPostcode, initialView }) {
   const mpColor = result?(PARTY_COLOR[displayParty]||C.mid):C.accent;
   const isStale = result && !liveMpLoading && !liveMp; // sample electorate but no live match found
 
+  // Full adapted live member (with .records) when we have one — ContactModal
+  // needs the real voting history, not just the corrected name/party.
+  const liveMemberAdapted = liveMp ? adaptMember(liveMp) : null;
+
   return (
     <div>
-      {showContact && result && <ContactModal mp={{...result.mp, name:displayName, party:displayParty}} userVotes={userVotes} onClose={()=>setShowContact(false)} />}
+      {showContact && result && (
+        <ContactModal
+          mp={{ ...result.mp, name: displayName, party: displayParty, records: liveMemberAdapted?.records || [] }}
+          onClose={() => setShowContact(false)}
+        />
+      )}
 
       {/* Search */}
       <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"22px 24px", marginBottom:16 }}>
@@ -2141,96 +2140,6 @@ function VoteTab() {
   );
 }
 
-// ── Home dashboard ────────────────────────────────────────────────────────────
-function HomeTab({ userVotes, xp, streak, onTabChange }) {
-  const level      = getLevel(xp);
-  const nextLevel  = XP_LEVELS.find(l=>l.level===level.level+1);
-  const xpInLevel  = xp - level.minXp;
-  const xpNeeded   = (nextLevel?.minXp||level.maxXp) - level.minXp;
-  const pct        = Math.min(100,(xpInLevel/xpNeeded)*100);
-  const votedCount = Object.keys(userVotes).length;
-  const hotBill    = POLICIES.reduce((a,b)=>b.heat>a.heat?b:a);
-  const hotColor   = PARTY_COLOR[hotBill.party]||C.mid;
-
-  return (
-    <div>
-      <div style={{ display:"grid", gridTemplateColumns:"1.4fr 1fr", gap:16, alignItems:"start", marginBottom:16 }}>
-      <div>
-      {/* Hot bill */}
-      <SectionLabel>🔥 Hottest right now</SectionLabel>
-      <div onClick={()=>onTabChange("feed")} style={{ background:C.white, border:`1.5px solid ${hotColor}33`, borderRadius:20, padding:"20px 22px", marginBottom:14, cursor:"pointer" }}>
-        <div style={{ display:"flex", gap:8, marginBottom:12 }}><PartyPill party={hotBill.party} /><StatusPill status={hotBill.status} /><Tag color={C.accent}>Heat {hotBill.heat}</Tag></div>
-        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:8, lineHeight:1.25 }}>{hotBill.title}</div>
-        <p style={{ fontSize:13, color:C.mid, margin:"0 0 14px", lineHeight:1.6 }}>{hotBill.plain}</p>
-        <div style={{ display:"flex", gap:20, alignItems:"center", marginBottom:14 }}>
-          <div><div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:hotBill.support>50?C.green:C.red, lineHeight:1 }}>{hotBill.support}%</div><div style={{ fontSize:10, color:C.faint, marginTop:2 }}>community support</div></div>
-          <div style={{ flex:1 }}>
-            <div style={{ height:4, background:C.border, borderRadius:99, overflow:"hidden", display:"flex", gap:"1px", marginBottom:5 }}>
-              <div style={{ width:`${hotBill.support}%`, background:C.green }} /><div style={{ width:`${hotBill.neutral}%`, background:C.border }} /><div style={{ width:`${hotBill.oppose}%`, background:C.red }} />
-            </div>
-            <div style={{ fontSize:11, color:hotBill.trendDir==="up"?C.green:C.red, fontWeight:600 }}>{hotBill.trendDir==="up"?"▲":"▼"} {hotBill.trend}pts this week</div>
-          </div>
-        </div>
-        <div style={{ fontSize:12, color:C.accent, fontWeight:600 }}>View all policies →</div>
-      </div>
-
-      {/* 2PP */}
-      <SectionLabel>Live polling</SectionLabel>
-      <div onClick={()=>onTabChange("parties")} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"18px 20px", cursor:"pointer" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-          <div style={{ fontSize:13, fontWeight:600, color:C.ink }}>Two-party preferred</div>
-          <Tag color={C.accent}>Live</Tag>
-        </div>
-        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
-          <div style={{ textAlign:"center" }}><div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.red, lineHeight:1 }}>52</div><div style={{ fontSize:10, color:C.faint }}>ALP %</div></div>
-          <div style={{ flex:1, height:8, borderRadius:99, overflow:"hidden", display:"flex" }}><div style={{ width:"52%", background:C.red }} /><div style={{ width:"48%", background:C.blue }} /></div>
-          <div style={{ textAlign:"center" }}><div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.blue, lineHeight:1 }}>48</div><div style={{ fontSize:10, color:C.faint }}>LNP %</div></div>
-        </div>
-        <div style={{ fontSize:12, color:C.accent, fontWeight:600 }}>Full party breakdown →</div>
-      </div>
-      </div>
-
-      <div>
-      {/* Stats */}
-      <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"18px 20px", marginBottom:14 }}>
-        <div style={{ marginBottom:12 }}>
-          <div style={{ fontSize:11, fontWeight:600, color:C.faint, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>{level.label}</div><div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink }}>Level {level.level}</div>
-        </div>
-        <div style={{ display:"flex", gap:16, marginBottom:14 }}>
-          {[{v:streak,l:"streak",c:C.accent},{v:xp,l:"XP",c:C.ink},{v:votedCount,l:"votes",c:C.green}].map((s,i)=>(
-            <div key={i} style={{ textAlign:"center" }}><div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:s.c, lineHeight:1 }}>{s.v}</div><div style={{ fontSize:10, color:C.faint, marginTop:2 }}>{s.l}</div></div>
-          ))}
-        </div>
-        <div style={{ height:5, background:C.border, borderRadius:99, overflow:"hidden", marginBottom:5 }}><div style={{ width:`${pct}%`, height:"100%", background:C.accent, borderRadius:99, transition:"width 0.6s" }} /></div>
-        <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:C.faint }}>
-          <span>{xpInLevel}/{xpNeeded} XP to Level {level.level+1}</span>
-        </div>
-        {nextLevel?.unlock&&<div style={{ fontSize:10, color:C.accent, fontWeight:600, marginTop:4 }}>🔓 {nextLevel.unlock}</div>}
-      </div>
-
-      {/* Quick actions */}
-      <SectionLabel>Quick actions</SectionLabel>
-      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-        {[
-          { label:"Parties",              sub:"Representatives, party profiles & donations",    tab:"mymp",        icon:"🏛️" },
-          { label:"Civic lessons",      sub:votedCount>0?`${votedCount} votes cast`:"Earn XP", tab:"learn",     icon:"🎓" },
-          { label:"How parliament works", sub:"Interactive explainer",                        tab:"parliament",  icon:"🏛️" },
-          { label:"Budget tracker",     sub:"2024–25 measures explained",                    tab:"budget",      icon:"💰" },
-        ].map(a=>(
-          <div key={a.tab} onClick={()=>onTabChange(a.tab)} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:14, padding:"14px 16px", cursor:"pointer", transition:"box-shadow 0.15s", display:"flex", gap:12, alignItems:"center" }}>
-            <div style={{ fontSize:13, flexShrink:0 }}>{a.icon}</div>
-            <div>
-              <div style={{ fontSize:13, fontWeight:700, color:C.ink, marginBottom:2 }}>{a.label}</div>
-              <div style={{ fontSize:11, color:C.faint, lineHeight:1.4 }}>{a.sub}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-      </div>
-      </div>
-    </div>
-  );
-}
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 // 6 primary tabs, each with optional sub-navigation
@@ -2551,12 +2460,14 @@ function adaptMember(row) {
                          ? new Date(p.last_edited_at).toLocaleDateString("en-AU",
                              { day:"numeric", month:"short", year:"numeric" })
                          : "Date unknown",
+        lastEditedAt:  p.last_edited_at || null, // retained post-map so the sort below actually has something to compare
         withParty:     undefined,
         userAlignment: null,
       };
     })
-    // Keep newest first within each year — the year filter pill handles era selection
-    .sort((a, b) => new Date(b.last_edited_at || 0) - new Date(a.last_edited_at || 0));
+    // Keep newest first — was comparing a field that no longer existed on the
+    // mapped object (always undefined vs undefined, a silent no-op sort).
+    .sort((a, b) => new Date(b.lastEditedAt || 0) - new Date(a.lastEditedAt || 0));
   const attendance = (row.votes_attended != null && row.votes_possible)
     ? Math.round((row.votes_attended / row.votes_possible) * 100)
     : null;
@@ -2836,10 +2747,10 @@ function PoliAppInner() {
       title:{ home:"Home", bills:"Bill tracker", parliament:"Parliament map", mymp:"My MP", vote:"Vote", learn:"Learn" }[id],
       onSelect:() => navigate(id),
     })),
-    ...POLICIES.map(p => ({
+    ...(billsLoading || billsError ? POLICIES : liveBills).map(p => ({
       id:`bill-${p.id}`, type:"bill", title:p.title,
       sub:`${p.meta?.billNumber || p.category} · ${p.status}`,
-      onSelect:() => navigate("bills","tracker"),
+      onSelect:() => navigateToBill(p.id),
     })),
     ...members.map(m => ({
       id:`mp-${m.id}`, type:"member", title:m.name,
@@ -2850,7 +2761,7 @@ function PoliAppInner() {
       id:`gl-${term}`, type:"glossary", title:term, sub:def,
       onSelect:() => navigate("learn"),
     })),
-  ], [members]);
+  ], [members, liveBills, billsLoading, billsError]);
 
   // ── Sidebar footer ──
   const sidebarFooter = (
@@ -2905,7 +2816,9 @@ function PoliAppInner() {
     if (tab === "bills") {
       if (s === "alerts") return (
         <V5PageWrapper title="Tracked Bills" sub="Bills you're following — updates as they progress.">
-          <AlertsTab alerts={alerts} onToggleAlert={toggleAlert} />
+          <AlertsTab alerts={alerts} onToggleAlert={toggleAlert}
+            bills={billsLoading || billsError ? POLICIES : mergeSentiment(liveBills)}
+            dataState={billsLoading ? "cached" : billsError ? "cached" : "live"} />
         </V5PageWrapper>
       );
       if (s === "budget") return (
