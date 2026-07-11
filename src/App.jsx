@@ -1248,18 +1248,145 @@ function ConsistencyTracker() {
   );
 }
 
+// ── Budget at a Glance ────────────────────────────────────────────────────────
+// Real figures extracted from budget.gov.au's own "Website Chart Data" —
+// the source behind BP1/BP3's narrative charts (Tables 1–4, bs6.1, bs8.1).
+// Not the same source as BudgetTracker's itemized measures (BP2) — this is
+// long-run macro context. Baked in as of the 2026–27 Budget; sync_budget_chart_data.py
+// re-derives these from the same source for future budget cycles.
+const REVENUE_COMPOSITION = [
+  { year:"2005–06", total:255943, individuals:44.1, company:19.1, gst:14.6, excise:8.5, other:13.7 },
+  { year:"2015–16", total:386924, individuals:48.4, company:16.3, gst:14.8, excise:5.6,  other:14.9 },
+  { year:"2024–25", total:716951, individuals:47.2, company:19.4, gst:12.6, excise:4.4,  other:16.4 },
+  { year:"2029–30 (est)", total:894794, individuals:50.3, company:16.9, gst:13.4, excise:4.2, other:15.2 },
+];
+const SPENDING_BY_FUNCTION = [
+  { label:"Social Security and Welfare", pct:37.1 },
+  { label:"Other Purposes", pct:19.6 },
+  { label:"Health", pct:16.4 },
+  { label:"Education", pct:6.9 },
+  { label:"Defence", pct:6.2 },
+  { label:"General Public Services", pct:3.9 },
+  { label:"All Others", pct:9.9 },
+];
+const FORECAST_VS_OUTCOME = [
+  { year:"2018–19", forecast:3.0,  outcome:2.2 },
+  { year:"2019–20", forecast:2.75, outcome:-0.1 },
+  { year:"2020–21", forecast:-1.5, outcome:2.0 },
+  { year:"2021–22", forecast:4.25, outcome:4.3 },
+  { year:"2022–23", forecast:3.5,  outcome:3.6 },
+  { year:"2023–24", forecast:1.5,  outcome:1.4 },
+  { year:"2024–25", forecast:2.0,  outcome:1.3 },
+];
+const REVENUE_COLORS = { individuals:C.red, company:C.blue, gst:C.teal, excise:C.amber, other:C.faint };
+
+function BudgetGlance({ revenue = REVENUE_COMPOSITION, spending = SPENDING_BY_FUNCTION, forecast = FORECAST_VS_OUTCOME }) {
+  return (
+    <div>
+      <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"20px", marginBottom:14 }}>
+        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:4 }}>Australia's finances, in context</div>
+        <p style={{ fontSize:13, color:C.mid, margin:0, lineHeight:1.5 }}>Where government revenue comes from, what it's spent on, and how accurate past forecasts have actually been — the long-run picture behind this year's measures.</p>
+      </div>
+
+      {/* Revenue composition over time */}
+      <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"18px 20px", marginBottom:12 }}>
+        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:2 }}>Where revenue comes from — 2005–06 to 2029–30</div>
+        <div style={{ fontSize:11, color:C.faint, marginBottom:14 }}>Individuals' share of total receipts has grown from 44% to a projected 50% over two decades; excise's share has nearly halved.</div>
+        {revenue.map(r => (
+          <div key={r.year} style={{ marginBottom:12 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:C.mid, marginBottom:4 }}>
+              <span>{r.year}</span>
+              <span style={{ color:C.faint }}>${(r.total/1000).toFixed(0)}B total</span>
+            </div>
+            <div style={{ display:"flex", height:22, borderRadius:6, overflow:"hidden" }}>
+              {[["individuals",r.individuals],["company",r.company],["gst",r.gst],["excise",r.excise],["other",r.other]].map(([k,v]) => (
+                <div key={k} title={`${k}: ${v}%`} style={{ width:`${v}%`, background:REVENUE_COLORS[k], display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  {v>7 && <span style={{ fontSize:9, fontWeight:700, color:"#fff" }}>{v}%</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+        <div style={{ display:"flex", gap:12, flexWrap:"wrap", marginTop:8 }}>
+          {[["individuals","Individuals & withholding"],["company","Company tax"],["gst","GST"],["excise","Excise & customs"],["other","Other (incl. non-tax)"]].map(([k,label]) => (
+            <div key={k} style={{ display:"flex", alignItems:"center", gap:5 }}>
+              <span style={{ width:8, height:8, borderRadius:2, background:REVENUE_COLORS[k] }} />
+              <span style={{ fontSize:10, color:C.faint }}>{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Spending by function */}
+      <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"18px 20px", marginBottom:12 }}>
+        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:2 }}>What it's spent on — 2026–27</div>
+        <div style={{ fontSize:11, color:C.faint, marginBottom:14 }}>Social Security and Welfare is more than double the next-largest category.</div>
+        {SPENDING_BY_FUNCTION.map(s => (
+          <div key={s.label} style={{ marginBottom:10 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:C.ink, marginBottom:3 }}>
+              <span>{s.label}</span>
+              <span style={{ fontWeight:600, fontVariantNumeric:"tabular-nums" }}>{s.pct}%</span>
+            </div>
+            <div style={{ height:10, borderRadius:99, background:C.surface, overflow:"hidden" }}>
+              <div style={{ width:`${s.pct * 2}%`, maxWidth:"100%", height:"100%", background:C.accent, borderRadius:99 }} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Forecast vs outcome */}
+      <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"18px 20px" }}>
+        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:2 }}>How accurate were past forecasts?</div>
+        <div style={{ fontSize:11, color:C.faint, marginBottom:14 }}>Budget-time GDP growth forecast vs. what actually happened. 2019–20's forecast was made just before COVID hit.</div>
+        {FORECAST_VS_OUTCOME.map(f => {
+          const miss = f.outcome - f.forecast;
+          const barMax = 5; // scale reference, ± percentage points
+          return (
+            <div key={f.year} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+              <span style={{ width:78, fontSize:11, color:C.mid, flexShrink:0 }}>{f.year}</span>
+              <div style={{ flex:1, display:"flex", alignItems:"center", height:18, position:"relative" }}>
+                <div style={{ position:"absolute", left:"50%", top:0, bottom:0, width:1, background:C.border }} />
+                <div style={{
+                  position:"absolute", height:14, borderRadius:4,
+                  background: miss >= 0 ? C.green : C.red,
+                  left: miss >= 0 ? "50%" : `${50 + (miss/barMax)*50}%`,
+                  width: `${Math.min(Math.abs(miss)/barMax*50, 50)}%`,
+                }} />
+              </div>
+              <span style={{ width:130, fontSize:10, color:C.faint, flexShrink:0, textAlign:"right" }}>
+                forecast {f.forecast>0?"+":""}{f.forecast}% · actual {f.outcome>0?"+":""}{f.outcome}%
+              </span>
+            </div>
+          );
+        })}
+        <div style={{ fontSize:10, color:C.faint, marginTop:10 }}>Bars right of centre (green) mean the economy did better than forecast; left (red) means it undershot.</div>
+      </div>
+
+      <div style={{ fontSize:10, color:C.faint, marginTop:14, textAlign:"center" }}>
+        Based on Commonwealth of Australia data — budget.gov.au.
+      </div>
+    </div>
+  );
+}
+
 // ── Budget Tracker ────────────────────────────────────────────────────────────
-function BudgetTracker() {
+function BudgetTracker({ measures = BUDGET_MEASURES, dataState = "sample", budgetLabel = "Federal Budget 2024–25" }) {
   const [filter, setFilter] = useState("All");
-  const filtered = filter==="Cost of living" ? BUDGET_MEASURES.filter(m=>m.colLiving) : BUDGET_MEASURES;
+  const filtered = filter==="Cost of living" ? measures.filter(m=>m.colLiving) : measures;
   const dirColor = d => d==="expenditure"?C.red:d==="revenue"?C.amber:C.green;
-  const dirLabel = d => d==="expenditure"?"Spending":"saving"?"Saving":"Revenue impact";
+  const badge = { live:{c:C.green,l:"Live — Budget Paper No. 2 & budget.gov.au"}, cached:{c:C.amber,l:"Last known — live fetch failed"}, sample:{c:C.faint,l:"Sample data"} }[dataState];
 
   return (
     <div>
       <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"20px", marginBottom:14 }}>
-        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:4 }}>Federal Budget 2024–25</div>
-        <p style={{ fontSize:13, color:C.mid, margin:"0 0 14px", lineHeight:1.5 }}>Key budget measures in plain English — what was funded, what was cut, and what it means for you.</p>
+        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:4 }}>{budgetLabel}</div>
+        <p style={{ fontSize:13, color:C.mid, margin:"0 0 10px", lineHeight:1.5 }}>Key budget measures in plain English — what was funded, what was cut, and what it means for you.</p>
+        {badge && (
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10, fontSize:11, fontWeight:600, color:badge.c }}>
+            <span style={{ width:6, height:6, borderRadius:99, background:badge.c }} />
+            {badge.l}
+          </div>
+        )}
         <div style={{ display:"flex", gap:8 }}>
           {["All","Cost of living"].map(f => <button key={f} onClick={()=>setFilter(f)} style={{ padding:"6px 14px", borderRadius:99, border:`1.5px solid ${filter===f?C.accent:C.border}`, background:filter===f?C.accentSoft:C.surface, fontSize:12, fontWeight:600, color:filter===f?C.accent:C.mid, cursor:"pointer" }}>{f}</button>)}
         </div>
@@ -1270,7 +1397,7 @@ function BudgetTracker() {
         <div key={m.id} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"18px 20px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
             <div style={{ flex:1 }}>
-              <div style={{ display:"flex", gap:6, marginBottom:8 }}>
+              <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"wrap" }}>
                 <Tag color={dirColor(m.direction)}>{m.direction==="expenditure"?"Spending":m.direction==="saving"?"Saving":"Revenue"}</Tag>
                 <Tag color={C.faint}>{m.portfolio}</Tag>
                 {m.colLiving && <Tag color={C.teal}>Cost of living</Tag>}
@@ -1279,14 +1406,16 @@ function BudgetTracker() {
             </div>
             <div style={{ textAlign:"right", flexShrink:0, marginLeft:12 }}>
               <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:dirColor(m.direction) }}>{m.amount}</div>
-              <div style={{ fontSize:10, color:C.faint }}>{m.year}</div>
+              {m.year && <div style={{ fontSize:10, color:C.faint }}>{m.year}</div>}
             </div>
           </div>
           <p style={{ fontSize:13, color:C.mid, margin:"0 0 10px", lineHeight:1.6 }}>{m.plain}</p>
-          <div style={{ background:C.surface, borderLeft:`3px solid ${C.accent}`, borderRadius:"0 8px 8px 0", padding:"9px 12px" }}>
-            <div style={{ fontSize:10, fontWeight:700, color:C.accent, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>What this means for you</div>
-            <div style={{ fontSize:12, color:C.mid, lineHeight:1.5 }}>{m.impact}</div>
-          </div>
+          {m.impact && m.impact !== m.plain && (
+            <div style={{ background:C.surface, borderLeft:`3px solid ${C.accent}`, borderRadius:"0 8px 8px 0", padding:"9px 12px" }}>
+              <div style={{ fontSize:10, fontWeight:700, color:C.accent, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>What this means for you</div>
+              <div style={{ fontSize:12, color:C.mid, lineHeight:1.5 }}>{m.impact}</div>
+            </div>
+          )}
         </div>
       ))}
       </div>
@@ -2483,6 +2612,38 @@ function PoliAppInner() {
   };
 
   const [alerts, setAlerts] = useState([]);
+
+  // Budget measures — live from budget_measures (populated by sync_budget_measures.py).
+  const [budgetMeasures, setBudgetMeasures] = useState([]);
+  const [budgetState, setBudgetState] = useState("sample"); // "live" | "cached" | "sample"
+
+  useEffect(() => {
+    supabase.from("budget_measures").select("*")
+      .then(({ data, error }) => {
+        if (error || !data?.length) { setBudgetState("cached"); return; }
+        setBudgetMeasures(data.map(row => ({
+          id: row.id, title: row.title, portfolio: row.portfolio,
+          direction: row.direction, amount: row.amount, plain: row.plain,
+          colLiving: row.col_living,
+        })));
+        setBudgetState("live");
+      });
+  }, []);
+  // Avoid hardcoding a budget year in the label — it goes stale every May.
+  const budgetLabel = budgetState === "live" ? "Federal Budget — current" : "Federal Budget 2024–25";
+  const [budgetView, setBudgetView] = useState("Measures"); // "Measures" | "At a glance"
+
+  // Budget at a Glance — live from budget_glance (populated by sync_budget_glance.py).
+  // Falls back to the real, hand-verified figures baked into REVENUE_COMPOSITION etc.
+  const [glanceData, setGlanceData] = useState(null);
+  useEffect(() => {
+    supabase.from("budget_glance").select("*")
+      .then(({ data, error }) => {
+        if (error || !data?.length) return; // silent fallback — this is context, not core functionality
+        const bySection = Object.fromEntries(data.map(r => [r.section, r.data]));
+        setGlanceData(bySection);
+      });
+  }, []);
   const toggleAlert = id => setAlerts(a => a.includes(id) ? a.filter(x => x !== id) : [...a, id]);
 
   // ── CommandPalette index ──
@@ -2567,8 +2728,22 @@ function PoliAppInner() {
         </V5PageWrapper>
       );
       if (s === "budget") return (
-        <V5PageWrapper title="Federal Budget 2024–25" sub="Key budget measures explained in plain English.">
-          <BudgetTracker />
+        <V5PageWrapper title={budgetLabel} sub="Key budget measures explained in plain English.">
+          <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+            {["Measures","At a glance"].map(v => (
+              <button key={v} onClick={()=>setBudgetView(v)} style={{ padding:"6px 14px", borderRadius:99, border:`1.5px solid ${budgetView===v?C.accent:C.border}`, background:budgetView===v?C.accentSoft:C.white, fontSize:12, fontWeight:600, color:budgetView===v?C.accent:C.mid, cursor:"pointer" }}>{v}</button>
+            ))}
+          </div>
+          {budgetView === "Measures" ? (
+            <BudgetTracker measures={budgetMeasures.length ? budgetMeasures : BUDGET_MEASURES}
+              dataState={budgetState} budgetLabel={budgetLabel} />
+          ) : (
+            <BudgetGlance
+              revenue={glanceData?.revenue_composition}
+              spending={glanceData?.spending_by_function}
+              forecast={glanceData?.forecast_accuracy}
+            />
+          )}
         </V5PageWrapper>
       );
       // default: tracker
