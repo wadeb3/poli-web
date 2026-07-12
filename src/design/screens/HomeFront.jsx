@@ -111,7 +111,7 @@ export function HomeFront({ bills, divisions = [], items = [], onOpenBill, onNav
           Making Sense of Australian Democracy
         </h1>
         <p style={{ ...TYPE.body, fontSize: "clamp(14px, 1.6vw, 17px)", color: C.mid, maxWidth: 560, margin: "0 0 40px", lineHeight: 1.55 }}>
-          Making politics understandable, trackable, and actionable for every Australian, in real time
+          Understandable, trackable, and actionable for every Australian, in real time
         </p>
 
         <div style={{ width: "100%", maxWidth: 620, position: "relative" }}>
