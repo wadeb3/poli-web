@@ -108,10 +108,10 @@ export function HomeFront({ bills, divisions = [], items = [], onOpenBill, onNav
         </div>
 
         <h1 style={{ ...TYPE.masthead, fontSize: "clamp(28px, 4.2vw, 44px)", color: C.ink, margin: "0 0 14px", maxWidth: 760, lineHeight: 1.14 }}>
-          Australia's civic intelligence platform.
+          Making Sense of Australian Democracy
         </h1>
         <p style={{ ...TYPE.body, fontSize: "clamp(14px, 1.6vw, 17px)", color: C.mid, maxWidth: 560, margin: "0 0 40px", lineHeight: 1.55 }}>
-          Making politics understandable, trackable, and actionable for every Australian, in real time.
+          Making politics understandable, trackable, and actionable for every Australian, in real time
         </p>
 
         <div style={{ width: "100%", maxWidth: 620, position: "relative" }}>
