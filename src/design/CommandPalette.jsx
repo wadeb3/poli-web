@@ -46,9 +46,9 @@ export function usePaletteShortcut() {
 }
 
 /**
- * @param {{ open: boolean, onClose: () => void, items: PaletteItem[], maxResults?: number }} props
+ * @param {{ open: boolean, onClose: () => void, items: PaletteItem[], maxResults?: number, initialQuery?: string }} props
  */
-export function CommandPalette({ open, onClose, items, maxResults = 9 }) {
+export function CommandPalette({ open, onClose, items, maxResults = 9, initialQuery = "" }) {
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef(null);
@@ -63,7 +63,7 @@ export function CommandPalette({ open, onClose, items, maxResults = 9 }) {
   }, [items, query, maxResults]);
 
   useEffect(() => { setCursor(0); }, [query, open]);
-  useEffect(() => { if (open) { setQuery(""); setTimeout(() => inputRef.current?.focus(), 10); } }, [open]);
+  useEffect(() => { if (open) { setQuery(initialQuery); setTimeout(() => inputRef.current?.focus(), 10); } }, [open, initialQuery]);
 
   if (!open) return null;
 

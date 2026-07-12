@@ -1,308 +1,211 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// HOME · DASHBOARD · v6.4
+// HOME · "The Brief" · v7
 //
-// Single-viewport dashboard — everything visible at once on desktop.
-// No full-screen sections. Three columns + a footer pulse bar.
+// Full redesign from the newspaper-front-page v6.1 concept. The brief: one
+// dominant opening moment (vision statement + a search that reads like the
+// first prompt screen of an AI product — generous whitespace, one big soft
+// input, suggested starting points), then three small, equal, condensed
+// containers below. Nothing here competes with the hero for attention —
+// restraint is the point after the hero spends its one bold move.
 //
-// Layout (desktop):
-//   ┌─────────────────────────────────────────────────────────┐
-//   │  dateline header                                        │
-//   ├──────────────────────┬─────────────────┬───────────────┤
-//   │  Recent bills (list) │  Parliament     │  Your rep     │
-//   │  8 compact rows      │  Seats + divs   │  Postcode     │
-//   ├──────────────────────┴─────────────────┴───────────────┤
-//   │  Community pulse — 3 sentiment bars                     │
-//   └─────────────────────────────────────────────────────────┘
+// The search hero does NOT run its own parallel search logic — typing and
+// submitting hands the query straight to the existing CommandPalette (via
+// onSearch), so there is exactly one search implementation in the app, not
+// two that can drift out of sync.
 //
-// Mobile: single column, natural scroll, no snap.
+// Community pulse is a real curation, not an arbitrary pick: most-supported,
+// most-opposed, and most-contested (closest support/oppose split) bills,
+// deduped so one bill can't fill two slots — three genuinely different
+// stories about where public opinion actually sits right now.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState } from "react";
-import { C, TYPE, RADIUS } from "../tokens.js";
-import { Chip, StatusChip, BillTypeChip, SentimentBar } from "../primitives.jsx";
-import { IconChevron, IconEye, IconSearch } from "../icons.jsx";
+import { C, TYPE, RADIUS, SHADOW } from "../tokens.js";
+import { Card, Chip, StatusChip } from "../primitives.jsx";
+import { SourceBadge } from "../states.jsx";
+import { IconSearch, IconSparkle, IconChevron, IconBill, IconVote, IconParliament } from "../icons.jsx";
 
-const PARTY_SEATS = [
-  { label: "Labor",       seats: 93,  color: "#E8373B" },
-  { label: "Lib–Nat",     seats: 56,  color: "#1C4F9C" },
-  { label: "Greens",      seats: 4,   color: "#00A651" },
-  { label: "Independent", seats: 14,  color: "#888888" },
-  { label: "Other",       seats: 9,   color: "#C0BAB2" },
+/** @param {import("./BillCard.jsx").Bill[]} bills */
+function pulseHighlights(bills, n = 3) {
+  const withVotes = (bills || []).filter(b => (b.support || 0) + (b.oppose || 0) + (b.neutral || 0) > 0);
+  if (!withVotes.length) return [];
+  const used = new Set();
+  const pick = (label, sortFn) => {
+    const found = [...withVotes].sort(sortFn).find(b => !used.has(b.id));
+    if (found) used.add(found.id);
+    return found ? { bill: found, label } : null;
+  };
+  return [
+    pick("Most supported", (a, b) => (b.support || 0) - (a.support || 0)),
+    pick("Most opposed", (a, b) => (b.oppose || 0) - (a.oppose || 0)),
+    pick("Most contested", (a, b) =>
+      Math.abs((a.support || 0) - (a.oppose || 0)) - Math.abs((b.support || 0) - (b.oppose || 0))),
+  ].filter(Boolean).slice(0, n);
+}
+
+const SUGGESTIONS = [
+  { label: "What's moving through parliament?", tab: "parliament" },
+  { label: "See the federal budget", tab: "bills", sub: "budget" },
+  { label: "Find my electorate", tab: "mymp", sub: "mp" },
+  { label: "Cast your vote on live issues", tab: "vote" },
 ];
-const TOTAL_SEATS = PARTY_SEATS.reduce((s, p) => s + p.seats, 0);
 
-export function HomeFront({
-  bills = [], members = [], divisions = [],
-  onOpenBill, onOpenMember, onPostcodeChange,
-  savedPostcode = "", nextSitting,
-}) {
-  const today = new Date().toLocaleDateString("en-AU", {
-    weekday: "long", day: "numeric", month: "long", year: "numeric",
-  });
+/**
+ * @param {{ bills: import("./BillCard.jsx").Bill[],
+ *           divisions?: {id:string|number, name:string, date:string, aye_votes:number, no_votes:number, house:string}[],
+ *           onOpenBill: (id: number) => void,
+ *           onNavigate: (tab: string, sub?: string) => void,
+ *           onSearch: (query: string) => void,
+ *           nextSitting?: {label: string, days: number},
+ *           dataState?: "live"|"cached"|"sample" }} props
+ */
+export function HomeFront({ bills, divisions = [], onOpenBill, onNavigate, onSearch, nextSitting, dataState = "sample" }) {
+  const [query, setQuery] = useState("");
+  const topBills = [...(bills || [])].sort((a, b) => (b.heat || 0) - (a.heat || 0)).slice(0, 3);
+  const pulse = pulseHighlights(bills);
+  const recentDivisions = (divisions || []).slice(0, 3);
 
-  const recentBills = [...bills]
-    .sort((a, b) => new Date(b.meta?.introducedDate || 0) - new Date(a.meta?.introducedDate || 0))
-    .slice(0, 8);
+  const submit = () => { if (query.trim()) onSearch(query.trim()); };
 
-  const activeBills = bills
-    .filter(b => b.status === "Active" || b.status === "Legislation")
-    .slice(0, 3);
-
-  // ── Desktop layout ────────────────────────────────────────────────────────
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 60px)", overflow: "hidden", gap: 0 }}>
+    <div>
+      {/* ── HERO ─────────────────────────────────────────────────────────── */}
+      <div style={{
+        minHeight: "clamp(420px, 36vh, 560px)",
+        display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
+        textAlign: "center", padding: "32px 16px 24px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+          {nextSitting && (
+            <span style={{ ...TYPE.overline, color: C.accentText }}>
+              {nextSitting.label} in {nextSitting.days} day{nextSitting.days !== 1 ? "s" : ""}
+            </span>
+          )}
+          <SourceBadge state={dataState} source="APH" />
+        </div>
 
-      {/* Dateline bar */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0 8px", flexShrink: 0 }}>
-        <span style={{ fontSize: 11, color: C.faint }}>{today}</span>
-        {nextSitting && (
-          <span style={{ fontSize: 11, fontWeight: 600, color: C.accentText }}>
-            🗓 Parliament sitting in {nextSitting.days} day{nextSitting.days !== 1 ? "s" : ""}
-          </span>
-        )}
-      </div>
+        <h1 style={{ ...TYPE.masthead, fontSize: "clamp(28px, 4.2vw, 44px)", color: C.ink, margin: "0 0 14px", maxWidth: 760, lineHeight: 1.14 }}>
+          Australia's civic intelligence platform.
+        </h1>
+        <p style={{ ...TYPE.body, fontSize: "clamp(14px, 1.6vw, 17px)", color: C.mid, maxWidth: 560, margin: "0 0 40px", lineHeight: 1.55 }}>
+          Making politics understandable, trackable, and actionable for every Australian — in real time.
+        </p>
 
-      {/* Main 3-column grid — all headers outside cards so containers align */}
-      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "minmax(0,1.4fr) minmax(0,1fr) minmax(0,0.9fr)", gap: "clamp(8px, 1vw, 16px)", minHeight: 0, overflow: "hidden" }}>
+        <div style={{ width: "100%", maxWidth: 620 }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10,
+            background: C.white, border: `1.5px solid ${C.border}`, borderRadius: RADIUS.pill,
+            padding: "6px 8px 6px 20px", boxShadow: SHADOW.cardHover,
+          }}>
+            <span style={{ color: C.faint, flexShrink: 0, display: "flex" }}><IconSparkle size={17} /></span>
+            <input
+              value={query} onChange={e => setQuery(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") submit(); }}
+              placeholder="Ask about a bill, search your MP, explore parliament…"
+              aria-label="Search Poli"
+              style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", fontFamily: "inherit", fontSize: 15, color: C.ink, padding: "11px 0" }}
+            />
+            <button onClick={submit} aria-label="Search" disabled={!query.trim()} style={{
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+              width: 38, height: 38, borderRadius: "50%", border: "none",
+              cursor: query.trim() ? "pointer" : "default",
+              background: query.trim() ? C.accent : C.surface, color: query.trim() ? C.white : C.faint,
+              transition: "background 0.15s",
+            }}>
+              <IconSearch size={16} />
+            </button>
+          </div>
 
-        {/* ── COL 1: Recent Bills ────────────────────────────────────── */}
-        <div style={{ display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
-          <PanelHeader label="Recent Bills" count={bills.length} action="All bills →" onAction={() => onOpenBill(null)} />
-          <div style={{ flex: 1, overflowY: "auto", background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card }}>
-            {recentBills.length === 0 ? (
-              <div style={{ padding: 16, fontSize: 11, color: C.faint, textAlign: "center" }}>Loading…</div>
-            ) : recentBills.map((b, i) => (
-              <BillRow key={b.id} bill={b} last={i === recentBills.length - 1} onClick={() => onOpenBill(b.id)} />
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, marginTop: 16 }}>
+            {SUGGESTIONS.map(s => (
+              <button key={s.label} onClick={() => onNavigate(s.tab, s.sub)} style={{
+                padding: "7px 14px", borderRadius: RADIUS.pill, border: `1px solid ${C.border}`,
+                background: C.white, fontSize: 12.5, color: C.mid, cursor: "pointer", fontFamily: "inherit",
+                transition: "border-color 0.15s, color 0.15s",
+              }}>{s.label}</button>
             ))}
           </div>
         </div>
+      </div>
 
-        {/* ── COL 2: Parliament — header outside, two cards inside ────── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 0, minHeight: 0, overflow: "hidden" }}>
-          <PanelHeader label="Parliament" action="Map →" onAction={() => onOpenBill(null, "parliament")} />
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minHeight: 0 }}>
-
-            {/* Seat composition */}
-            <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "10px 12px", flexShrink: 0 }}>
-              <div style={{ display: "flex", height: 6, borderRadius: 99, overflow: "hidden", marginBottom: 8 }}>
-                {PARTY_SEATS.map(p => (
-                  <div key={p.label} title={`${p.label}: ${p.seats}`} style={{ width: `${(p.seats / TOTAL_SEATS) * 100}%`, background: p.color }} />
-                ))}
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                {PARTY_SEATS.map(p => (
-                  <div key={p.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: 2, background: p.color, flexShrink: 0 }} />
-                    <span style={{ fontSize: 11, color: C.mid, flex: 1 }}>{p.label}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{p.seats}</span>
-                  </div>
-                ))}
-              </div>
-              <div style={{ marginTop: 6, paddingTop: 6, borderTop: `1px solid ${C.border}`, fontSize: 10, color: C.faint }}>
-                {TOTAL_SEATS} seats · majority {Math.floor(TOTAL_SEATS / 2) + 1}
-              </div>
-            </div>
-
-            {/* Recent divisions */}
-            <div style={{ flex: 1, background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "10px 12px", display: "flex", flexDirection: "column", minHeight: 0 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: C.faint, textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 8 }}>Recent Votes</div>
-              <div style={{ flex: 1, overflowY: "auto" }}>
-                {divisions.length === 0 ? (
-                  <div style={{ fontSize: 11, color: C.faint }}>Loading…</div>
-                ) : divisions.slice(0, 6).map((d, i) => (
-                  <div key={d.id || i} style={{ display: "flex", alignItems: "flex-start", gap: 8, paddingBottom: 7, marginBottom: 7, borderBottom: i < 5 ? `1px solid ${C.border}` : "none" }}>
-                    <div style={{ width: 6, height: 6, borderRadius: 99, background: d.aye_votes > d.no_votes ? C.green : C.red, marginTop: 3, flexShrink: 0 }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 11, fontWeight: 500, color: C.ink, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
-                      <div style={{ fontSize: 10, color: C.faint, marginTop: 1 }}>
-                        {d.date ? new Date(d.date).toLocaleDateString("en-AU", { day:"numeric", month:"short" }) : ""}
-                        {" · "}{d.aye_votes} aye · {d.no_votes} no
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── COL 3: Your Representatives ───────────────────────────── */}
-        <div style={{ display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
-          <PanelHeader label="Your Representatives" action="All →" onAction={() => onOpenMember(null)} />
-          <div style={{ flex: 1, background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8, minHeight: 0 }}>
-            <PostcodeLookup
-              members={members}
-              savedPostcode={savedPostcode}
-              onPostcodeChange={onPostcodeChange}
-              onOpenMember={onOpenMember}
+      {/* ── CONTAINERS ───────────────────────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 16 }}>
+        <HomeContainer icon={<IconBill size={15} />} title="Top bills" onSeeAll={() => onNavigate("bills", "tracker")}>
+          {topBills.length === 0 && <EmptyRow text="No bills loaded yet." />}
+          {topBills.map((b, i) => (
+            <ContainerRow key={b.id} onClick={() => onOpenBill(b.id)} last={i === topBills.length - 1}
+              title={b.title}
+              meta={<StatusChip status={b.status} />}
+              stat={`${b.support}% support`}
+              statColor={b.support > 50 ? C.green : b.oppose > 50 ? C.red : C.mid}
             />
-          </div>
-        </div>
-      </div>
-
-      {/* ── Community Pulse footer — fixed height, no overflow ─────────── */}
-      <div style={{ flexShrink: 0, marginTop: 8, height: 80 }}>
-        <PanelHeader label="Community Pulse" sub="How Australians are voting" action="Vote →" onAction={() => onOpenBill(null, "vote")} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, height: 62 }}>
-          {activeBills.length === 0 ? (
-            <div style={{ gridColumn: "1/-1", background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "10px 14px", fontSize: 11, color: C.faint, display: "flex", alignItems: "center" }}>
-              Community sentiment coming soon — be among the first to vote on active bills.
-            </div>
-          ) : activeBills.map(b => (
-            <div key={b.id} onClick={() => onOpenBill(b.id)}
-              style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: RADIUS.card, padding: "8px 12px", cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "space-between", overflow: "hidden" }}
-              onMouseEnter={e => e.currentTarget.style.background = C.surface}
-              onMouseLeave={e => e.currentTarget.style.background = C.white}>
-              <div style={{ fontSize: 11, fontWeight: 500, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.title}</div>
-              <SentimentBar support={b.support} neutral={b.neutral} oppose={b.oppose} height={4} />
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10 }}>
-                <span style={{ color: C.green, fontWeight: 600 }}>{b.support}% support</span>
-                <span style={{ color: C.faint }}>{b.neutral}% neutral</span>
-                <span style={{ color: C.red, fontWeight: 600 }}>{b.oppose}% oppose</span>
-              </div>
-            </div>
           ))}
-        </div>
-      </div>
+        </HomeContainer>
 
-    </div>
-  );
-}
+        <HomeContainer icon={<IconParliament size={15} />} title="Recent votes" onSeeAll={() => onNavigate("parliament")}>
+          {recentDivisions.length === 0 && <EmptyRow text="No recent divisions yet." />}
+          {recentDivisions.map((d, i) => (
+            <ContainerRow key={d.id} onClick={() => onNavigate("parliament")} last={i === recentDivisions.length - 1}
+              title={d.name}
+              meta={<Chip color={C.mid}>{d.house}</Chip>}
+              stat={`${d.aye_votes}–${d.no_votes}`}
+              statColor={d.aye_votes > d.no_votes ? C.green : C.red}
+            />
+          ))}
+        </HomeContainer>
 
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-function PanelHeader({ label, sub, count, action, onAction }) {
-  return (
-    <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6, flexShrink: 0 }}>
-      <span style={{ fontSize: 10, fontWeight: 700, color: C.faint, textTransform: "uppercase", letterSpacing: "0.09em" }}>{label}</span>
-      {count != null && <span style={{ fontSize: 10, color: C.faint }}>({count})</span>}
-      {sub && <span style={{ fontSize: 10, color: C.faint }}>{sub}</span>}
-      {action && (
-        <button onClick={onAction} style={{ marginLeft: "auto", fontSize: 10, fontWeight: 600, color: C.accentText, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
-          {action}
-        </button>
-      )}
-    </div>
-  );
-}
-
-function BillRow({ bill, last, onClick }) {
-  return (
-    <div onClick={onClick}
-      style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", borderBottom: last ? "none" : `1px solid ${C.border}`, cursor: "pointer", background: C.white }}
-      onMouseEnter={e => e.currentTarget.style.background = C.surface}
-      onMouseLeave={e => e.currentTarget.style.background = C.white}>
-
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {/* Chips row */}
-        <div style={{ display: "flex", gap: 3, marginBottom: 2, alignItems: "center" }}>
-          <StatusChip status={bill.status} />
-          <BillTypeChip title={bill.title} />
-          {bill.category && (
-            <span style={{ fontSize: 9, color: C.faint, marginLeft: 1 }}>{bill.category}</span>
-          )}
-        </div>
-        {/* Title — single line, ellipsis */}
-        <div style={{ fontSize: 11, fontWeight: 500, color: C.ink, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {bill.title}
-        </div>
-      </div>
-
-      {/* Right side */}
-      <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-        {bill.hiddenProvisions?.length > 0 && (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 2, fontSize: 9, color: C.amber, fontWeight: 600 }}>
-            <IconEye size={9} />{bill.hiddenProvisions.length}
-          </span>
-        )}
-        <IconChevron size={10} dir="right" />
+        <HomeContainer icon={<IconVote size={15} />} title="Community pulse" onSeeAll={() => onNavigate("vote")}>
+          {pulse.length === 0 && <EmptyRow text="No community votes yet." />}
+          {pulse.map(({ bill, label }, i) => (
+            <ContainerRow key={bill.id} onClick={() => onOpenBill(bill.id)} last={i === pulse.length - 1}
+              title={bill.title}
+              meta={<Chip color={C.accentText} tone="tint">{label}</Chip>}
+              stat={`${bill.support}% / ${bill.oppose}%`}
+              statColor={C.mid}
+            />
+          ))}
+        </HomeContainer>
       </div>
     </div>
   );
 }
 
-function PostcodeLookup({ members, savedPostcode, onPostcodeChange, onOpenMember }) {
-  const [input, setInput] = useState(savedPostcode || "");
-  const [results, setResults] = useState(null);
-
-  const lookup = () => {
-    const q = input.trim();
-    if (!q) return;
-    onPostcodeChange?.(q);
-    const matches = members.filter(m =>
-      m.electorate?.toLowerCase().includes(q.toLowerCase()) ||
-      m.name?.toLowerCase().includes(q.toLowerCase()) ||
-      m.postcodes?.includes(q)
-    ).slice(0, 4);
-    setResults(matches);
-  };
-
+function HomeContainer({ icon, title, onSeeAll, children }) {
   return (
-    <>
-      {/* Search */}
-      <div style={{ display: "flex", gap: 6 }}>
-        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, padding: "7px 10px", borderRadius: RADIUS.control, border: `1px solid ${C.border}`, background: C.paper }}>
-          <IconSearch size={12} />
-          <input
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && lookup()}
-            placeholder="Postcode or electorate…"
-            style={{ flex: 1, border: "none", outline: "none", fontFamily: "inherit", fontSize: 12, color: C.ink, background: "transparent" }}
-          />
-        </div>
-        <button onClick={lookup} style={{ padding: "7px 12px", borderRadius: RADIUS.control, border: "none", background: C.accent, color: "#fff", fontFamily: "inherit", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-          Find
+    <Card pad="18px 20px" style={{ display: "flex", flexDirection: "column", minHeight: 244 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <span style={{ color: C.accentText, display: "flex" }}>{icon}</span>
+        <span style={{ ...TYPE.overline, color: C.ink, flex: 1 }}>{title}</span>
+        <button onClick={onSeeAll} style={{
+          background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 2,
+          fontSize: 11.5, fontWeight: 600, color: C.accentText, fontFamily: "inherit", padding: 0,
+        }}>
+          See all <IconChevron size={11} dir="right" />
         </button>
       </div>
-
-      {/* Default: show first few members */}
-      {results === null && (
-        <div style={{ flex: 1, overflowY: "auto" }}>
-          <div style={{ fontSize: 10, color: C.faint, marginBottom: 8 }}>
-            {savedPostcode ? `Showing results for "${savedPostcode}"` : "Enter postcode to find your MP and Senators"}
-          </div>
-          {members.slice(0, 8).map(m => <RepRow key={m.id} member={m} onClick={() => onOpenMember(m.id)} />)}
-        </div>
-      )}
-
-      {/* Results */}
-      {results !== null && (
-        <div style={{ flex: 1, overflowY: "auto" }}>
-          {results.length === 0 ? (
-            <div style={{ fontSize: 12, color: C.mid, padding: "8px 0" }}>
-              No results for "{input}"
-              <button onClick={() => { setResults(null); setInput(""); }} style={{ display: "block", marginTop: 6, fontSize: 11, color: C.accentText, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0 }}>Clear</button>
-            </div>
-          ) : (
-            <>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ fontSize: 10, color: C.faint }}>{results.length} found</span>
-                <button onClick={() => { setResults(null); setInput(""); }} style={{ fontSize: 10, color: C.accentText, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>Clear</button>
-              </div>
-              {results.map(m => <RepRow key={m.id} member={m} onClick={() => onOpenMember(m.id)} />)}
-            </>
-          )}
-        </div>
-      )}
-    </>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {children}
+      </div>
+    </Card>
   );
 }
 
-function RepRow({ member, onClick }) {
-  const initials = member.name?.split(" ").map(w => w[0]).slice(0, 2).join("") || "?";
+function ContainerRow({ title, meta, stat, statColor, onClick, last = false }) {
   return (
-    <div onClick={onClick}
-      style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: `1px solid ${C.border}`, cursor: "pointer" }}
-      onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
-      onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
-      <div style={{ width: 28, height: 28, borderRadius: 99, background: C.accentSoft, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: C.accentText, flexShrink: 0 }}>
-        {initials}
-      </div>
+    <button onClick={onClick} style={{
+      display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
+      padding: "10px 0", borderBottom: last ? "none" : `1px solid ${C.border}`,
+      background: "none", border: "none",
+      cursor: "pointer", fontFamily: "inherit",
+    }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{member.name}</div>
-        <div style={{ fontSize: 10, color: C.faint }}>{member.role}</div>
+        <div style={{ fontSize: 13, color: C.ink, marginBottom: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
+        {meta}
       </div>
-      <IconChevron size={11} dir="right" />
-    </div>
+      <span style={{ fontSize: 11.5, fontWeight: 700, color: statColor, flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{stat}</span>
+    </button>
   );
+}
+
+function EmptyRow({ text }) {
+  return <div style={{ fontSize: 12, color: C.faint, padding: "24px 0", textAlign: "center" }}>{text}</div>;
 }
