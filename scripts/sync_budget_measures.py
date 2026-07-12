@@ -1,24 +1,24 @@
 """
-sync_budget_measures.py — Poli data pipeline · Federal Budget measures sync
+sync_budget_measures.py. Poli data pipeline · Federal Budget measures sync
 
 Two sources, kept deliberately separate rather than force-matched together:
 
-  1. Budget Paper No. 2 (BP2) — the exhaustive, portfolio-organised list of
+  1. Budget Paper No. 2 (BP2), the exhaustive, portfolio-organised list of
      every new budget measure, each with a $ table by year and a narrative
      paragraph. Source of `title` / `portfolio` / `amount` / `direction` /
      `plain`. Government prose, not written in second person.
 
   2. The 6 budget theme pages (Cost of living, Tax reform, Fuel supply and
      security, Productivity, Care and opportunity, Security and investment)
-     — plain HTML, already written in "what this means for you" voice with
+, plain HTML, already written in "what this means for you" voice with
      case studies. These become their OWN featured entries (source="theme"),
-     not merged onto BP2 rows — there's no explicit link between a theme
+     not merged onto BP2 rows, there's no explicit link between a theme
      page's prose and a specific BP2 measure title, and fuzzy-matching by
      keyword risks pairing the wrong measure with the wrong claim. Safer to
      keep them as a separate "featured" tier the UI can lead with.
 
 `amount` comes from the financial table's Total row summed across all 5
-published years — not from the "This measure is estimated to..." sentence,
+published years, not from the "This measure is estimated to..." sentence,
 which is frequently absent or phrased inconsistently. The table is always
 present and always the same shape.
 
@@ -27,12 +27,12 @@ preferred attribution for anything transformed (which summing a table and
 re-presenting it is): "Based on Commonwealth of Australia data."
 
 NOT executed against the live network in this environment (sandboxed, no
-internet access). The parser IS tested — against bp2_fixture.txt, built
+internet access). The parser IS tested, against bp2_fixture.txt, built
 from real text extracted from the live 2026–27 PDF during this session,
 covering both Part 1 (Receipts) and Part 2 (Payments), multi-agency tables,
 missing summary sentences, and nfp/*/".." placeholder values. Run once
 against the real downloaded PDF and spot-check before trusting it in a
-scheduled job — a page-layout change would need the measure-boundary
+scheduled job, a page-layout change would need the measure-boundary
 detection (title immediately followed by "Receipts ($m)"/"Payments ($m)")
 revisited.
 
@@ -80,7 +80,7 @@ def find_bp2_url() -> str:
     soup = BeautifulSoup(resp.text, "html.parser")
     link = soup.find("a", href=re.compile(r"bp2.*\.pdf", re.I))
     if not link:
-        raise RuntimeError("Could not find the BP2 PDF link — downloads page structure may have changed.")
+        raise RuntimeError("Could not find the BP2 PDF link, downloads page structure may have changed.")
     href = link["href"]
     return href if href.startswith("http") else BASE + href
 
@@ -100,21 +100,21 @@ def extract_pdf_text(pdf_path: str) -> str:
 
 def find_detail_sections(text: str) -> dict:
     """Returns {'receipts': text, 'payments': text} for the per-measure detail
-    sections only — skips the Contents, the portfolio index, and the
+    sections only, skips the Contents, the portfolio index, and the
     aggregate Table 1/Table 2 summary (which has no narrative, just figures)."""
     # "Table 1: Receipt measures since the 2025..." without "(continued)" is
-    # unique — it's the true start of Part 1 (Contents/index don't contain it).
+    # unique, it's the true start of Part 1 (Contents/index don't contain it).
     r1 = re.search(r"Table 1: Receipt measures since the 20\d\d(?!.*\(continued\))", text)
     r2 = re.search(r"Table 2: Payment measures since the 20\d\d(?!.*\(continued\))", text)
     if not r1 or not r2:
-        raise RuntimeError("Could not find Table 1 / Table 2 anchors — PDF structure may have changed.")
+        raise RuntimeError("Could not find Table 1 / Table 2 anchors. PDF structure may have changed.")
 
     # Within each part, the per-measure detail section starts after the
     # aggregate summary table, at "Total impact of receipt/payment measures".
     receipts_agg_end = text.find("Total impact of receipt measures", r1.start())
     payments_agg_end = text.find("Total impact of payment measures", r2.start())
     if receipts_agg_end == -1 or payments_agg_end == -1:
-        raise RuntimeError("Could not find 'Total impact of ... measures' — PDF structure may have changed.")
+        raise RuntimeError("Could not find 'Total impact of ... measures'. PDF structure may have changed.")
 
     receipts_detail = text[receipts_agg_end:r2.start()]
     payments_detail = text[payments_agg_end:]
@@ -130,12 +130,12 @@ PORTFOLIO_HEADER_RE = re.compile(
 def split_by_portfolio(detail_text: str) -> list[tuple[str, str]]:
     """Returns [(portfolio_name, chunk_text), ...] using the recurring
     '{Portfolio} | Part N: ... Measures | Page X' running header that
-    appears on odd (recto) pages — more reliable than the once-per-portfolio
+    appears on odd (recto) pages, more reliable than the once-per-portfolio
     standalone heading line for most of the document, but BP2 alternates
     with a generic 'Budget Paper No. 2 / Page X | Part N: ... Measures'
     header on even (verso) pages, which carries no portfolio name at all.
     The very first measure in the whole detail section always falls on one
-    of these headerless pages, before any running-header match exists — so
+    of these headerless pages, before any running-header match exists, so
     that leading chunk is resolved from its own standalone portfolio-name
     line instead (checked against KNOWN_PORTFOLIOS)."""
     matches = list(PORTFOLIO_HEADER_RE.finditer(detail_text))
@@ -213,7 +213,7 @@ def parse_measures_in_chunk(chunk: str, portfolio: str, part: str) -> list[dict]
         block_end = title_matches[i + 1].start() if i + 1 < len(title_matches) else len(chunk)
         block = chunk[block_start:block_end]
 
-        # Primary table ends at the first "Related " sub-table — don't let
+        # Primary table ends at the first "Related " sub-table, don't let
         # related/secondary figures pollute the primary amount.
         related_idx = block.find("\nRelated ")
         primary_block = block[:related_idx] if related_idx != -1 else block
@@ -262,7 +262,7 @@ def parse_bp2(text: str) -> list[dict]:
     return all_measures
 
 
-# ── Step 6: theme pages — featured, plain-English, kept separate from BP2 ────
+# ── Step 6: theme pages, featured, plain-English, kept separate from BP2 ────
 
 def parse_theme_page(html: str, theme_label: str, is_cost_of_living: bool) -> list[dict]:
     soup = BeautifulSoup(html, "html.parser")
@@ -306,7 +306,7 @@ def fetch_theme_measures() -> list[dict]:
 # ── Step 7: format + upsert ───────────────────────────────────────────────────
 
 def format_amount(amount_m, unquantified: bool) -> str:
-    # amount_m: float or None — written without the `float | None` union
+    # amount_m: float or None, written without the `float | None` union
     # syntax (that's Python 3.10+ only; this project runs on 3.9).
     if amount_m is None:
         return "Not separately quantified"
@@ -354,7 +354,7 @@ def main():
     print(f"Parsed {len(bp2_measures)} BP2 measures.")
     unknown = [m for m in bp2_measures if m["portfolio"] == "UNKNOWN"]
     if unknown:
-        print(f"  WARNING: {len(unknown)} measures had no resolvable portfolio — check parser against real layout.", file=sys.stderr)
+        print(f"  WARNING: {len(unknown)} measures had no resolvable portfolio, check parser against real layout.", file=sys.stderr)
 
     theme_measures = fetch_theme_measures()
     print(f"Parsed {len(theme_measures)} theme-page featured measures.")
@@ -363,9 +363,9 @@ def main():
     if os.environ.get("SUPABASE_URL"):
         upsert_to_supabase(all_measures)
     else:
-        print("\nSUPABASE_URL not set — dry run. First 5 BP2 measures:")
+        print("\nSUPABASE_URL not set, dry run. First 5 BP2 measures:")
         for m in bp2_measures[:5]:
-            print(f"  [{m['portfolio']}] {m['title']} — {format_amount(m['amount_m'], m['unquantified'])} ({m['direction']})")
+            print(f"  [{m['portfolio']}] {m['title']}, {format_amount(m['amount_m'], m['unquantified'])} ({m['direction']})")
         print("\nFirst 3 theme measures:")
         for m in theme_measures[:3]:
             print(f"  [{m['portfolio']}] {m['title']}")

@@ -3,13 +3,13 @@
 //
 // Full redesign from the newspaper-front-page v6.1 concept. The brief: one
 // dominant opening moment (vision statement + a search that reads like the
-// first prompt screen of an AI product — generous whitespace, one big soft
+// first prompt screen of an AI product, generous whitespace, one big soft
 // input, suggested starting points), then three small, equal, condensed
-// containers below. Nothing here competes with the hero for attention —
+// containers below. Nothing here competes with the hero for attention
 // restraint is the point after the hero spends its one bold move.
 //
 // v7.1: the search hero shows results inline as you type (a dropdown under
-// the input) rather than handing off to the ⌘K modal — one click away, no
+// the input) rather than handing off to the ⌘K modal, one click away, no
 // second window. It still doesn't run its own parallel matching logic:
 // filterPaletteItems is the same function the ⌘K modal uses, imported from
 // CommandPalette.jsx, so there's exactly one definition of "what matches,"
@@ -17,7 +17,7 @@
 //
 // Community pulse is a real curation, not an arbitrary pick: most-supported,
 // most-opposed, and most-contested (closest support/oppose split) bills,
-// deduped so one bill can't fill two slots — three genuinely different
+// deduped so one bill can't fill two slots, three genuinely different
 // stories about where public opinion actually sits right now.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -111,7 +111,7 @@ export function HomeFront({ bills, divisions = [], items = [], onOpenBill, onNav
           Australia's civic intelligence platform.
         </h1>
         <p style={{ ...TYPE.body, fontSize: "clamp(14px, 1.6vw, 17px)", color: C.mid, maxWidth: 560, margin: "0 0 40px", lineHeight: 1.55 }}>
-          Making politics understandable, trackable, and actionable for every Australian — in real time.
+          Making politics understandable, trackable, and actionable for every Australian, in real time.
         </p>
 
         <div style={{ width: "100%", maxWidth: 620, position: "relative" }}>
@@ -149,7 +149,7 @@ export function HomeFront({ bills, divisions = [], items = [], onOpenBill, onNav
             </button>
           </div>
 
-          {/* Inline results — one click away, no separate window */}
+          {/* Inline results, one click away, no separate window */}
           {showDropdown && (
             <div id="home-search-results" role="listbox" style={{
               position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20,
@@ -159,14 +159,14 @@ export function HomeFront({ bills, divisions = [], items = [], onOpenBill, onNav
             }}>
               {results.length === 0 ? (
                 <div style={{ padding: "20px 20px", textAlign: "center", fontSize: 12.5, color: C.faint }}>
-                  Nothing found — try a bill topic, a member's name, or a postcode.
+                  Nothing found. Try a bill topic, a member's name, or a postcode.
                 </div>
               ) : results.map((r, i) => {
                 const t = PALETTE_TYPE_STYLE[r.type] || PALETTE_TYPE_STYLE.page;
                 const on = i === cursor;
                 return (
                   <button key={r.id} role="option" aria-selected={on}
-                    onMouseDown={e => e.preventDefault()} // fires before input's onBlur — no lost-click race
+                    onMouseDown={e => e.preventDefault()} // fires before input's onBlur, no lost-click race
                     onClick={() => pick(r)} onMouseEnter={() => setCursor(i)}
                     style={{
                       display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "left",

@@ -34,6 +34,7 @@ Data flow:
 import os
 import sys
 import re
+import json
 import time
 import argparse
 import subprocess
@@ -566,6 +567,343 @@ def translate_bills(retranslate=False):
     print(f"\n  ✅ {translated} bills translated.")
 
 
+
+# ── Layer 2 — Bill detail enrichment ─────────────────────────────────────────
+#
+# For each bill that has a parlinfo_url, fetches the individual APH bill page
+# to extract the explanatory memorandum and second reading speech text, then
+# runs five targeted AI prompts to populate:
+#   provisions, cohorts, arguments, hidden_provisions, party_positions
+#
+# Run with: python3 scripts/sync_bills.py --enrich
+#
+# Incremental — only processes bills where enriched_at is null.
+# Re-run with: python3 scripts/sync_bills.py --re-enrich (reprocesses all)
+#
+# APH WAF blocks Python requests — uses curl subprocess (same as list scraper).
+
+def fetch_bill_detail_page(bill_id):
+    """
+    Fetch the APH bill detail page using curl.
+    URL format: https://www.aph.gov.au/Parliamentary_Business/Bills_Legislation/
+                Bills_Search_Results/Result?bId={bill_id}
+    Returns raw HTML string or None on failure.
+    """
+    url = f"https://www.aph.gov.au/Parliamentary_Business/Bills_Legislation/Bills_Search_Results/Result?bId={bill_id}"
+    try:
+        result = subprocess.run(
+            [
+                "curl", "-s", "-L",
+                "-A", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "--max-time", "30",
+                "--compressed",
+                "-H", "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "-H", "Accept-Language: en-AU,en;q=0.9",
+                url,
+            ],
+            capture_output=True, text=True, timeout=35
+        )
+        if result.returncode != 0 or not result.stdout:
+            return None
+        return result.stdout
+    except Exception as e:
+        print(f"    curl failed: {e}")
+        return None
+
+
+def extract_bill_texts(html):
+    """
+    Extract explanatory memorandum and second reading speech text
+    from an APH bill detail page HTML.
+    Returns (em_text, speech_text) tuple — either may be None.
+    """
+    if not html:
+        return None, None
+
+    soup = BeautifulSoup(html, "html.parser")
+    em_text = None
+    speech_text = None
+
+    # The bill detail page has sections separated by headings.
+    # We look for the EM and second reading speech link text, then
+    # follow the HTML link to the actual document HTML if available.
+    # For now, extract the summary/description text visible on the page.
+
+    # Find all text content in the main bill description area
+    main = soup.find("div", class_="bill-home") or soup.find("div", {"id": "billhome"}) or soup.find("main")
+
+    if main:
+        # Extract the full text content, which contains the bill summary,
+        # stage history, and any inline EM content
+        full_text = main.get_text(" ", strip=True)
+
+        # Split into rough sections by known headings
+        em_match = re.search(
+            r'(?:Explanatory memoranda?|Summary)[:\s]+(.{100,3000}?)(?:Second reading|Progress of bill|Text of bill|$)',
+            full_text, re.IGNORECASE | re.DOTALL
+        )
+        if em_match:
+            em_text = em_match.group(1).strip()
+
+        speech_match = re.search(
+            r'(?:Second reading speech[es]*)[:\s]+(.{100,3000}?)(?:Committee|Third reading|Progress|$)',
+            full_text, re.IGNORECASE | re.DOTALL
+        )
+        if speech_match:
+            speech_text = speech_match.group(1).strip()
+
+        # Fallback: use the full page text (capped) as EM source
+        if not em_text:
+            em_text = full_text[:3000]
+
+    return em_text, speech_text
+
+
+def parse_json_response(text, fallback):
+    """
+    Safely parse JSON from a Claude response.
+    Strips markdown fences, handles common formatting issues.
+    Returns parsed object or fallback on failure.
+    """
+    if not text:
+        return fallback
+    # Strip markdown code fences
+    text = re.sub(r'```(?:json)?\s*', '', text).strip()
+    text = re.sub(r'```\s*$', '', text).strip()
+    try:
+        return json.loads(text)
+    except Exception:
+        # Try to find JSON within the text
+        arr_match = re.search(r'(\[.*\])', text, re.DOTALL)
+        obj_match = re.search(r'(\{.*\})', text, re.DOTALL)
+        for m in [arr_match, obj_match]:
+            if m:
+                try:
+                    return json.loads(m.group(1))
+                except Exception:
+                    pass
+    return fallback
+
+
+def enrich_bill(bill, em_text, speech_text):
+    """
+    Run all five AI enrichment prompts for a single bill.
+    Returns a dict of the enriched fields.
+    """
+    if not ANTHROPIC_API_KEY:
+        return {}
+
+    title = bill.get("title", "")
+    # Use em_text as primary source, fall back to APH summary
+    primary_text = em_text or bill.get("summary_aph") or title
+    debate_text   = speech_text or primary_text
+
+    results = {}
+
+    # ── Prompt 1: Provisions ─────────────────────────────────────────────────
+    try:
+        raw = claude_call(
+            f"Extract 4-6 key operative provisions from this Australian parliamentary bill.\n"
+            f"Each provision must be one factual sentence describing something the bill "
+            f"specifically requires, prohibits, creates, or amends. Use active voice starting "
+            f"with a verb. Do not include political framing, background context, or opinions.\n"
+            f"Only include provisions explicitly stated in the source text.\n\n"
+            f"Output ONLY a JSON array of strings. Example: [\"Requires X to do Y\", \"Establishes Z\"]\n\n"
+            f"Bill: {title}\n"
+            f"Text: {primary_text[:2000]}",
+            max_tokens=400
+        )
+        parsed = parse_json_response(raw, [])
+        if isinstance(parsed, list) and parsed:
+            results["provisions"] = parsed
+    except Exception as e:
+        print(f"    provisions failed: {e}")
+
+    time.sleep(0.3)
+
+    # ── Prompt 2: Cohorts ────────────────────────────────────────────────────
+    try:
+        raw = claude_call(
+            f"Identify 4-6 distinct groups of Australians directly or indirectly affected by "
+            f"this bill. For each group state only observable, factual impacts as described "
+            f"in the bill or explanatory memorandum. Do not characterise impacts as positive "
+            f"or negative. Do not infer impacts not described in the source text.\n\n"
+            f"The 'group' field must be a SHORT noun phrase of 1-3 words maximum "
+            f"(e.g. 'Aged care residents', 'Small businesses', 'Renters', 'Employers'). "
+            f"The 'detail' field is one factual sentence.\n\n"
+            f"Output ONLY a JSON array: "
+            f"[{{\"group\":\"short noun phrase\",\"impact\":\"direct or indirect\",\"detail\":\"string\"}}]\n\n"
+            f"Bill: {title}\n"
+            f"Text: {primary_text[:2000]}",
+            max_tokens=500
+        )
+        parsed = parse_json_response(raw, [])
+        if isinstance(parsed, list) and parsed:
+            results["cohorts"] = parsed
+    except Exception as e:
+        print(f"    cohorts failed: {e}")
+
+    time.sleep(0.3)
+
+    # ── Prompt 3: Arguments ──────────────────────────────────────────────────
+    try:
+        raw = claude_call(
+            f"Based only on the text provided, extract the arguments made IN FAVOUR of and "
+            f"AGAINST this bill as stated by their respective proponents. Report only what "
+            f"was actually argued — do not invent, embellish, or editorialize. Up to 3 "
+            f"arguments per side, one factual sentence each. If fewer than 3 arguments are "
+            f"present on either side, include only those explicitly stated.\n\n"
+            f"Output ONLY a JSON object:\n"
+            f"{{\"for\":[\"string\"],\"against\":[\"string\"]}}\n\n"
+            f"Bill: {title}\n"
+            f"Text: {debate_text[:2000]}",
+            max_tokens=400
+        )
+        parsed = parse_json_response(raw, {"for": [], "against": []})
+        if isinstance(parsed, dict) and ("for" in parsed or "against" in parsed):
+            results["arguments"] = parsed
+    except Exception as e:
+        print(f"    arguments failed: {e}")
+
+    time.sleep(0.3)
+
+    # ── Prompt 4: Hidden provisions ──────────────────────────────────────────
+    try:
+        raw = claude_call(
+            f"Identify provisions in this bill that meet ONE OR MORE of these specific criteria:\n"
+            f"1. Substantively unrelated to the bill's stated primary purpose\n"
+            f"2. Delegate significant discretionary power to a Minister without parliamentary "
+            f"vote or oversight mechanism\n"
+            f"3. Remove or reduce an existing legal protection\n"
+            f"4. Contain a sunset clause that removes a protection (not routine administrative)\n\n"
+            f"Return an empty array if no provisions clearly meet these criteria.\n"
+            f"Do not flag standard legislative drafting, definitions, or procedural clauses.\n"
+            f"Be conservative — only flag provisions a reasonable person would find notable.\n\n"
+            f"Output ONLY a JSON array with these exact fields:\n"
+            f"- type: one of exactly: unrelated, delegated, expanded, sunset\n"
+            f"- severity: one of exactly: high, medium, low\n"
+            f"- clause: the specific clause reference e.g. 'Schedule 2, Clause 18'\n"
+            f"- title: a SHORT heading of 4-7 words describing what the provision does "
+            f"(NOT a full sentence — e.g. 'Minister sets cap by instrument', not "
+            f"'The Minister is given the power to set the cap')\n"
+            f"- summary: one factual sentence describing what the provision does\n"
+            f"- whyItMatters: one factual sentence explaining why this warrants scrutiny\n\n"
+            f"[{{\"type\":\"string\",\"severity\":\"string\",\"clause\":\"string\","
+            f"\"title\":\"string\",\"summary\":\"string\",\"whyItMatters\":\"string\"}}]\n\n"
+            f"Bill: {title}\n"
+            f"Text: {primary_text[:2000]}",
+            max_tokens=500
+        )
+        parsed = parse_json_response(raw, [])
+        if isinstance(parsed, list):
+            results["hidden_provisions"] = parsed
+    except Exception as e:
+        print(f"    hidden_provisions failed: {e}")
+
+    time.sleep(0.3)
+
+    # ── Prompt 5: Party positions ────────────────────────────────────────────
+    try:
+        raw = claude_call(
+            f"Based only on the text provided, state each party's position on this bill.\n"
+            f"Only include parties with an explicitly stated position in the source text.\n"
+            f"Do not infer positions from general ideology or past voting patterns.\n"
+            f"Include all parties mentioned regardless of size.\n\n"
+            f"The 'party' field must use EXACTLY one of these names (no variations):\n"
+            f"Australian Labor Party, Liberal Party, National Party, Australian Greens, "
+            f"Liberal National Party, Independent, One Nation, Katter's Australian Party, "
+            f"Jacqui Lambie Network, United Australia Party, Centre Alliance\n\n"
+            f"The 'note' field must be one SHORT factual sentence (max 15 words) "
+            f"stating their stated reason.\n\n"
+            f"Output ONLY a JSON array:\n"
+            f"[{{\"party\":\"string\",\"position\":\"support|oppose|conditional\","
+            f"\"note\":\"string\"}}]\n\n"
+            f"Bill: {title}\n"
+            f"Text: {debate_text[:2000]}",
+            max_tokens=400
+        )
+        parsed = parse_json_response(raw, [])
+        if isinstance(parsed, list) and parsed:
+            results["party_positions"] = parsed
+    except Exception as e:
+        print(f"    party_positions failed: {e}")
+
+    return results
+
+
+def enrich_bills(reenrich=False):
+    """
+    Layer 2 enrichment — fetch each bill's APH detail page,
+    extract EM + speech text, run 5 AI prompts, store results.
+    """
+    if not ANTHROPIC_API_KEY:
+        print("\n❌ ANTHROPIC_API_KEY not set — skipping enrichment.")
+        return
+
+    print(f"\n═══ Enriching bill details {'(re-enrich all)' if reenrich else '(new only)'} ═══")
+
+    params = {
+        "select":  "id,title,parlinfo_url,summary_aph",
+        "order":   "introduced_date.desc",
+        "limit":   "500",
+    }
+    if not reenrich:
+        params["enriched_at"] = "is.null"
+
+    resp = requests.get(
+        f"{SUPABASE_URL}/rest/v1/bills",
+        headers={**SB_HEADERS, "Prefer": "count=none"},
+        params=params, timeout=30,
+    )
+    resp.raise_for_status()
+    bills = [b for b in resp.json() if b.get("parlinfo_url") or b.get("summary_aph")]
+    print(f"  {len(bills)} bills to enrich.")
+
+    enriched = 0
+    for i, bill in enumerate(bills, 1):
+        print(f"\n  [{i}/{len(bills)}] {bill['title'][:60]}")
+
+        # Fetch the APH detail page
+        em_text, speech_text = None, None
+        if bill.get("parlinfo_url"):
+            # Extract bill ID from the parlinfo URL
+            bill_id = extract_bill_id(bill["parlinfo_url"])
+            if bill_id:
+                html = fetch_bill_detail_page(bill_id)
+                em_text, speech_text = extract_bill_texts(html)
+                if em_text:
+                    print(f"    ✓ Page fetched ({len(em_text)} chars)")
+                else:
+                    print(f"    ⚠ Page fetched but no EM text extracted")
+            time.sleep(1)  # polite delay between page fetches
+
+        # Run AI enrichment
+        enrichment = enrich_bill(bill, em_text, speech_text)
+
+        if enrichment or em_text:
+            update = {
+                "enriched_at": datetime.utcnow().isoformat() + "Z",
+            }
+            if em_text:     update["em_text"]     = em_text[:5000]
+            if speech_text: update["speech_text"] = speech_text[:3000]
+            update.update(enrichment)
+
+            sb_patch("bills", bill["id"], update)
+            enriched += 1
+
+            for field in ["provisions", "cohorts", "arguments", "hidden_provisions", "party_positions"]:
+                val = enrichment.get(field)
+                if val:
+                    if isinstance(val, list):
+                        print(f"    {field}: {len(val)} items")
+                    else:
+                        print(f"    {field}: ✓")
+
+        time.sleep(0.5)
+
+    print(f"\n  ✅ {enriched} bills enriched.")
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
@@ -574,15 +912,25 @@ def main():
                         help="Generate AI plain-English summaries for new bills")
     parser.add_argument("--retranslate", action="store_true",
                         help="Re-generate all summaries (use when prompt has been improved)")
+    parser.add_argument("--enrich",      action="store_true",
+                        help="Layer 2: fetch bill detail pages and run 5 AI enrichment prompts")
+    parser.add_argument("--re-enrich",   action="store_true", dest="reenrich",
+                        help="Re-enrich all bills (reprocesses even if already enriched)")
     args = parser.parse_args()
 
-    if not args.translate and not args.retranslate:
+    run_scrape = not any([args.translate, args.retranslate, args.enrich, args.reenrich])
+
+    if run_scrape:
         scrape_bills()
-    elif args.retranslate:
-        translate_bills(retranslate=True)
-    else:
+    if args.translate:
         scrape_bills()
         translate_bills(retranslate=False)
+    if args.retranslate:
+        translate_bills(retranslate=True)
+    if args.enrich:
+        enrich_bills(reenrich=False)
+    if args.reenrich:
+        enrich_bills(reenrich=True)
 
     print("\n✅ Bills sync complete.")
 

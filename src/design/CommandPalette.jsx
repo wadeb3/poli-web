@@ -2,7 +2,7 @@
 // COMMAND PALETTE · Cmd/Ctrl+K global search · v6.2
 //
 // One box that reaches everything: bills, members, electorates, glossary
-// terms, pages. For a reference product this changes the relationship — a
+// terms, pages. For a reference product this changes the relationship, a
 // novice types their suburb, a journalist types a bill number, both land in
 // two keystrokes. Zero dependencies; simple token matching (every query word
 // must appear in title+sub) which is predictable and fast at this data size.
@@ -33,7 +33,7 @@ export const PALETTE_TYPE_STYLE = {
 };
 
 /**
- * The one matching implementation for "search everything" — used by both the
+ * The one matching implementation for "search everything", used by both the
  * ⌘K modal and any inline dropdown (e.g. HomeFront's search hero), so there's
  * exactly one place that defines what counts as a match.
  * @param {PaletteItem[]} items

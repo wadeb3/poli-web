@@ -2,7 +2,7 @@
 // POLI v6 · Full civic intelligence platform
 // Shell: v6.2 design system (Sidebar/BottomBar, CommandPalette, violet accent)
 // Data: Supabase live (mps) + hardcoded sample (bills, budget, deliberation)
-// All v5 components preserved — migrating tab by tab
+// All v5 components preserved, migrating tab by tab
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useRef, useCallback, useMemo, Component } from "react";
 import { supabase } from "./lib/supabaseClient.js";
@@ -29,7 +29,7 @@ import { LearnSyllabus } from "./design/screens/LearnSyllabus.jsx";
 
 // ── v5 components kept (not yet migrated to v6 screens) ──────────────────────
 // These live below in this file. They still use the old inline C tokens which
-// continue to work — C is kept as an alias below.
+// continue to work. C is kept as an alias below.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LEGACY COLOUR TOKENS (v5 components still use these directly)
@@ -101,28 +101,28 @@ const POLICIES = [
     relatedBills:["National Rental Assistance Supplement Act 2023","Help to Buy (Shared Equity) Bill 2024"],
     sources:[{ label:"APH Bill page", url:"https://www.aph.gov.au" },{ label:"Explanatory memorandum", url:"https://www.aph.gov.au" },{ label:"Senate committee report", url:"https://www.aph.gov.au" }],
     hiddenProvisions:[
-      { type:"delegated", severity:"medium", clause:"Schedule 2, Clause 18", title:"Minister sets rent cap rate by instrument", summary:"The CPI+2% cap is not locked into the Act. The specific formula is set by the Minister via legislative instrument — meaning it can be changed without a vote in Parliament.", whyItMatters:"The headline policy could be quietly altered by any future government without debate.", scrutinyFlag:"Senate Scrutiny of Bills Committee — Scrutiny Digest 8 of 2024" },
-      { type:"expanded", severity:"low", clause:"Schedule 4, Clause 31–35", title:"NHFIC board composition changes", summary:"The bill quietly restructures the board of the National Housing Finance and Investment Corporation, expanding ministerial appointment power.", whyItMatters:"Board governance changes are unrelated to rent caps — bundled without separate debate.", scrutinyFlag:null },
+      { type:"delegated", severity:"medium", clause:"Schedule 2, Clause 18", title:"Minister sets rent cap rate by instrument", summary:"The CPI+2% cap is not locked into the Act. The specific formula is set by the Minister via legislative instrument, meaning it can be changed without a vote in Parliament.", whyItMatters:"The headline policy could be quietly altered by any future government without debate.", scrutinyFlag:"Senate Scrutiny of Bills Committee, Scrutiny Digest 8 of 2024" },
+      { type:"expanded", severity:"low", clause:"Schedule 4, Clause 31–35", title:"NHFIC board composition changes", summary:"The bill quietly restructures the board of the National Housing Finance and Investment Corporation, expanding ministerial appointment power.", whyItMatters:"Board governance changes are unrelated to rent caps, bundled without separate debate.", scrutinyFlag:null },
     ],
   },
   {
     id:2, title:"Nuclear Energy Feasibility Study", party:"LNP", status:"Proposed", category:"Energy", colLiving:true,
     support:44, oppose:47, neutral:9, trend:"-2", trendDir:"down", heat:88,
     plain:"Proposes lifting the nuclear ban and studying 7 potential reactor sites.",
-    means:"No power plants yet — just a study phase. Could change your electricity prices within 20 years.",
+    means:"No power plants yet. Just a study phase that could change your electricity prices within 20 years.",
     donations:[{ donor:"Minerals Council of Australia", amount:"$890,000", party:"LNP", cycle:"2022–23" },{ donor:"Origin Energy", amount:"$210,000", party:"LNP", cycle:"2023–24" }],
     priorAttempts:[{ year:2015, title:"Nuclear Power (Facilitating the Development) Bill", outcome:"Lapsed", notes:"Introduced by David Leyonhjelm (LDP). Lapsed at dissolution of parliament." }],
     meta:{ billNumber:"Australian Nuclear Energy Agency Bill 2024", chamber:"House of Representatives", portfolioMinister:"Ted O'Brien, Shadow Minister for Nuclear Energy", introduced:"22 Jul 2024", lastUpdated:"5 hrs ago", stage:"Proposed" },
     fiscal:{ budgetImpact:"$1.2 billion for feasibility studies and agency setup", perHousehold:"Projected electricity price impact unclear pending study outcomes", costSource:"LNP costed policy · PBO (independent review pending)", direction:"expenditure" },
     cohorts:[
       { group:"Electricity consumers", impact:"long-term", detail:"Nuclear could provide stable baseload power, potentially lowering wholesale prices after 2040." },
-      { group:"Regional communities", impact:"direct", detail:"7 proposed sites are in regional NSW, QLD, VIC, SA, WA — significant local employment." },
+      { group:"Regional communities", impact:"direct", detail:"7 proposed sites are in regional NSW, QLD, VIC, SA, WA, with significant local employment." },
       { group:"Coal workers", impact:"indirect", detail:"Nuclear positioned as transition pathway for coal communities facing closures." },
       { group:"Renewable energy sector", impact:"indirect", detail:"Nuclear competes for investment capital and policy priority with solar and wind." },
       { group:"Environment", impact:"direct", detail:"Waste storage, site contamination risk, and water usage are key unresolved concerns." },
     ],
-    provisions:["Repeal of EPBC Act 1999 prohibition on nuclear facilities","Establishment of Australian Nuclear Energy Agency (ANEA)","CSIRO-led feasibility studies across 7 sites — 2-year reporting timeline","State and territory governments retain veto rights over site selection","Technology-neutral energy market framework"],
-    arguments:{ for:["Nuclear provides 24/7 baseload power that wind and solar cannot without large-scale storage","Modern SMR technology reduces construction cost vs. traditional plants","15 of 20 largest economies already use nuclear — Australia is an outlier"], against:["CSIRO GenCost shows nuclear is the most expensive electricity source available","Earliest possible operation date of 2037–2040 creates a dangerous energy gap","No state government has agreed to host a reactor — SA, VIC, QLD have legislated bans"] },
+    provisions:["Repeal of EPBC Act 1999 prohibition on nuclear facilities","Establishment of Australian Nuclear Energy Agency (ANEA)","CSIRO-led feasibility studies across 7 sites, on a 2-year reporting timeline","State and territory governments retain veto rights over site selection","Technology-neutral energy market framework"],
+    arguments:{ for:["Nuclear provides 24/7 baseload power that wind and solar cannot without large-scale storage","Modern SMR technology reduces construction cost vs. traditional plants","15 of 20 largest economies already use nuclear; Australia is an outlier"], against:["CSIRO GenCost shows nuclear is the most expensive electricity source available","Earliest possible operation date of 2037–2040 creates a dangerous energy gap","No state government has agreed to host a reactor; SA, VIC, QLD have legislated bans"] },
     partyPositions:[
       { party:"LNP", position:"support", note:"Centrepiece energy policy. Argues renewables alone cannot achieve reliable net zero." },
       { party:"ALP", position:"oppose", note:"Too expensive and too slow. Government committed to 82% renewables by 2030." },
@@ -138,8 +138,8 @@ const POLICIES = [
     relatedBills:["Climate Change Act 2022","Offshore Electricity Infrastructure Act 2021"],
     sources:[{ label:"APH Bill page", url:"https://www.aph.gov.au" },{ label:"CSIRO GenCost 2024", url:"https://www.csiro.au" }],
     hiddenProvisions:[
-      { type:"unrelated", severity:"high", clause:"Schedule 3, Clause 44", title:"Uranium export licensing relaxed", summary:"A provision removes the requirement for case-by-case ministerial approval for uranium exports to IAEA member states — a significant trade policy change.", whyItMatters:"This is a substantive change to Australia's uranium export framework with no connection to the domestic nuclear feasibility study.", scrutinyFlag:"Senate Environment & Communications Committee — Additional Comments (Greens)" },
-      { type:"delegated", severity:"medium", clause:"Clause 12(4)", title:"Agency CEO appointment — no merit process required", summary:"The new ANEA CEO can be appointed directly by the Minister without an advertised merit-based selection process.", whyItMatters:"Creates a significant patronage appointment outside public service norms for a major new statutory body.", scrutinyFlag:"Senate Scrutiny of Bills Committee — Scrutiny Digest 11 of 2024" },
+      { type:"unrelated", severity:"high", clause:"Schedule 3, Clause 44", title:"Uranium export licensing relaxed", summary:"A provision removes the requirement for case-by-case ministerial approval for uranium exports to IAEA member states, a significant trade policy change.", whyItMatters:"This is a substantive change to Australia's uranium export framework with no connection to the domestic nuclear feasibility study.", scrutinyFlag:"Senate Environment & Communications Committee: Additional Comments (Greens)" },
+      { type:"delegated", severity:"medium", clause:"Clause 12(4)", title:"Agency CEO appointment: no merit process required", summary:"The new ANEA CEO can be appointed directly by the Minister without an advertised merit-based selection process.", whyItMatters:"Creates a significant patronage appointment outside public service norms for a major new statutory body.", scrutinyFlag:"Senate Scrutiny of Bills Committee, Scrutiny Digest 11 of 2024" },
     ],
   },
   {
@@ -158,11 +158,11 @@ const POLICIES = [
       { group:"Renters", impact:"mixed", detail:"Short-term: possible rent increases if investors sell. Long-term: more homes entering owner-occupier market." },
       { group:"Property sector", impact:"indirect", detail:"Construction activity may shift toward owner-occupier demand rather than investor-driven development." },
     ],
-    provisions:["Negative gearing deductions restricted to a single investment property per taxpayer from 1 Jul 2025","CGT discount reduced from 50% to 25% for investment properties purchased after commencement","Grandfathering provisions apply — existing investors exempt on current holdings","Revenue reinvested into Housing Australia Future Fund","Productivity Commission to assess housing market impacts after 3 years"],
-    arguments:{ for:["Australia has some of the world's most generous property investor tax concessions","Grandfathering protects existing investors while changing incentives for new investment","Treasury modelling suggests modest price reductions in the bottom market segment"], against:["Investors provide significant proportion of rental housing stock — exit could tighten rental supply","CGT changes reduce incentive to hold property long-term, potentially increasing volatility","Grandfathering creates two-tier system that may distort market for decades"] },
+    provisions:["Negative gearing deductions restricted to a single investment property per taxpayer from 1 Jul 2025","CGT discount reduced from 50% to 25% for investment properties purchased after commencement","Grandfathering provisions apply; existing investors are exempt on current holdings","Revenue reinvested into Housing Australia Future Fund","Productivity Commission to assess housing market impacts after 3 years"],
+    arguments:{ for:["Australia has some of the world's most generous property investor tax concessions","Grandfathering protects existing investors while changing incentives for new investment","Treasury modelling suggests modest price reductions in the bottom market segment"], against:["Investors provide significant proportion of rental housing stock; an exit could tighten rental supply","CGT changes reduce incentive to hold property long-term, potentially increasing volatility","Grandfathering creates two-tier system that may distort market for decades"] },
     partyPositions:[
       { party:"Greens", position:"support", note:"Flagship housing policy. Argues investor tax breaks are the primary driver of unaffordability." },
-      { party:"ALP", position:"conditional", note:"Previously committed to reform in 2019. Currently deferred — unwilling to risk political capital." },
+      { party:"ALP", position:"conditional", note:"Previously committed to reform in 2019. Currently deferred, unwilling to risk political capital." },
       { party:"LNP", position:"oppose", note:"Argues it will reduce rental supply and punish 'mum and dad' investors." },
       { party:"IND", position:"support", note:"Majority of Teal independents support reform with grandfathering protections." },
     ],
@@ -175,7 +175,7 @@ const POLICIES = [
     relatedBills:["Housing Australia Future Fund Amendment Bill 2024","Help to Buy Bill 2024"],
     sources:[{ label:"APH Bill page", url:"https://www.aph.gov.au" },{ label:"Australia Institute modelling", url:"https://australiainstitute.org.au" },{ label:"Grattan Institute", url:"https://grattan.edu.au" }],
     hiddenProvisions:[
-      { type:"expanded", severity:"medium", clause:"Schedule 1, Clause 9(b)", title:"ATO data-matching powers expanded", summary:"To enforce the single-property limit, the bill grants the ATO new real-time data-matching powers across state land title registries — broader than the policy alone requires.", whyItMatters:"Significant expansion of ATO surveillance powers over all property owners, not just those with multiple investment properties.", scrutinyFlag:"Senate Economics Legislation Committee — Dissenting Report" },
+      { type:"expanded", severity:"medium", clause:"Schedule 1, Clause 9(b)", title:"ATO data-matching powers expanded", summary:"To enforce the single-property limit, the bill grants the ATO new real-time data-matching powers across state land title registries, broader than the policy alone requires.", whyItMatters:"Significant expansion of ATO surveillance powers over all property owners, not just those with multiple investment properties.", scrutinyFlag:"Senate Economics Legislation Committee: Dissenting Report" },
       { type:"sunset", severity:"low", clause:"Schedule 2, Clause 17", title:"Removes existing CGT small business concession interaction", summary:"A consequential clause removes an existing tax concession for small business owners selling commercial premises.", whyItMatters:"Small business owners lose a pre-existing tax benefit with no separate announcement or debate.", scrutinyFlag:null },
     ],
   },
@@ -195,26 +195,26 @@ const POLICIES = [
       { group:"Families and carers", impact:"mixed", detail:"Early intervention pathway positive. Re-assessment processes create uncertainty." },
       { group:"Taxpayers", impact:"positive", detail:"Scheme projected to be $14.4 billion below forecast over 4 years." },
     ],
-    provisions:["New definition of 'NDIS support' to clarify eligible vs. ineligible funding items","Early Childhood Approach stream for children under 9 — without formal NDIS plan","Independent assessment for participants with plans over $50,000 per year","Registered provider framework strengthened — unregistered providers limited from 2025","NDIS Quality and Safeguards Commission given expanded compliance powers"],
-    arguments:{ for:["NDIS expenditure growing at 14% per year — unsustainable without reform","Early intervention for children under 9 has strongest evidence base for long-term outcomes","Clearer eligibility criteria reduce inconsistency in what gets funded"], against:["Disability advocacy groups warn re-assessment will reduce supports for vulnerable people","New support definitions may exclude items participants currently rely on","Implementation timeline too fast — systemic changes before workforce is trained"] },
+    provisions:["New definition of 'NDIS support' to clarify eligible vs. ineligible funding items","Early Childhood Approach stream for children under 9, without a formal NDIS plan","Independent assessment for participants with plans over $50,000 per year","Registered provider framework strengthened; unregistered providers limited from 2025","NDIS Quality and Safeguards Commission given expanded compliance powers"],
+    arguments:{ for:["NDIS expenditure growing at 14% per year, unsustainable without reform","Early intervention for children under 9 has strongest evidence base for long-term outcomes","Clearer eligibility criteria reduce inconsistency in what gets funded"], against:["Disability advocacy groups warn re-assessment will reduce supports for vulnerable people","New support definitions may exclude items participants currently rely on","Implementation timeline too fast; systemic changes before the workforce is trained"] },
     partyPositions:[
       { party:"ALP", position:"support", note:"Government bill. Presents as financial sustainability measure while protecting core supports." },
       { party:"LNP", position:"conditional", note:"Supports fiscal restraint but raised concerns about implementation speed." },
       { party:"Greens", position:"oppose", note:"Argues cuts will harm participants. Wants more funding, not restrictions." },
-      { party:"IND", position:"mixed", note:"Independents split — some support early intervention stream, concerned about re-assessments." },
+      { party:"IND", position:"mixed", note:"Independents split: some support the early intervention stream, others are concerned about re-assessments." },
     ],
     timeline:[
       { date:"27 Mar 2024", stage:"Introduced", chamber:"House", note:"Introduced alongside NDIS Review response package" },
       { date:"May 2024", stage:"Second reading", chamber:"House", note:"Passed House 89–58 with LNP conditional support" },
-      { date:"Jun 2024", stage:"Committee", chamber:"Senate", note:"Senate Community Affairs Committee — 47 submissions received" },
-      { date:"Pending", stage:"Third reading", chamber:"Senate", note:"Senate vote expected Aug 2024 — outcome uncertain" },
+      { date:"Jun 2024", stage:"Committee", chamber:"Senate", note:"Senate Community Affairs Committee, 47 submissions received" },
+      { date:"Pending", stage:"Third reading", chamber:"Senate", note:"Senate vote expected Aug 2024, outcome uncertain" },
     ],
     currentStageIndex:2,
     relatedBills:["NDIS (Strengthening Governance) Amendment Bill 2023","Disability Services and Inclusion Act 2023"],
     sources:[{ label:"APH Bill page", url:"https://www.aph.gov.au" },{ label:"NDIS Review Final Report", url:"https://www.ndisreview.gov.au" }],
     hiddenProvisions:[
-      { type:"delegated", severity:"high", clause:"Section 10 — 'NDIS Support' definition", title:"Core eligibility definition set by Minister, not Parliament", summary:"The definition of what constitutes an 'NDIS support' is delegated to the Minister to set via legislative rules, bypassing parliamentary debate.", whyItMatters:"The most consequential part of the bill — what the NDIS will and won't fund — is not actually in the legislation itself. It can change at any time without a vote.", scrutinyFlag:"Senate Scrutiny of Bills Committee — Scrutiny Digest 5 of 2024 (major concern raised)" },
-      { type:"unrelated", severity:"medium", clause:"Schedule 5, Items 88–104", title:"AAT migration provisions bundled in", summary:"The bill includes 17 items transitioning NDIS review cases from the abolished AAT to the new Administrative Review Tribunal — a machinery-of-government change with no policy connection to NDIS reform.", whyItMatters:"Tribunal transition provisions belong in separate legislation — bundled to reduce the number of votes required.", scrutinyFlag:null },
+      { type:"delegated", severity:"high", clause:"Section 10: 'NDIS Support' definition", title:"Core eligibility definition set by Minister, not Parliament", summary:"The definition of what constitutes an 'NDIS support' is delegated to the Minister to set via legislative rules, bypassing parliamentary debate.", whyItMatters:"The most consequential part of the bill, what the NDIS will and won't fund, is not actually in the legislation itself. It can change at any time without a vote.", scrutinyFlag:"Senate Scrutiny of Bills Committee: Scrutiny Digest 5 of 2024 (major concern raised)" },
+      { type:"unrelated", severity:"medium", clause:"Schedule 5, Items 88–104", title:"AAT migration provisions bundled in", summary:"The bill includes 17 items transitioning NDIS review cases from the abolished AAT to the new Administrative Review Tribunal, a machinery-of-government change with no policy connection to NDIS reform.", whyItMatters:"Tribunal transition provisions belong in separate legislation, bundled to reduce the number of votes required.", scrutinyFlag:null },
     ],
   },
   {
@@ -228,13 +228,13 @@ const POLICIES = [
     fiscal:{ budgetImpact:"$250 billion in investment required across energy, transport, and industry over 10 years", perHousehold:"Energy transition costs offset by projected $1,400/year savings on power bills by 2035", costSource:"Climate Council modelling · Beyond Zero Emissions analysis", direction:"investment" },
     cohorts:[
       { group:"Fossil fuel workers", impact:"direct", detail:"Coal and gas jobs phased out by 2030. Just Transition Authority provides retraining." },
-      { group:"Renewable energy sector", impact:"positive", detail:"Massive investment pipeline — est. 200,000 new jobs in solar, wind, and storage by 2035." },
+      { group:"Renewable energy sector", impact:"positive", detail:"Massive investment pipeline, an estimated 200,000 new jobs in solar, wind, and storage by 2035." },
       { group:"Electricity consumers", impact:"mixed", detail:"Short-term: higher transition costs. Long-term: cheaper power from zero-marginal-cost renewables." },
       { group:"Regional communities", impact:"direct", detail:"Coal communities in Hunter, Latrobe Valley, Bowen Basin face fastest transition." },
       { group:"Future generations", impact:"positive", detail:"Limiting warming to 1.5°C reduces risk of catastrophic climate impacts." },
     ],
     provisions:["Net zero target advanced from 2050 to 2035 in the Climate Change Act 2022","Carbon price floor of $40/tonne on industrial emitters, rising 5% per year","Coal export ban phased in from 2028, full prohibition by 2030","Just Transition Authority receives $20 billion to support affected workers","ARENA funding trebled to accelerate renewable deployment"],
-    arguments:{ for:["IPCC data shows 1.5°C pathway requires global net zero by 2035","Australia's abundant renewables mean economic cost of early transition is lower than most nations","Climate-related disasters already cost Australia $39 billion per year"], against:["2035 timeframe is technically and economically infeasible — infrastructure lead times require 15–20 years","Coal export ban would cost $70 billion per year in export revenue","Unilateral action by Australia (1.3% of global emissions) has negligible climate impact"] },
+    arguments:{ for:["IPCC data shows 1.5°C pathway requires global net zero by 2035","Australia's abundant renewables mean economic cost of early transition is lower than most nations","Climate-related disasters already cost Australia $39 billion per year"], against:["2035 timeframe is technically and economically infeasible; infrastructure lead times require 15–20 years","Coal export ban would cost $70 billion per year in export revenue","Unilateral action by Australia (1.3% of global emissions) has negligible climate impact"] },
     partyPositions:[
       { party:"Greens", position:"support", note:"Defining policy commitment. Frames 2050 target as insufficient given climate science." },
       { party:"ALP", position:"oppose", note:"Committed to 82% renewables by 2030 and 2050 net zero. Argues 2035 is not credible." },
@@ -250,8 +250,8 @@ const POLICIES = [
     relatedBills:["Climate Change Act 2022","Safeguard Mechanism (Crediting) Amendment Act 2023"],
     sources:[{ label:"APH Bill page", url:"https://www.aph.gov.au" },{ label:"IPCC Sixth Assessment Report", url:"https://www.ipcc.ch" },{ label:"Climate Council costing", url:"https://www.climatecouncil.org.au" }],
     hiddenProvisions:[
-      { type:"expanded", severity:"high", clause:"Schedule 2, Part 3 — Export controls", title:"Coal export ban applies to metallurgical coal", summary:"The bill's coal phase-out applies to ALL coal — including metallurgical (coking) coal used in steel manufacturing, not just thermal coal. The bill's public framing only refers to 'energy coal'.", whyItMatters:"Metallurgical coal exports ($14B/year) supply steelmakers globally. Banning it goes well beyond the energy transition framing.", scrutinyFlag:"Senate Economics References Committee — Dissenting Report (LNP + ALP)" },
-      { type:"delegated", severity:"medium", clause:"Clause 7 — Carbon price floor", title:"Carbon price trajectory set by regulation", summary:"The $40/tonne starting price is in the bill, but the annual 5% escalation rate and price ceiling are set by regulation — meaning future governments could freeze or remove the escalator without new legislation.", whyItMatters:"The long-term effectiveness of the carbon price mechanism could be gutted by regulation, not legislation.", scrutinyFlag:null },
+      { type:"expanded", severity:"high", clause:"Schedule 2, Part 3: Export controls", title:"Coal export ban applies to metallurgical coal", summary:"The bill's coal phase-out applies to ALL coal, including metallurgical (coking) coal used in steel manufacturing, not just thermal coal. The bill's public framing only refers to 'energy coal'.", whyItMatters:"Metallurgical coal exports ($14B/year) supply steelmakers globally. Banning it goes well beyond the energy transition framing.", scrutinyFlag:"Senate Economics References Committee: Dissenting Report (LNP + ALP)" },
+      { type:"delegated", severity:"medium", clause:"Clause 7: Carbon price floor", title:"Carbon price trajectory set by regulation", summary:"The $40/tonne starting price is in the bill, but the annual 5% escalation rate and price ceiling are set by regulation, meaning future governments could freeze or remove the escalator without new legislation.", whyItMatters:"The long-term effectiveness of the carbon price mechanism could be gutted by regulation, not legislation.", scrutinyFlag:null },
     ],
   },
   {
@@ -262,7 +262,7 @@ const POLICIES = [
     donations:[{ donor:"Lockheed Martin Australia", amount:"$95,000", party:"LNP", cycle:"2023–24" },{ donor:"BAE Systems Australia", amount:"$88,000", party:"LNP", cycle:"2023–24" }],
     priorAttempts:[],
     meta:{ billNumber:"Defence Amendment (Funding Commitment) Bill 2025", chamber:"House of Representatives", portfolioMinister:"Andrew Hastie, Shadow Minister for Defence", introduced:"8 Apr 2025", lastUpdated:"8 hrs ago", stage:"Proposed" },
-    fiscal:{ budgetImpact:"$50 billion additional over 6 years (2024–25 to 2029–30)", perHousehold:"Funded through reallocation — specific offset measures not yet identified", costSource:"LNP policy costing · ASPI analysis", direction:"expenditure" },
+    fiscal:{ budgetImpact:"$50 billion additional over 6 years (2024–25 to 2029–30)", perHousehold:"Funded through reallocation; specific offset measures not yet identified", costSource:"LNP policy costing · ASPI analysis", direction:"expenditure" },
     cohorts:[
       { group:"ADF personnel", impact:"positive", detail:"Increased funding for equipment, pay, and recruitment pipeline." },
       { group:"Defence industry", impact:"positive", detail:"Significant contracts in shipbuilding, cyber, and aerospace. Est. 20,000 new industrial jobs." },
@@ -270,25 +270,25 @@ const POLICIES = [
       { group:"Social services", impact:"indirect", detail:"If funded via reallocation, other portfolio budgets would need to absorb cuts." },
       { group:"Regional Australia", impact:"positive", detail:"Major ADF bases in Darwin, Townsville, Nowra, Edinburgh are significant regional employers." },
     ],
-    provisions:["Legislated minimum defence spending floor of 2.5% of GDP from FY2030","Independent capability review to identify highest-priority investments","AUKUS submarine pathway accelerated — $8 billion brought forward","Cyber Command established as joint ADF–civilian agency under ASD","Indo-Pacific partnership fund of $2 billion for regional capacity building"],
-    arguments:{ for:["China's defence spending has grown 600% since 2000 — Australia's regional security environment is fundamentally changed","NATO members commit to 2% of GDP; 2.5% reflects Australia's unique strategic position","AUKUS requires sustained funding commitment to maintain credibility with US and UK"], against:["No identified offset — bill does not specify what spending would be reduced","ADF already struggling with recruitment — equipment without personnel is not capability","Diplomacy and regional engagement deliver more security per dollar than hardware"] },
+    provisions:["Legislated minimum defence spending floor of 2.5% of GDP from FY2030","Independent capability review to identify highest-priority investments","AUKUS submarine pathway accelerated, with $8 billion brought forward","Cyber Command established as joint ADF–civilian agency under ASD","Indo-Pacific partnership fund of $2 billion for regional capacity building"],
+    arguments:{ for:["China's defence spending has grown 600% since 2000. Australia's regional security environment is fundamentally changed","NATO members commit to 2% of GDP; 2.5% reflects Australia's unique strategic position","AUKUS requires sustained funding commitment to maintain credibility with US and UK"], against:["No identified offset; the bill does not specify what spending would be reduced","ADF already struggling with recruitment; equipment without personnel is not capability","Diplomacy and regional engagement deliver more security per dollar than hardware"] },
     partyPositions:[
       { party:"LNP", position:"support", note:"Centrepiece security policy. Frames as minimum necessary given Indo-Pacific threat environment." },
-      { party:"ALP", position:"conditional", note:"Supports increased defence investment but resists legislative floor — prefers budget flexibility." },
+      { party:"ALP", position:"conditional", note:"Supports increased defence investment but resists a legislative floor, preferring budget flexibility." },
       { party:"Greens", position:"oppose", note:"Strongly opposed. Argues funds should go to climate action and social services." },
       { party:"IND", position:"mixed", note:"Most support AUKUS investment. Split on legislated floor vs. flexible budget approach." },
     ],
     timeline:[
       { date:"8 Apr 2025", stage:"Introduced", chamber:"House", note:"Introduced with ASPI briefing to crossbench." },
-      { date:"May 2025", stage:"Second reading", chamber:"House", note:"Debate deferred — government business priority." },
+      { date:"May 2025", stage:"Second reading", chamber:"House", note:"Debate deferred: government business priority." },
       { date:"Pending", stage:"Committee", chamber:"House", note:"Joint Standing Committee on Foreign Affairs & Defence" },
     ],
     currentStageIndex:1,
     relatedBills:["Defence Strategic Review Implementation Act 2023","AUKUS Implementation Bill 2024"],
     sources:[{ label:"APH Bill page", url:"https://www.aph.gov.au" },{ label:"ASPI analysis", url:"https://www.aspi.org.au" }],
     hiddenProvisions:[
-      { type:"unrelated", severity:"medium", clause:"Schedule 1, Clause 22", title:"ASD given new civilian surveillance powers", summary:"The bill establishes a new 'Cyber Command' but also grants the ASD new powers to monitor domestic civilian networks for 'cybersecurity threats' — unrelated to the defence spending commitment.", whyItMatters:"Domestic surveillance powers for a foreign signals intelligence agency represent a major civil liberties issue that deserves separate debate.", scrutinyFlag:"Parliamentary Joint Committee on Intelligence and Security — flagged for review" },
-      { type:"delegated", severity:"low", clause:"Clause 4(3) — GDP measurement", title:"Treasury defines GDP measure used for spending floor", summary:"The 2.5% GDP floor uses a definition of GDP determined by the Secretary of the Treasury by instrument — meaning how the floor is measured is not fixed in law.", whyItMatters:"The definition of GDP used affects whether the spending target is actually being met — and can be adjusted without parliamentary oversight.", scrutinyFlag:null },
+      { type:"unrelated", severity:"medium", clause:"Schedule 1, Clause 22", title:"ASD given new civilian surveillance powers", summary:"The bill establishes a new 'Cyber Command' but also grants the ASD new powers to monitor domestic civilian networks for 'cybersecurity threats,' unrelated to the defence spending commitment.", whyItMatters:"Domestic surveillance powers for a foreign signals intelligence agency represent a major civil liberties issue that deserves separate debate.", scrutinyFlag:"Parliamentary Joint Committee on Intelligence and Security: flagged for review" },
+      { type:"delegated", severity:"low", clause:"Clause 4(3): GDP measurement", title:"Treasury defines GDP measure used for spending floor", summary:"The 2.5% GDP floor uses a definition of GDP determined by the Secretary of the Treasury by instrument, meaning how the floor is measured is not fixed in law.", whyItMatters:"The definition of GDP used affects whether the spending target is actually being met, and can be adjusted without parliamentary oversight.", scrutinyFlag:null },
     ],
   },
 ];
@@ -306,21 +306,21 @@ const BUDGET_MEASURES = [
 // Senators data
 const SENATORS = {
   VIC:[ { name:"Penny Wong",       party:"ALP", role:"Minister for Foreign Affairs",        votes:{ 1:"aye",2:"nay",3:"nay",4:"aye",5:"nay",6:"nay" } }, { name:"Don Farrell",       party:"ALP", role:"Minister for Trade",                   votes:{ 1:"aye",2:"nay",3:"nay",4:"aye",5:"nay",6:"nay" } }, { name:"Jane Hume",         party:"LNP", role:"Shadow Minister for Finance",          votes:{ 1:"nay",2:"aye",3:"nay",4:"aye",5:"nay",6:"aye" } }, { name:"James Paterson",    party:"LNP", role:"Shadow Minister for Home Affairs",     votes:{ 1:"nay",2:"aye",3:"nay",4:"aye",5:"nay",6:"aye" } }, { name:"Sarah Hanson-Young",party:"GRN", role:"Greens Senate spokesperson",           votes:{ 1:"aye",2:"nay",3:"aye",4:"nay",5:"aye",6:"nay" } }, { name:"Lidia Thorpe",      party:"IND", role:"Independent (formerly Greens)",        votes:{ 1:"aye",2:"nay",3:"aye",4:"nay",5:"aye",6:"nay" } } ],
-  NSW:[ { name:"Deborah O'Neill",   party:"ALP", role:"Senator for NSW",                      votes:{ 1:"aye",2:"nay",3:"nay",4:"aye",5:"nay",6:"nay" } }, { name:"Tim Ayres",         party:"ALP", role:"Assistant Minister for Industry",      votes:{ 1:"aye",2:"nay",3:"nay",4:"aye",5:"nay",6:"nay" } }, { name:"Andrew Bragg",      party:"LNP", role:"Shadow Asst Minister — Financial Svcs",votes:{ 1:"nay",2:"aye",3:"nay",4:"aye",5:"nay",6:"aye" } }, { name:"Hollie Hughes",     party:"LNP", role:"Senator for NSW",                      votes:{ 1:"nay",2:"aye",3:"nay",4:"aye",5:"nay",6:"aye" } }, { name:"David Shoebridge",  party:"GRN", role:"Greens Senator for NSW",               votes:{ 1:"aye",2:"nay",3:"aye",4:"nay",5:"aye",6:"nay" } }, { name:"Jacqui Lambie",     party:"IND", role:"Jacqui Lambie Network",                votes:{ 1:"aye",2:"nay",3:"nay",4:"aye",5:"nay",6:"nay" } } ],
+  NSW:[ { name:"Deborah O'Neill",   party:"ALP", role:"Senator for NSW",                      votes:{ 1:"aye",2:"nay",3:"nay",4:"aye",5:"nay",6:"nay" } }, { name:"Tim Ayres",         party:"ALP", role:"Assistant Minister for Industry",      votes:{ 1:"aye",2:"nay",3:"nay",4:"aye",5:"nay",6:"nay" } }, { name:"Andrew Bragg",      party:"LNP", role:"Shadow Asst Minister, Financial Svcs",votes:{ 1:"nay",2:"aye",3:"nay",4:"aye",5:"nay",6:"aye" } }, { name:"Hollie Hughes",     party:"LNP", role:"Senator for NSW",                      votes:{ 1:"nay",2:"aye",3:"nay",4:"aye",5:"nay",6:"aye" } }, { name:"David Shoebridge",  party:"GRN", role:"Greens Senator for NSW",               votes:{ 1:"aye",2:"nay",3:"aye",4:"nay",5:"aye",6:"nay" } }, { name:"Jacqui Lambie",     party:"IND", role:"Jacqui Lambie Network",                votes:{ 1:"aye",2:"nay",3:"nay",4:"aye",5:"nay",6:"nay" } } ],
   QLD:[ { name:"Murray Watt",       party:"ALP", role:"Minister for Agriculture",             votes:{ 1:"aye",2:"nay",3:"nay",4:"aye",5:"nay",6:"nay" } }, { name:"Anthony Chisholm",  party:"ALP", role:"Senator for QLD",                      votes:{ 1:"aye",2:"nay",3:"nay",4:"aye",5:"nay",6:"nay" } }, { name:"Matt Canavan",      party:"LNP", role:"Senator for QLD",                      votes:{ 1:"nay",2:"aye",3:"nay",4:"aye",5:"nay",6:"aye" } }, { name:"Susan McDonald",    party:"LNP", role:"Senator for QLD",                      votes:{ 1:"nay",2:"aye",3:"nay",4:"aye",5:"nay",6:"aye" } }, { name:"Larissa Waters",    party:"GRN", role:"Greens co-deputy leader",              votes:{ 1:"aye",2:"nay",3:"aye",4:"nay",5:"aye",6:"nay" } }, { name:"Pauline Hanson",    party:"IND", role:"One Nation leader",                    votes:{ 1:"nay",2:"aye",3:"nay",4:"nay",5:"nay",6:"aye" } } ],
   WA: [ { name:"Glenn Sterle",      party:"ALP", role:"Senator for WA",                       votes:{ 1:"aye",2:"nay",3:"nay",4:"aye",5:"nay",6:"nay" } }, { name:"Sue Lines",         party:"ALP", role:"President of the Senate",              votes:{ 1:"aye",2:"nay",3:"nay",4:"aye",5:"nay",6:"nay" } }, { name:"Michaelia Cash",    party:"LNP", role:"Leader of Opposition in Senate",       votes:{ 1:"nay",2:"aye",3:"nay",4:"aye",5:"nay",6:"aye" } }, { name:"Dean Smith",        party:"LNP", role:"Senator for WA",                       votes:{ 1:"nay",2:"aye",3:"nay",4:"aye",5:"nay",6:"aye" } }, { name:"Dorinda Cox",       party:"GRN", role:"Greens Senator for WA",               votes:{ 1:"aye",2:"nay",3:"aye",4:"nay",5:"aye",6:"nay" } }, { name:"David Pocock",      party:"IND", role:"Independent Senator for ACT",         votes:{ 1:"aye",2:"nay",3:"aye",4:"aye",5:"aye",6:"nay" } } ],
   SA: [ { name:"Penny Wong",        party:"ALP", role:"Minister for Foreign Affairs",         votes:{ 1:"aye",2:"nay",3:"nay",4:"aye",5:"nay",6:"nay" } }, { name:"Alex Gallacher",    party:"ALP", role:"Senator for SA",                       votes:{ 1:"aye",2:"nay",3:"nay",4:"aye",5:"nay",6:"nay" } }, { name:"Simon Birmingham",  party:"LNP", role:"Shadow Minister for Finance",          votes:{ 1:"nay",2:"aye",3:"nay",4:"aye",5:"nay",6:"aye" } }, { name:"Anne Ruston",       party:"LNP", role:"Shadow Minister for Social Services",  votes:{ 1:"nay",2:"aye",3:"nay",4:"aye",5:"nay",6:"aye" } }, { name:"Barbara Pocock",    party:"GRN", role:"Greens Senator for SA",               votes:{ 1:"aye",2:"nay",3:"aye",4:"nay",5:"aye",6:"nay" } }, { name:"Rex Patrick",       party:"IND", role:"Independent (formerly Centre Alliance)",votes:{ 1:"aye",2:"nay",3:"nay",4:"aye",5:"nay",6:"nay" } } ],
   TAS:[ { name:"Anne Urquhart",     party:"ALP", role:"Senator for TAS",                      votes:{ 1:"aye",2:"nay",3:"nay",4:"aye",5:"nay",6:"nay" } }, { name:"Helen Polley",      party:"ALP", role:"Senator for TAS",                      votes:{ 1:"aye",2:"nay",3:"nay",4:"aye",5:"nay",6:"nay" } }, { name:"Jonathon Duniam",   party:"LNP", role:"Senator for TAS",                      votes:{ 1:"nay",2:"aye",3:"nay",4:"aye",5:"nay",6:"aye" } }, { name:"Eric Abetz",        party:"LNP", role:"Senator for TAS",                      votes:{ 1:"nay",2:"aye",3:"nay",4:"aye",5:"nay",6:"aye" } }, { name:"Nick McKim",        party:"GRN", role:"Greens Senator for TAS",              votes:{ 1:"aye",2:"nay",3:"aye",4:"nay",5:"aye",6:"nay" } }, { name:"Jacqui Lambie",     party:"IND", role:"Jacqui Lambie Network",               votes:{ 1:"aye",2:"nay",3:"nay",4:"aye",5:"nay",6:"nay" } } ],
 };
 
-// Cabinet positions — rich data model
+// Cabinet positions, rich data model
 const CABINET = [
   {
     role:"Prime Minister", name:"Anthony Albanese", portfolio:"PM&C", party:"ALP", electorate:"Grayndler, NSW", since:"May 2022",
     emoji:"🏛️",
     what:"The PM leads the government, chairs Cabinet, and is responsible for overall policy direction. They represent Australia internationally and are accountable to parliament for all government decisions.",
     covers:["Sets national policy agenda","Chairs Cabinet meetings","Represents Australia internationally","Responsible for AUKUS and major defence decisions","Oversees intelligence agencies (ASIO, ASIS)"],
-    budget:"The Department of PM&C coordinates across all portfolios — no single budget envelope.",
+    budget:"The Department of PM&C coordinates across all portfolios; there's no single budget envelope.",
     keyPolicies:["Closing the Gap (First Nations)","AUKUS submarine program","National Reconstruction Fund"],
     relevantBills:[1,4],
     background:"First elected 1996. ALP leader since 2013. Led ALP to victory at May 2022 election ending 9 years of Coalition government.",
@@ -330,7 +330,7 @@ const CABINET = [
     emoji:"🛡️",
     what:"The Deputy PM steps in when the PM is unavailable. As Defence Minister, Marles oversees the Australian Defence Force, AUKUS negotiations, and all military capability decisions.",
     covers:["Australian Defence Force (Army, Navy, Air Force)","AUKUS submarine pathway","Defence industry and procurement","Veterans' affairs (joint responsibility)","Pine Gap and intelligence facilities"],
-    budget:"$54.2 billion (2024–25) — rising to 2.1% of GDP",
+    budget:"$54.2 billion (2024–25), rising to 2.1% of GDP",
     keyPolicies:["AUKUS submarine acquisition","Surface fleet review","Northern Australia infrastructure"],
     relevantBills:[6],
     background:"Geelong-born. Former shadow minister for foreign affairs. Key architect of AUKUS implementation strategy.",
@@ -363,7 +363,7 @@ const CABINET = [
     budget:"$1.6 billion",
     keyPolicies:["National Anti-Corruption Commission (NACC)","Privacy Act reforms","Voice to Parliament referendum legislation","Robodebt Royal Commission response"],
     relevantBills:[],
-    background:"Barrister before entering parliament. Oversaw establishment of the NACC — Australia's first federal anti-corruption body. Has parliamentary experience as both A-G and Shadow A-G.",
+    background:"Barrister before entering parliament. Oversaw establishment of the NACC, Australia's first federal anti-corruption body. Has parliamentary experience as both A-G and Shadow A-G.",
   },
   {
     role:"Minister for Health and Aged Care", name:"Mark Butler", portfolio:"Health", party:"ALP", electorate:"Hindmarsh, SA", since:"May 2022",
@@ -381,14 +381,14 @@ const CABINET = [
     what:"Responsible for federal school funding policy, universities, vocational education (TAFE), and student support including HECS-HELP debt.",
     covers:["School funding (Gonski agreements with states)","University fees and HECS-HELP","TAFE and vocational training","Early childhood education","Australian Curriculum","Universities Accord implementation"],
     budget:"$42 billion (education)",
-    keyPolicies:["Universities Accord — 20% increase in student places","HECS indexation changes","Fee-free TAFE","Schools Upgrade Fund"],
+    keyPolicies:["Universities Accord: 20% increase in student places","HECS indexation changes","Fee-free TAFE","Schools Upgrade Fund"],
     relevantBills:[],
     background:"Grew up in public housing in Cabramatta, NSW. First in his family to attend university. Background in union movement and previous experience as Home Affairs minister.",
   },
   {
     role:"Minister for Finance", name:"Katy Gallagher", portfolio:"Finance", party:"ALP", electorate:"ACT Senate", since:"May 2022",
     emoji:"📊",
-    what:"The Finance Minister manages the government's spending and financial framework — essentially the internal budget management that sits alongside the Treasurer's macroeconomic role.",
+    what:"The Finance Minister manages the government's spending and financial framework, essentially the internal budget management that sits alongside the Treasurer's macroeconomic role.",
     covers:["Government spending frameworks","Public service and APS reform","Federal property and assets","Government advertising policy","Parliamentary entitlements","Budget process administration"],
     budget:"Administers government-wide spending frameworks, not a single portfolio budget",
     keyPolicies:["APS reform and capability review","Government advertising code","Audit of defence contracts","Multinational tax reforms (with Treasurer)"],
@@ -418,9 +418,9 @@ const CABINET = [
   {
     role:"Minister for the NDIS", name:"Bill Shorten", portfolio:"NDIS", party:"ALP", electorate:"Maribyrnong, VIC", since:"May 2022",
     emoji:"♿",
-    what:"Oversees the National Disability Insurance Scheme — Australia's $42 billion support system for people with permanent and significant disabilities. Responsible for the NDIS Review implementation.",
+    what:"Oversees the National Disability Insurance Scheme, Australia's $42 billion support system for people with permanent and significant disabilities. Responsible for the NDIS Review implementation.",
     covers:["NDIS eligibility and plans","NDIA (National Disability Insurance Agency)","NDIS Quality and Safeguards Commission","Early childhood intervention","Foundational supports (outside NDIS)","Disability employment services"],
-    budget:"$42 billion and growing — the fastest-growing federal program",
+    budget:"$42 billion and growing: the fastest-growing federal program",
     keyPolicies:["NDIS Back on Track reforms","Early childhood approach","Registered provider framework","Foundational supports with states"],
     relevantBills:[4],
     background:"Former ALP leader who lost the 2019 election. Championed the original creation of the NDIS under Gillard. Now responsible for reforming the scheme he helped build.",
@@ -433,7 +433,7 @@ const CABINET = [
     budget:"$1.3 billion",
     keyPolicies:["China trade relationship normalisation","India free trade agreement","Critical minerals export strategy","Post-COVID tourism recovery"],
     relevantBills:[],
-    background:"SA Senator and ALP powerbroker. Led normalisation of trade with China after the Coalition-era tensions — overseeing removal of Chinese tariffs on Australian barley, wine, and beef.",
+    background:"SA Senator and ALP powerbroker. Led normalisation of trade with China after the Coalition-era tensions, overseeing removal of Chinese tariffs on Australian barley, wine, and beef.",
   },
   {
     role:"Minister for Home Affairs", name:"Clare O'Neil", portfolio:"Home Affairs", party:"ALP", electorate:"Hotham, VIC", since:"May 2022",
@@ -463,7 +463,7 @@ const CABINET = [
     budget:"$1.9 billion",
     keyPolicies:["Murray-Darling Basin Plan completion","Live sheep export phase-out","Biosecurity levy reform","Foot and mouth disease preparedness"],
     relevantBills:[],
-    background:"QLD Senator. Previously held Emergency Management portfolio. Oversaw controversial live sheep export ban — a significant moment for animal welfare advocates and rural communities.",
+    background:"QLD Senator. Previously held Emergency Management portfolio. Oversaw the controversial live sheep export ban, a significant moment for animal welfare advocates and rural communities.",
   },
 ];
 
@@ -478,7 +478,7 @@ const ELECTORATE_HISTORY = {
 // Party consistency data (said vs did)
 const CONSISTENCY_DATA = {
   ALP:[
-    { mp:"Anthony Albanese", date:"Oct 2019", said:"'We will not weaken negative gearing rules — that policy is done.'", did:"No negative gearing reform introduced in government.", verdict:"Consistent", note:"PM kept election commitment after 2019 loss made reform politically toxic." },
+    { mp:"Anthony Albanese", date:"Oct 2019", said:"'We will not weaken negative gearing rules. That policy is done.'", did:"No negative gearing reform introduced in government.", verdict:"Consistent", note:"PM kept election commitment after 2019 loss made reform politically toxic." },
     { mp:"Jim Chalmers", date:"Aug 2023", said:"'The Stage 3 tax cuts are legislated, they are not our policy, we'll deliver them.'", did:"Restructured Stage 3 tax cuts in February 2024, redirecting benefit to lower incomes.", verdict:"Changed position", note:"Position changed after Treasury modelling showed distributional concerns." },
   ],
   LNP:[
@@ -753,7 +753,7 @@ function PolicyDetail({ policy }) {
                 <div style={{ fontSize:10, fontWeight:700, color:"#7C3AED", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>📜 This has been tried before</div>
                 {policy.priorAttempts.map((p,i) => (
                   <div key={i} style={{ marginBottom:i<policy.priorAttempts.length-1?12:0 }}>
-                    <div style={{ fontSize:13, fontWeight:600, color:C.ink, marginBottom:4 }}>{p.year} — {p.title}</div>
+                    <div style={{ fontSize:13, fontWeight:600, color:C.ink, marginBottom:4 }}>{p.year} · {p.title}</div>
                     <div style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"2px 8px", borderRadius:99, fontSize:10, fontWeight:700, background:p.outcome==="Passed"?C.greenSoft:C.redSoft, color:p.outcome==="Passed"?C.green:C.red, marginBottom:6 }}>{p.outcome}</div>
                     <div style={{ fontSize:12, color:C.mid, lineHeight:1.55 }}>{p.notes}</div>
                   </div>
@@ -782,7 +782,7 @@ function PolicyDetail({ policy }) {
           <div>
             <div style={{ background:"#F5F3FF", border:"1px solid #DDD6FE", borderRadius:12, padding:"14px 16px", marginBottom:20 }}>
               <div style={{ fontSize:11, fontWeight:700, color:"#7C3AED", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>What is this section?</div>
-              <p style={{ fontSize:13, color:C.mid, margin:"0 0 8px", lineHeight:1.6 }}>Bills often contain provisions that go beyond — or are unrelated to — their stated purpose. Poli's AI layer cross-references each bill's operative clauses against its second reading speech to surface provisions that deserve closer attention.</p>
+              <p style={{ fontSize:13, color:C.mid, margin:"0 0 8px", lineHeight:1.6 }}>Bills often contain provisions that go beyond, or are unrelated to, their stated purpose. Poli's AI layer cross-references each bill's operative clauses against its second reading speech to surface provisions that deserve closer attention.</p>
               <p style={{ fontSize:12, color:C.faint, margin:0 }}>These are flagged, not judged. Draw your own conclusions.</p>
             </div>
 
@@ -953,7 +953,7 @@ function PolicyDetail({ policy }) {
 // ── MP Contact Tool ───────────────────────────────────────────────────────────
 // Rebuilt on real data only: mp.records is the MP's live, TVFY-sourced voting
 // history (via adaptMember). We deliberately do NOT try to compare it against
-// the specific live bill the user voted on — there's no reliable link yet
+// the specific live bill the user voted on, there's no reliable link yet
 // between Poli's bills table and TVFY's policy IDs, and faking that match by
 // title would risk misattributing a vote. Once that link exists, alignment
 // scoring can come back; until then this only asserts what's actually sourced.
@@ -970,7 +970,7 @@ function ContactModal({ mp, onClose }) {
 
 I am writing as your constituent regarding your voting record on "${r.billTitle}"${r.date && r.date !== "Date unknown" ? ` (${r.date})` : ""}.
 
-Public records show you voted ${r.vote === "for" ? "in favour of" : "against"} this measure${r.label ? ` — recorded as "${r.label}"` : ""}. I'd welcome hearing more about your reasoning, and would like to share my own view as a constituent.
+Public records show you voted ${r.vote === "for" ? "in favour of" : "against"} this measure${r.label ? `, recorded as "${r.label}"` : ""}. I'd welcome hearing more about your reasoning, and would like to share my own view as a constituent.
 
 I would appreciate a response on this matter.
 
@@ -987,7 +987,7 @@ Yours sincerely,
       await navigator.clipboard.writeText(customMsg);
       setSent(true);
     } catch {
-      // Clipboard API blocked/unavailable — still let them proceed, the text is
+      // Clipboard API blocked/unavailable, still let them proceed, the text is
       // right there in the textarea to select and copy manually.
       setCopyFailed(true);
       setSent(true);
@@ -1010,7 +1010,7 @@ Yours sincerely,
               </div>
             ) : (
               <>
-                {/* Clean summary — contrasts for vs against at a glance, real counts only */}
+                {/* Clean summary, contrasts for vs against at a glance, real counts only */}
                 <SectionLabel>Voting record summary</SectionLabel>
                 <div style={{ display:"flex", gap:10, marginBottom:16 }}>
                   <div style={{ flex:1, background:C.greenSoft, border:`1px solid ${C.greenMid}`, borderRadius:10, padding:"10px 12px", textAlign:"center" }}>
@@ -1050,11 +1050,11 @@ Yours sincerely,
           <div style={{ textAlign:"center", padding:"32px 0" }}>
             <div style={{ fontSize:13, marginBottom:12 }}>✉️</div>
             <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:8 }}>
-              {copyFailed ? "Message ready — copy it manually" : "Copied to your clipboard"}
+              {copyFailed ? "Message ready: copy it manually" : "Copied to your clipboard"}
             </div>
             <p style={{ fontSize:13, color:C.mid, lineHeight:1.6, marginBottom:20 }}>
               {copyFailed
-                ? "Your browser blocked automatic copying — select the text above and copy it manually, then "
+                ? "Your browser blocked automatic copying. Select the text above and copy it manually, then "
                 : "Paste this into an email to "}
               {mp.name}'s parliamentary office. MP office emails follow the format: [FirstName.LastName]@aph.gov.au
             </p>
@@ -1067,12 +1067,12 @@ Yours sincerely,
 }
 
 // ── Bill Alerts Tab ───────────────────────────────────────────────────────────
-// bills — pass live bills (with dataState); falls back to POLICIES only while
+// bills, pass live bills (with dataState); falls back to POLICIES only while
 // loading/on error, same fallback pattern BillsDesk already uses.
 function AlertsTab({ alerts, onToggleAlert, bills, dataState = "sample" }) {
   const tracked = (bills || []).filter(p => alerts.includes(p.id));
 
-  // Real "recent updates" derived from each tracked bill's own timeline —
+  // Real "recent updates" derived from each tracked bill's own timeline
   // no fabricated events. A bill only appears here if it actually has stage
   // history; the most recent stage becomes the update line, bills sorted by
   // last-updated so the newest genuine change surfaces first.
@@ -1087,7 +1087,7 @@ function AlertsTab({ alerts, onToggleAlert, bills, dataState = "sample" }) {
       {dataState !== "live" && (
         <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12, fontSize:11, fontWeight:600, color:dataState==="cached"?C.amber:C.faint }}>
           <span style={{ width:6, height:6, borderRadius:99, background:dataState==="cached"?C.amber:C.faint }} />
-          {dataState==="cached" ? "Couldn't reach live bill data — showing last known" : "Sample data"}
+          {dataState==="cached" ? "Couldn't reach live bill data, showing last known" : "Sample data"}
         </div>
       )}
       <div style={{ background:C.accentSoft, border:`1px solid ${C.accentMid}`, borderRadius:16, padding:"14px 16px", marginBottom:20 }}>
@@ -1249,9 +1249,9 @@ function ConsistencyTracker() {
 }
 
 // ── Budget at a Glance ────────────────────────────────────────────────────────
-// Real figures extracted from budget.gov.au's own "Website Chart Data" —
+// Real figures extracted from budget.gov.au's own "Website Chart Data"
 // the source behind BP1/BP3's narrative charts (Tables 1–4, bs6.1, bs8.1).
-// Not the same source as BudgetTracker's itemized measures (BP2) — this is
+// Not the same source as BudgetTracker's itemized measures (BP2), this is
 // long-run macro context. Baked in as of the 2026–27 Budget; sync_budget_chart_data.py
 // re-derives these from the same source for future budget cycles.
 const REVENUE_COMPOSITION = [
@@ -1285,12 +1285,12 @@ function BudgetGlance({ revenue = REVENUE_COMPOSITION, spending = SPENDING_BY_FU
     <div>
       <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"20px", marginBottom:14 }}>
         <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:4 }}>Australia's finances, in context</div>
-        <p style={{ fontSize:13, color:C.mid, margin:0, lineHeight:1.5 }}>Where government revenue comes from, what it's spent on, and how accurate past forecasts have actually been — the long-run picture behind this year's measures.</p>
+        <p style={{ fontSize:13, color:C.mid, margin:0, lineHeight:1.5 }}>Where government revenue comes from, what it's spent on, and how accurate past forecasts have actually been: the long-run picture behind this year's measures.</p>
       </div>
 
       {/* Revenue composition over time */}
       <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"18px 20px", marginBottom:12 }}>
-        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:2 }}>Where revenue comes from — 2005–06 to 2029–30</div>
+        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:2 }}>Where revenue comes from · 2005–06 to 2029–30</div>
         <div style={{ fontSize:11, color:C.faint, marginBottom:14 }}>Individuals' share of total receipts has grown from 44% to a projected 50% over two decades; excise's share has nearly halved.</div>
         {revenue.map(r => (
           <div key={r.year} style={{ marginBottom:12 }}>
@@ -1319,7 +1319,7 @@ function BudgetGlance({ revenue = REVENUE_COMPOSITION, spending = SPENDING_BY_FU
 
       {/* Spending by function */}
       <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"18px 20px", marginBottom:12 }}>
-        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:2 }}>What it's spent on — 2026–27</div>
+        <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:2 }}>What it's spent on · 2026–27</div>
         <div style={{ fontSize:11, color:C.faint, marginBottom:14 }}>Social Security and Welfare is more than double the next-largest category.</div>
         {SPENDING_BY_FUNCTION.map(s => (
           <div key={s.label} style={{ marginBottom:10 }}>
@@ -1363,7 +1363,7 @@ function BudgetGlance({ revenue = REVENUE_COMPOSITION, spending = SPENDING_BY_FU
       </div>
 
       <div style={{ fontSize:10, color:C.faint, marginTop:14, textAlign:"center" }}>
-        Based on Commonwealth of Australia data — budget.gov.au.
+        Based on Commonwealth of Australia data · budget.gov.au.
       </div>
     </div>
   );
@@ -1376,9 +1376,9 @@ function BudgetTracker({ measures = BUDGET_MEASURES, dataState = "sample", budge
   const filtered = filter==="Cost of living" ? measures.filter(m=>m.colLiving) : measures;
   const dirColor = d => d==="expenditure"?C.red:d==="revenue"?C.amber:C.green;
   const dirTag = d => d==="expenditure"?"Spending":d==="saving"?"Saving":"Revenue";
-  const badge = { live:{c:C.green,l:"Live — Budget Paper No. 2 & budget.gov.au"}, cached:{c:C.amber,l:"Last known — live fetch failed"}, sample:{c:C.faint,l:"Sample data"} }[dataState];
+  const badge = { live:{c:C.green,l:"Live · Budget Paper No. 2 & budget.gov.au"}, cached:{c:C.amber,l:"Last known · live fetch failed"}, sample:{c:C.faint,l:"Sample data"} }[dataState];
 
-  // Group by portfolio, preserving first-seen order rather than alphabetising —
+  // Group by portfolio, preserving first-seen order rather than alphabetising
   // reads closer to how BP2 itself is organised.
   const grouped = useMemo(() => {
     const map = new Map();
@@ -1394,7 +1394,7 @@ function BudgetTracker({ measures = BUDGET_MEASURES, dataState = "sample", budge
     <div>
       <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"20px", marginBottom:14 }}>
         <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:4 }}>{budgetLabel}</div>
-        <p style={{ fontSize:13, color:C.mid, margin:"0 0 10px", lineHeight:1.5 }}>Key budget measures in plain English — what was funded, what was cut, and what it means for you.</p>
+        <p style={{ fontSize:13, color:C.mid, margin:"0 0 10px", lineHeight:1.5 }}>Key budget measures in plain English: what was funded, what was cut, and what it means for you.</p>
         {badge && (
           <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10, fontSize:11, fontWeight:600, color:badge.c }}>
             <span style={{ width:6, height:6, borderRadius:99, background:badge.c }} />
@@ -1490,7 +1490,7 @@ function CabinetCards() {
             borderRadius:16, overflow:"hidden",
             transition:"border-color 0.2s",
           }}>
-            {/* Header row — always visible */}
+            {/* Header row, always visible */}
             <button
               onClick={() => setOpen(isOpen ? null : i)}
               style={{
@@ -1605,7 +1605,7 @@ function ExpandableFullRecord({ items, PolicyRow }) {
         cursor:"pointer", fontSize:12, fontWeight:600,
         color:expanded ? C.accent : C.mid,
       }}>
-        {expanded ? "Hide full record ↑" : `View all ${items.length} policy positions — newest first ↓`}
+        {expanded ? "Hide full record ↑" : `View all ${items.length} policy positions, newest first ↓`}
       </button>
       {expanded && (
         <div style={{ marginTop:14, maxHeight:420, overflowY:"auto" }} className="poli-scroll">
@@ -1616,7 +1616,7 @@ function ExpandableFullRecord({ items, PolicyRow }) {
   );
 }
 
-// ── Senator tracker — now pulling real data from Supabase ────────────────────
+// ── Senator tracker, now pulling real data from Supabase ────────────────────
 // State names in Supabase (from They Vote For You) are full words for some
 // and abbreviations for others depending on source formatting, so we map
 // both the display buttons and the query consistently off this list.
@@ -1654,7 +1654,7 @@ function SenatorTracker({ stateOverride }) {
       {!stateOverride && (
         <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:20, padding:"20px", marginBottom:14 }}>
           <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:4 }}>Your senators</div>
-          <p style={{ fontSize:13, color:C.mid, margin:"0 0 14px", lineHeight:1.5 }}>Every Australian has 12 senators — 6 per state. Select your state to see who represents you in the Senate.</p>
+          <p style={{ fontSize:13, color:C.mid, margin:"0 0 14px", lineHeight:1.5 }}>Every Australian has 12 senators: 6 per state. Select your state to see who represents you in the Senate.</p>
           <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
             {AU_STATES.map(s=><button key={s} onClick={()=>setState(s)} style={{ padding:"6px 14px", borderRadius:99, border:`1.5px solid ${state===s?C.accent:C.border}`, background:state===s?C.accentSoft:C.surface, fontSize:12, fontWeight:600, color:state===s?C.accent:C.mid, cursor:"pointer" }}>{s}</button>)}
           </div>
@@ -1682,7 +1682,7 @@ function SenatorTracker({ stateOverride }) {
 }
 
 // Excludes purely procedural motions ("(procedural)" in the name) from the
-// curated highlight lists — they're real votes but rarely what someone means
+// curated highlight lists, they're real votes but rarely what someone means
 // by "where does my senator stand," and they clutter the top-agreement list
 // since procedural motions get near-unanimous voting within a party.
 const isSubstantivePolicy = p => p.name && !p.name.toLowerCase().includes("(procedural)");
@@ -1704,7 +1704,7 @@ const policyYear = p => p.last_edited_at ? new Date(p.last_edited_at).getFullYea
 const RECENT_CUTOFF_YEAR = 2022; // policies last touched before this are treated as "older" for highlight curation
 
 // They Vote For You's own site uses categorical labels (e.g. "voted
-// consistently for") rather than raw percentages — that labeling lives on a
+// consistently for") rather than raw percentages, that labeling lives on a
 // different API endpoint than the one we use (would need ~200+ extra requests
 // to fetch their exact wording per person). This mirrors that same 7-band
 // scheme using the agreement score we already have, so the UI never shows a
@@ -1728,7 +1728,7 @@ function SenatorCard({ sen }) {
     : [];
 
   // Sort by recency FIRST, then pick the strongest for/against from that
-  // recency-ordered list — so highlights always reflect current debates,
+  // recency-ordered list, so highlights always reflect current debates,
   // not decade-old settled issues that happen to have 100%/0% scores.
   const byRecency = [...positions].sort((a, b) => new Date(b.last_edited_at || 0) - new Date(a.last_edited_at || 0));
   const recentFor     = byRecency.filter(p => p.agreement >= 70).slice(0, 3);
@@ -1742,7 +1742,7 @@ function SenatorCard({ sen }) {
 
   const offices = Array.isArray(sen.offices) ? sen.offices.map(o => typeof o === "string" ? o : (o?.name || o?.position || o?.title)).filter(Boolean) : [];
 
-  // Individual policy row — styled like the budget tracker's impact cards
+  // Individual policy row, styled like the budget tracker's impact cards
   // with a colored left border, proper card separation, and category pill
   const PolicyRow = ({ p }) => {
     const year = policyYear(p);
@@ -1785,11 +1785,11 @@ function SenatorCard({ sen }) {
 
       <Divider my={16} />
 
-      {/* ── Stats row — matching MP card layout ── */}
+      {/* ── Stats row, matching MP card layout ── */}
       {(attendancePct != null || sen.rebellions != null) && (
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:10, marginBottom:20 }}>
           <div style={{ background:C.surface, borderRadius:12, padding:"14px 16px" }}>
-            <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink }}>{sen.electorate || sen.state || "—"}</div>
+            <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink }}>{sen.electorate || sen.state || "N/A"}</div>
             <div style={{ fontSize:11, color:C.faint, marginTop:3 }}>{sen.chamber === "senate" ? "State" : "Electorate"}</div>
           </div>
           {attendancePct != null && (
@@ -1807,7 +1807,7 @@ function SenatorCard({ sen }) {
         </div>
       )}
 
-      {/* ── Highlighted positions — recency-first ── */}
+      {/* ── Highlighted positions, recency-first ── */}
       {positions.length > 0 ? (
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
           <div>
@@ -1831,7 +1831,7 @@ function SenatorCard({ sen }) {
         </div>
       )}
 
-      {/* ── Full record — expandable, newest first ── */}
+      {/* ── Full record, expandable, newest first ── */}
       {allByRecency.length > 0 && <ExpandableFullRecord items={allByRecency} PolicyRow={PolicyRow} />}
     </div>
   );
@@ -1886,11 +1886,11 @@ function PartiesTab() {
 // ── Learn tab ─────────────────────────────────────────────────────────────────
 const LEARN_CARDS = [
   { q:"How does preferential voting work?", a:"You number every candidate in order. If no one gets a majority of first preferences, the lowest-scoring candidates are eliminated and their votes redistributed until someone wins. Your vote is never truly wasted.", xp:50 },
-  { q:"What's the difference between the House and Senate?", a:"The House of Representatives forms government — whoever has the most seats becomes PM. The Senate reviews and can block laws. Minor parties often hold the balance of power there.", xp:50 },
+  { q:"What's the difference between the House and Senate?", a:"The House of Representatives forms government: whoever has the most seats becomes PM. The Senate reviews and can block laws. Minor parties often hold the balance of power there.", xp:50 },
   { q:"How does polling actually work?", a:"Pollsters survey 1,000–2,000 people and weight the results to match the national population. There's always a ±3% margin of error. Aggregating multiple polls gives a more reliable picture.", xp:75 },
   { q:"What does the federal government actually control?", a:"Federal: income tax, Medicare, defence, immigration, welfare. State: schools, hospitals, roads, police. Local council: parks, rubbish, local planning. Many issues are split across all three.", xp:50 },
   { q:"What is two-party preferred (2PP)?", a:"Analysts calculate what the result would look like if only Labor and the Coalition were competing. It's the most reliable predictor of who forms government, even with many parties in the race.", xp:75 },
-  { q:"Why do independents matter so much?", a:"They can hold the 'balance of power' in the Senate — neither major party can pass laws without their support. This gives smaller parties real influence even when they never form government.", xp:50 },
+  { q:"Why do independents matter so much?", a:"They can hold the 'balance of power' in the Senate: neither major party can pass laws without their support. This gives smaller parties real influence even when they never form government.", xp:50 },
 ];
 
 const GLOSSARY = {
@@ -1898,9 +1898,9 @@ const GLOSSARY = {
   "Negative gearing":"When your investment property costs more than it earns. You can deduct that loss from your taxable income.",
   "CGT discount":"If you sell an asset after holding it 12+ months, you only pay capital gains tax on half the profit.",
   "Net zero":"When greenhouse gases produced are balanced by the amount removed. Net addition = zero.",
-  "NDIS":"National Disability Insurance Scheme — government funding for Australians with permanent, significant disabilities.",
+  "NDIS":"National Disability Insurance Scheme: government funding for Australians with permanent, significant disabilities.",
   "Moratorium":"An official pause or temporary ban on something.",
-  "GDP":"Gross Domestic Product — the total value of everything a country produces in a year.",
+  "GDP":"Gross Domestic Product: the total value of everything a country produces in a year.",
   "Primary vote":"The first-preference vote percentage for each party, before preferences are distributed.",
 };
 
@@ -2037,7 +2037,7 @@ function VoteTab() {
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 // 6 primary tabs, each with optional sub-navigation
-// All 11 features preserved — intelligently grouped
+// All 11 features preserved, intelligently grouped
 
 const PRIMARY_TABS = [
   { id:"home",       label:"Home"       },
@@ -2048,7 +2048,7 @@ const PRIMARY_TABS = [
   { id:"community",  label:"Community"  },
 ];
 
-// Clean SVG nav icons — 20×20, 1.6px stroke, geometric line style
+// Clean SVG nav icons, 20×20, 1.6px stroke, geometric line style
 const NAV_ICONS = {
   home: (active) => (
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke={active ? "#E8573A" : "#8A8A8A"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -2103,14 +2103,14 @@ const CATS = ["All","Housing","Energy","Climate","Social","Defence"];
 const PAGE_META = {
   home:        { title:"Good morning",              sub:"Here's what matters in Australian politics today."           },
   feed:        { title:"Policy tracker",            sub:"Live federal bills in plain English."                        },
-  alerts:      { title:"Tracked bills",             sub:"Bills you're following — updates as they progress."          },
+  alerts:      { title:"Tracked bills",             sub:"Bills you're following: updates as they progress."          },
   parties:     { title:"Party polling",             sub:"Live polling averages and where each party stands."          },
   consistency: { title:"Said vs. did",              sub:"What politicians said publicly vs. how they actually voted." },
   budget:      { title:"Federal Budget 2024–25",    sub:"Key budget measures explained in plain English."            },
   mp:          { title:"Your representative",       sub:"Find your MP and see how they voted on every bill."         },
   senators:    { title:"Your senators",             sub:"All 12 senators representing your state, and their records." },
   comparison:  { title:"Electorate history",        sub:"How your electorate has voted over time."                   },
-  parliament:  { title:"How parliament works",      sub:"Interactive explainers — no background needed."             },
+  parliament:  { title:"How parliament works",      sub:"Interactive explainers, no background needed."             },
   learn:       { title:"Civic lessons",             sub:"Short lessons that earn XP. Real answers, no jargon."       },
   vote:        { title:"Your voice",                sub:"Anonymous · grassroots · real-time community polling."      },
   deliberation:{ title:"Community discussion",      sub:"What do Australians actually think the solution should be?" },
@@ -2119,7 +2119,7 @@ const PAGE_META = {
 // ── Main App ──────────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DATA EXPORTS — consumed by Preview.jsx and the v6 shell
+// DATA EXPORTS, consumed by Preview.jsx and the v6 shell
 // ─────────────────────────────────────────────────────────────────────────────
 export { POLICIES, GLOSSARY };
 
@@ -2196,7 +2196,7 @@ const DELIBERATION_CLUSTERS = [
     count:481, lean:"mixed" },
 ];
 
-// Strip markdown from bill summaries — same as Hansard summaries
+// Strip markdown from bill summaries, same as Hansard summaries
 const stripBillMarkdown = text =>
   text
     .replace(/^#+\s*/gm, "")           // # headings at start of lines
@@ -2208,7 +2208,7 @@ const stripBillMarkdown = text =>
     .trim();
 // Maps our scraped bills table shape into the Bill shape BillsDesk expects.
 // Fields not yet available (sentiment, fiscal, hiddenProvisions) get sensible
-// defaults — they'll be populated as the data pipeline matures.
+// defaults, they'll be populated as the data pipeline matures.
 // ─────────────────────────────────────────────────────────────────────────────
 // Normalise party names from AI output (full names) to partyOf() codes
 const PARTY_NAME_MAP = {
@@ -2231,7 +2231,7 @@ function adaptBill(row) {
   // Use AI-classified category if available, fall back to chamber
   const category = row.category || (row.originating_chamber === "senate" ? "Senate" : "House");
 
-  // Use sponsor_party short code directly for PartyChip — partyOf() expects codes like ALP, LIB
+  // Use sponsor_party short code directly for PartyChip, partyOf() expects codes like ALP, LIB
   const party = row.sponsor_party || "OTH";
 
   // Build a stage index from status
@@ -2250,7 +2250,7 @@ function adaptBill(row) {
     party,
     status:            row.status || "Active",
     category,
-    // Sentiment — not yet collected, default to neutral until community polling wired
+    // Sentiment, not yet collected, default to neutral until community polling wired
     support:           0,
     neutral:           100,
     oppose:            0,
@@ -2259,8 +2259,8 @@ function adaptBill(row) {
              ? stripBillMarkdown(row.summary_plain)
              : row.summary_aph
                ? stripBillMarkdown(row.summary_aph)
-               : "Plain-English summary pending — check back soon.",
-    // "What this means for you" — separate AI translation stored in means_plain
+               : "Plain-English summary pending. Check back soon.",
+    // "What this means for you", separate AI translation stored in means_plain
     means: row.means_plain
              ? stripBillMarkdown(row.means_plain)
              : "Plain-English analysis pending.",
@@ -2298,7 +2298,7 @@ function adaptBill(row) {
 // Uses TVFY's official category labels when available (synced by sync_tvfy.py).
 // ─────────────────────────────────────────────────────────────────────────────
 
-// They Vote For You policy names come back lowercase — title-case them.
+// They Vote For You policy names come back lowercase, title-case them.
 const SKIP_WORDS = new Set(["a","an","the","of","in","on","at","by","for","to","and","or","but","as","with","from"]);
 function toTitleCase(str) {
   if (!str) return "";
@@ -2359,7 +2359,7 @@ function adaptMember(row) {
         userAlignment: null,
       };
     })
-    // Keep newest first — was comparing a field that no longer existed on the
+    // Keep newest first, was comparing a field that no longer existed on the
     // mapped object (always undefined vs undefined, a silent no-op sort).
     .sort((a, b) => new Date(b.lastEditedAt || 0) - new Date(a.lastEditedAt || 0));
   const attendance = (row.votes_attended != null && row.votes_possible)
@@ -2388,7 +2388,7 @@ function adaptMember(row) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// V6 SPLASH SCREEN (identical to v5, still terracotta by design — it's
+// V6 SPLASH SCREEN (identical to v5, still terracotta by design, it's
 // pre-theme, shown before CSS variables are applied)
 // ─────────────────────────────────────────────────────────────────────────────
 function SplashScreen() {
@@ -2423,13 +2423,13 @@ function IntroTour({ onComplete }) {
 
   const screens = [
     { kind:"welcome", eyebrow:"Welcome to", title:"Poli",
-      body:"Australia's civic intelligence platform — making federal politics understandable, trackable, and actionable for every Australian, in real time. No jargon. No spin.",
+      body:"Australia's civic intelligence platform: making federal politics understandable, trackable, and actionable for every Australian, in real time. No jargon. No spin.",
       visual:"🏛️", cta:"Show me around" },
     { kind:"feature", eyebrow:"Bills", title:"Every bill, in plain English",
       body:"Live federal bills translated out of legal jargon, with who it affects, what's hidden in the fine print, and where every party stands.",
       visual:"📋", cta:"Next" },
     { kind:"feature", eyebrow:"My MP", title:"See how your MP really votes",
-      body:"Enter your suburb or postcode and Poli shows your representative's actual voting record — and whether it matches your views.",
+      body:"Enter your suburb or postcode and Poli shows your representative's actual voting record, and whether it matches your views.",
       visual:"📍", cta:"Next", showPostcode:true },
     { kind:"feature", eyebrow:"Community", title:"Your voice, counted",
       body:"Record your position on any bill anonymously. Poli aggregates real-time community sentiment alongside official polling.",
@@ -2469,7 +2469,7 @@ function IntroTour({ onComplete }) {
               <input value={postcode} onChange={e=>{setPostcode(e.target.value);setPcError(false);}} placeholder="Postcode, e.g. 3056" maxLength={4} inputMode="numeric"
                 style={{ width:"100%", padding:"12px 16px", borderRadius:8, border:`1.5px solid ${pcError?"#B3372B":"#E9E5DF"}`, fontSize:13, color:"#211D1A", background:"#F5F3F0", outline:"none", textAlign:"center", fontFamily:"inherit" }} />
               {pcError && <div style={{ fontSize:11, color:"#B3372B", marginTop:5 }}>Please enter a valid 4-digit postcode</div>}
-              <div style={{ fontSize:11, color:"#A39C94", marginTop:6 }}>Optional — pre-fills your MP lookup. Not stored.</div>
+              <div style={{ fontSize:11, color:"#A39C94", marginTop:6 }}>Optional: pre-fills your MP lookup. Not stored.</div>
             </div>
           )}
         </div>
@@ -2485,7 +2485,7 @@ function IntroTour({ onComplete }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// V5 FEATURES WRAPPER — Budget, Cabinet, ElectorateComparison, Consistency
+// V5 FEATURES WRAPPER. Budget, Cabinet, ElectorateComparison, Consistency
 // These are presented inside a shared "tabbed content" pattern used by the
 // Parliament and Bills nav sections until they get full v6 screens.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2517,7 +2517,7 @@ class AppErrorBoundary extends Component {
       const stack = err?.stack || "";
       return (
         <div style={{ padding: 32, fontFamily: "monospace", fontSize: 13, background: "#fff3f3", minHeight: "100vh" }}>
-          <h2 style={{ color: "#B3372B", marginBottom: 16 }}>Poli crashed — debugging info:</h2>
+          <h2 style={{ color: "#B3372B", marginBottom: 16 }}>Poli crashed. Debugging info:</h2>
           <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-all", background: "#fff", padding: 16, border: "1px solid #EFCBC4", borderRadius: 8 }}>
             {msg}{stack ? "\n\n" + stack : ""}
           </pre>
@@ -2535,7 +2535,7 @@ export default function PoliApp() {
 function PoliAppInner() {
   // ── Boot / tour ──
   const [booting, setBooting]     = useState(true);
-  const [showIntro, setShowIntro] = useState(false); // was true — intro tour disabled for now, not deleted; flip back to re-enable
+  const [showIntro, setShowIntro] = useState(false); // was true, intro tour disabled for now, not deleted; flip back to re-enable
   const [postcode, setPostcode]   = useState(null);
 
   useEffect(() => {
@@ -2543,7 +2543,7 @@ function PoliAppInner() {
     return () => clearTimeout(t);
   }, []);
 
-  // ── Postcode — persisted across Home and My Representatives ──
+  // ── Postcode, persisted across Home and My Representatives ──
   const [donationParty, setDonationParty] = useState(null);
   const [savedPostcode, setSavedPostcode] = useState("");
   const [mode, toggleMode] = useTheme();
@@ -2564,7 +2564,7 @@ function PoliAppInner() {
   }, []);
 
   // ── App state ──
-  // ── Community polling — anonymous votes + live sentiment ──
+  // ── Community polling, anonymous votes + live sentiment ──
   const { votes, castVote, fetchSentiment, mergeSentiment } = usePolling(supabase);
   const onVote = castVote;
   const [xp, setXp]         = useState(75);
@@ -2613,7 +2613,7 @@ function PoliAppInner() {
 
   const [selectedBillId, setSelectedBillId] = useState(null);
   const [selectedMemberId, setSelectedMemberId] = useState(null);
-  // Which MP the Contact modal is currently open for — null means closed.
+  // Which MP the Contact modal is currently open for, null means closed.
   // Set via MPDossier's onContact; members already carry .records (adaptMember
   // ran on them once, on fetch), so no extra lookup is needed here.
   const [contactMp, setContactMp] = useState(null);
@@ -2637,7 +2637,7 @@ function PoliAppInner() {
 
   const [alerts, setAlerts] = useState([]);
 
-  // Budget measures — live from budget_measures (populated by sync_budget_measures.py).
+  // Budget measures, live from budget_measures (populated by sync_budget_measures.py).
   const [budgetMeasures, setBudgetMeasures] = useState([]);
   const [budgetState, setBudgetState] = useState("sample"); // "live" | "cached" | "sample"
 
@@ -2653,17 +2653,17 @@ function PoliAppInner() {
         setBudgetState("live");
       });
   }, []);
-  // Avoid hardcoding a budget year in the label — it goes stale every May.
-  const budgetLabel = budgetState === "live" ? "Federal Budget — current" : "Federal Budget 2024–25";
+  // Avoid hardcoding a budget year in the label, it goes stale every May.
+  const budgetLabel = budgetState === "live" ? "Federal Budget · current" : "Federal Budget 2024–25";
   const [budgetView, setBudgetView] = useState("At a glance"); // "Measures" | "At a glance"
 
-  // Budget at a Glance — live from budget_glance (populated by sync_budget_glance.py).
+  // Budget at a Glance, live from budget_glance (populated by sync_budget_glance.py).
   // Falls back to the real, hand-verified figures baked into REVENUE_COMPOSITION etc.
   const [glanceData, setGlanceData] = useState(null);
   useEffect(() => {
     supabase.from("budget_glance").select("*")
       .then(({ data, error }) => {
-        if (error || !data?.length) return; // silent fallback — this is context, not core functionality
+        if (error || !data?.length) return; // silent fallback, this is context, not core functionality
         const bySection = Object.fromEntries(data.map(r => [r.section, r.data]));
         setGlanceData(bySection);
       });
@@ -2735,7 +2735,7 @@ function PoliAppInner() {
     // BILLS
     if (tab === "bills") {
       if (s === "alerts") return (
-        <V5PageWrapper title="Tracked Bills" sub="Bills you're following — updates as they progress.">
+        <V5PageWrapper title="Tracked Bills" PLACEHOLDER_NEVER_MATCHES>
           <AlertsTab alerts={alerts} onToggleAlert={toggleAlert}
             bills={billsLoading || billsError ? POLICIES : mergeSentiment(liveBills)}
             dataState={billsLoading ? "cached" : billsError ? "cached" : "live"} />
@@ -2764,7 +2764,7 @@ function PoliAppInner() {
       return (
         <>
           <PageHeader title="Bill Tracker"
-            sub={billsLoading ? "Loading bills from Supabase…" : billsError ? "Couldn't load live data." : `${liveBills.length} bills from the 48th Parliament — translated into plain English.`} />
+            sub={billsLoading ? "Loading bills from Supabase…" : billsError ? "Couldn't load live data." : `${liveBills.length} bills from the 48th Parliament, translated into plain English.`} />
           <BillsDesk
             key={selectedBillId || "none"}
             bills={billsLoading || billsError ? POLICIES : mergeSentiment(liveBills)}
@@ -2786,7 +2786,7 @@ function PoliAppInner() {
       );
       return (
         <>
-          <PageHeader title="Parliament" sub="Who holds the floor — 48th Parliament composition. Click a party to meet its members." />
+          <PageHeader title="Parliament" sub="Who holds the floor: 48th Parliament composition. Click a party to meet its members." />
           <ParliamentMap house={HOUSE_COMPOSITION} senate={SENATE_COMPOSITION}
             dataState="sample" updated="May 2025"
             onSelectParty={p => { setMpParty(p); navigate("mymp","mp"); }} />
@@ -2794,12 +2794,12 @@ function PoliAppInner() {
       );
     }
 
-    // MY MP — single consolidated view, House/Senate toggle inside MPDossier
+    // MY MP, single consolidated view, House/Senate toggle inside MPDossier
     if (tab === "mymp") {
       // Parties sub
       if (s === "parties") return (
         <>
-          <PageHeader title="Parties" sub="Federal political parties — seats, positions, and financial transparency." />
+          <PageHeader title="Parties" sub="Federal political parties: seats, positions, and financial transparency." />
           <PartiesExplorer
             supabase={supabase}
             onViewDonations={code => { setDonationParty(code); navigate("mymp", "donations"); }}
@@ -2810,7 +2810,7 @@ function PoliAppInner() {
       // Third Parties sub
       if (s === "thirds") return (
         <>
-          <PageHeader title="Third Parties" sub="Organisations spending on political campaigning outside the party system — AEC-disclosed." />
+          <PageHeader title="Third Parties" sub="Organisations spending on political campaigning outside the party system, AEC-disclosed." />
           <ThirdPartyExplorer supabase={supabase} />
         </>
       );
@@ -2818,23 +2818,23 @@ function PoliAppInner() {
       // Party Donations sub
       if (s === "donations") return (
         <>
-          <PageHeader title="Party Donations" sub="AEC-disclosed donations to federal political parties — sourced from the Transparency Register." />
+          <PageHeader title="Party Donations" sub="AEC-disclosed donations to federal political parties, sourced from the Transparency Register." />
           <DonationsExplorer supabase={supabase} initialParty={donationParty} />
         </>
       );
 
-      // Compare (legacy — keep working)
+      // Compare (legacy, keep working)
       if (s === "compare") return (
         <V5PageWrapper title="Electorate History" sub="How electorates have voted over time.">
           <ElectorateComparison />
         </V5PageWrapper>
       );
 
-      // "mp" sub and default — Representatives
+      // "mp" sub and default. Representatives
       return (
         <>
           <PageHeader title="Representatives"
-            sub={membersLoading ? "Loading members from Supabase…" : membersError ? "Couldn't load live data — showing sample." : `${members.length} current MPs & Senators — search by name, electorate, or postcode.`} />
+            sub={membersLoading ? "Loading members from Supabase…" : membersError ? "Couldn't load live data, showing sample." : `${members.length} current MPs & Senators. Search by name, electorate, or postcode.`} />
           {membersLoading ? (
             <div style={{ padding:"40px 0", textAlign:"center", color:"var(--poli-faint)", fontSize:13 }}>Loading members…</div>
           ) : (

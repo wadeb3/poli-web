@@ -3,17 +3,17 @@
 //
 // Every colour in the design system is a CSS custom property; the palettes
 // below are the only place raw values live. Components keep using `C.paper`
-// etc. from tokens.js — those now resolve to var(--poli-*), so the entire app
+// etc. from tokens.js, those now resolve to var(--poli-*), so the entire app
 // retints instantly when `data-poli-theme` flips on <html>. No re-render
 // needed for the colour change itself.
 //
-// Dark mode is not an inversion — it's the same editorial material at night:
+// Dark mode is not an inversion, it's the same editorial material at night:
 // warm char surfaces (never blue-black), ink becomes warm bone, terracotta
 // brightens slightly to hold its presence, and all sentiment/party colours
 // are re-tuned for AA contrast on dark grounds.
 //
 // Behaviour: follows OS preference on first visit, persists explicit choice
-// in localStorage, applies before paint (module runs at import time) — no
+// in localStorage, applies before paint (module runs at import time), no
 // flash of wrong theme.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useState } from "react";
@@ -71,15 +71,15 @@ export const PALETTES = { light: LIGHT, dark: DARK };
 // Australian party colours have claimed nearly the whole wheel: red (ALP),
 // blues (LIB), greens (GRN/NAT), orange (ON), yellow (UAP), teal (independents).
 // The unclaimed hues are violet and near-monochrome. Violet carries a uniquely
-// useful anchor here: purple is the AEC's colour — the colour of neutral
+// useful anchor here: purple is the AEC's colour, the colour of neutral
 // election administration itself.
-//   terracotta — current brand. Earthy, warm, distinctive; sits between ALP
+//   terracotta, current brand. Earthy, warm, distinctive; sits between ALP
 //                red and ON orange, which is the risk being evaluated.
-//   violet     — "electoral violet". Unclaimable by parties; AEC association.
-//   charcoal   — no hue at all: ink as accent. The hardest possible
+//   violet, "electoral violet". Unclaimable by parties; AEC association.
+//   charcoal, no hue at all: ink as accent. The hardest possible
 //                non-partisan position; broadsheet austerity.
 export const ACCENTS = {
-  terracotta: null, // baseline — values live in LIGHT/DARK above
+  terracotta: null, // baseline, values live in LIGHT/DARK above
   violet: {
     light: { accent: "#6E49C9", accentText: "#5A38AE", accentDark: "#4B2D96", accentSoft: "#F1EDFB", accentMid: "#DCD2F2" },
     dark:  { accent: "#9B7CF0", accentText: "#B49CF5", accentDark: "#7E5CE0", accentSoft: "#291F42", accentMid: "#392C5C" },
@@ -117,7 +117,7 @@ if (typeof document !== "undefined") {
   `;
   const stored = localStorage.getItem("poli-theme");
   // Was: follow OS prefers-color-scheme on first visit. Defaulting to light
-  // instead, regardless of system setting — dark only applies once someone
+  // instead, regardless of system setting, dark only applies once someone
   // explicitly picks it via ThemeToggle (which is what populates "stored").
   document.documentElement.setAttribute("data-poli-theme", stored || "light");
   document.documentElement.setAttribute("data-poli-accent", localStorage.getItem("poli-accent") || "violet");
@@ -165,7 +165,7 @@ export function AccentSwitcher({ accent, onSelect }) {
 }
 
 /**
- * Theme state hook — reads initial mode from the attribute set at import time.
+ * Theme state hook, reads initial mode from the attribute set at import time.
  * @returns {["light"|"dark", () => void]} [mode, toggle]
  */
 export function useTheme() {

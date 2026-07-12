@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // PARTIES EXPLORER · v6
 //
-// Overview of Australian federal political parties — seats, membership,
+// Overview of Australian federal political parties, seats, membership,
 // recent policy positions from the bills data, and a link through to
 // the Party Donations explorer.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -110,16 +110,16 @@ const fmtAmount = n => n >= 1_000_000
     ? `$${(n / 1_000).toFixed(0)}k`
     : `$${n}`;
 
-// Real chamber sizes for the seat hemicycle. NOT summed from PARTIES below —
+// Real chamber sizes for the seat hemicycle. NOT summed from PARTIES below
 // checked, and PARTIES' own seat/senator figures currently add up to 175
 // (House) and 70 (Senate), neither of which matches the real 151/76. That's
 // a pre-existing data-accuracy issue in this file (worth a proper pass on
-// PARTIES' numbers separately), not something the hemicycle should inherit —
+// PARTIES' numbers separately), not something the hemicycle should inherit
 // no single party's own count exceeds these real totals, so nothing overflows.
 const HOUSE_TOTAL = 151;
 const SENATE_TOTAL = 76;
 
-/** Dot-grid hemicycle — proportion at a glance instead of a bare number. */
+/** Dot-grid hemicycle, proportion at a glance instead of a bare number. */
 function SeatGrid({ held, total, color }) {
   const held_ = Math.max(0, Math.min(held || 0, total));
   return (
@@ -137,7 +137,7 @@ function SeatGrid({ held, total, color }) {
 // Australian federal election years
 const ELECTION_YEARS = new Set(["2025-26","2024-25","2021-22","2018-19","2015-16","2012-13","2009-10","2006-07","2003-04","2001-02"]);
 
-// ── Party Financials — grouped column chart ───────────────────────────────────
+// ── Party Financials, grouped column chart ───────────────────────────────────
 function PartyFinancials({ partyCode, supabase }) {
   const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -145,7 +145,7 @@ function PartyFinancials({ partyCode, supabase }) {
   useEffect(() => {
     if (!supabase || !partyCode) return;
     setLoading(true);
-    // Fetch all rows — multiple per year (state branches), aggregate client-side
+    // Fetch all rows, multiple per year (state branches), aggregate client-side
     supabase.from("party_returns")
       .select("financial_year,total_receipts,total_payments,surplus")
       .eq("party", partyCode)
@@ -198,7 +198,7 @@ function PartyFinancials({ partyCode, supabase }) {
   const chartData = returns;
   const latest = chartData[chartData.length - 1];
   const maxVal = Math.max(...chartData.flatMap(r => [r.total_receipts || 0, r.total_payments || 0])) || 1;
-  const chartH = 64; // half-height budget — chart mirrors income (up) and expenditure (down) around a shared baseline
+  const chartH = 64; // half-height budget, chart mirrors income (up) and expenditure (down) around a shared baseline
 
   // Format year label: "2024-25" → "24-25", "1998-99" → "98-99"
   const fmtYear = y => {
@@ -229,7 +229,7 @@ function PartyFinancials({ partyCode, supabase }) {
         ))}
       </div>
 
-      {/* Mirrored income/expenditure chart — income grows up, expenditure grows
+      {/* Mirrored income/expenditure chart, income grows up, expenditure grows
           down from a shared baseline, so the visual gap between them at each
           year IS the surplus/deficit, not a number you compute separately.
           Election years get a shaded band behind the whole column rather than
@@ -259,7 +259,7 @@ function PartyFinancials({ partyCode, supabase }) {
                   )}
                   {!isElec && <div style={{ height: 12 }} />}
 
-                  {/* Income — grows up from baseline */}
+                  {/* Income, grows up from baseline */}
                   <div style={{ width: "100%", height: chartH, display: "flex", alignItems: "flex-end", justifyContent: "center", position: "relative", zIndex: 1 }}>
                     <div title={`Income ${r.financial_year}: ${fmtAmount(r.total_receipts || 0)}`}
                       style={{ width: "58%", height: Math.max(incPx, 2), background: C.green, borderRadius: "4px 4px 0 0", opacity: isLatest ? 1 : 0.65 }} />
@@ -268,13 +268,13 @@ function PartyFinancials({ partyCode, supabase }) {
                   {/* Shared baseline */}
                   <div style={{ width: "100%", height: 1.5, background: C.borderDark, position: "relative", zIndex: 1 }} />
 
-                  {/* Expenditure — grows down from baseline */}
+                  {/* Expenditure, grows down from baseline */}
                   <div style={{ width: "100%", height: chartH, display: "flex", alignItems: "flex-start", justifyContent: "center", position: "relative", zIndex: 1 }}>
                     <div title={`Expenditure ${r.financial_year}: ${fmtAmount(r.total_payments || 0)}`}
                       style={{ width: "58%", height: Math.max(expPx, 2), background: C.red, borderRadius: "0 0 4px 4px", opacity: isLatest ? 1 : 0.65 }} />
                   </div>
 
-                  {/* Year + net position — the gap above IS this number, this just labels it */}
+                  {/* Year + net position, the gap above IS this number, this just labels it */}
                   <div style={{ marginTop: 7, fontSize: 9.5, fontWeight: isLatest ? 700 : 500, color: isLatest ? C.mid : C.faint, fontVariantNumeric: "tabular-nums", position: "relative", zIndex: 1 }}>
                     {fmtYear(r.financial_year)}
                   </div>
@@ -327,7 +327,7 @@ function TopDonors({ partyCode, partyColor, supabase, onViewAll }) {
       });
   }, [partyCode, supabase]);
 
-  // Build year buckets — recent 6 years + "Older"
+  // Build year buckets, recent 6 years + "Older"
   const allYears = [...new Set(allDonations.map(r => r.financial_year))].sort().reverse();
   const recentYears = allYears.slice(0, 6);
   const olderYears  = allYears.slice(6);
@@ -374,7 +374,7 @@ function TopDonors({ partyCode, partyColor, supabase, onViewAll }) {
         )}
       </div>
 
-      {/* Year pills — always visible, never disappear */}
+      {/* Year pills, always visible, never disappear */}
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 10 }}>
         <button onClick={() => setYear(null)} style={pillStyle(!year)}>All years</button>
         {recentYears.map(y => (
@@ -477,20 +477,20 @@ export function PartiesExplorer({ onViewDonations, supabase }) {
               <Chip color={party.color} tone="tint">{party.position}</Chip>
             </div>
 
-            {/* Seats — hemicycle dot-grid, proportion at a glance instead of a bare number */}
+            {/* Seats, hemicycle dot-grid, proportion at a glance instead of a bare number */}
             <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
               <div style={{ flex: 1, background: C.surface, borderRadius: RADIUS.control, padding: "14px 16px" }}>
                 <div style={{ fontSize: 10, color: C.faint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>House of Representatives</div>
                 <SeatGrid held={party.seats} total={HOUSE_TOTAL} color={party.color} />
                 <div style={{ marginTop: 10, fontSize: 12, color: C.mid }}>
-                  <span style={{ ...TYPE.h3, fontSize: 20, color: C.ink }}>{party.seats}</span> of {HOUSE_TOTAL} seats — {((party.seats / HOUSE_TOTAL) * 100).toFixed(1)}%
+                  <span style={{ ...TYPE.h3, fontSize: 20, color: C.ink }}>{party.seats}</span> of {HOUSE_TOTAL} seats · {((party.seats / HOUSE_TOTAL) * 100).toFixed(1)}%
                 </div>
               </div>
               <div style={{ flex: 1, background: C.surface, borderRadius: RADIUS.control, padding: "14px 16px" }}>
                 <div style={{ fontSize: 10, color: C.faint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Senate</div>
                 <SeatGrid held={party.senators} total={SENATE_TOTAL} color={party.color} />
                 <div style={{ marginTop: 10, fontSize: 12, color: C.mid }}>
-                  <span style={{ ...TYPE.h3, fontSize: 20, color: C.ink }}>{party.senators || 0}</span> of {SENATE_TOTAL} seats — {(((party.senators || 0) / SENATE_TOTAL) * 100).toFixed(1)}%
+                  <span style={{ ...TYPE.h3, fontSize: 20, color: C.ink }}>{party.senators || 0}</span> of {SENATE_TOTAL} seats · {(((party.senators || 0) / SENATE_TOTAL) * 100).toFixed(1)}%
                 </div>
               </div>
             </div>
@@ -510,14 +510,14 @@ export function PartiesExplorer({ onViewDonations, supabase }) {
             {/* Divider */}
             <div style={{ borderTop: `1px solid ${C.border}`, marginBottom: 16 }} />
 
-            {/* Party financials — live from party_returns */}
+            {/* Party financials, live from party_returns */}
             <PartyFinancials
               key={`fin-${party.code}`}
               partyCode={party.code}
               supabase={supabase}
             />
 
-            {/* Top donors — live from donations */}
+            {/* Top donors, live from donations */}
             <TopDonors
               key={party.code}
               partyCode={party.code}
