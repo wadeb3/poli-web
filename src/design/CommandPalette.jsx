@@ -24,13 +24,31 @@ import { IconSearch } from "./icons.jsx";
  * @property {() => void} onSelect
  */
 
-const TYPE_STYLE = {
+export const PALETTE_TYPE_STYLE = {
   bill:       { label: "Bill",       color: C.accentText },
   member:     { label: "Member",     color: C.teal },
   electorate: { label: "Electorate", color: C.blue },
   glossary:   { label: "Glossary",   color: C.purple },
   page:       { label: "Go to",      color: C.mid },
 };
+
+/**
+ * The one matching implementation for "search everything" — used by both the
+ * ⌘K modal and any inline dropdown (e.g. HomeFront's search hero), so there's
+ * exactly one place that defines what counts as a match.
+ * @param {PaletteItem[]} items
+ * @param {string} query
+ * @param {number} maxResults
+ * @returns {PaletteItem[]}
+ */
+export function filterPaletteItems(items, query, maxResults = 9) {
+  const q = query.trim().toLowerCase();
+  if (!q) return items.filter(i => i.type === "page").slice(0, maxResults);
+  const words = q.split(/\s+/);
+  return items
+    .filter(i => { const hay = `${i.title} ${i.sub || ""}`.toLowerCase(); return words.every(w => hay.includes(w)); })
+    .slice(0, maxResults);
+}
 
 /** Global ⌘K / Ctrl+K listener. @returns {[boolean, Function]} */
 export function usePaletteShortcut() {
@@ -53,14 +71,7 @@ export function CommandPalette({ open, onClose, items, maxResults = 9, initialQu
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef(null);
 
-  const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return items.filter(i => i.type === "page").slice(0, maxResults);
-    const words = q.split(/\s+/);
-    return items
-      .filter(i => { const hay = `${i.title} ${i.sub || ""}`.toLowerCase(); return words.every(w => hay.includes(w)); })
-      .slice(0, maxResults);
-  }, [items, query, maxResults]);
+  const results = useMemo(() => filterPaletteItems(items, query, maxResults), [items, query, maxResults]);
 
   useEffect(() => { setCursor(0); }, [query, open]);
   useEffect(() => { if (open) { setQuery(initialQuery); setTimeout(() => inputRef.current?.focus(), 10); } }, [open, initialQuery]);
@@ -101,7 +112,7 @@ export function CommandPalette({ open, onClose, items, maxResults = 9, initialQu
               <div style={{ fontSize: 12, color: C.faint }}>Try a bill topic, a member's name, or a postcode.</div>
             </div>
           ) : results.map((r, i) => {
-            const t = TYPE_STYLE[r.type] || TYPE_STYLE.page;
+            const t = PALETTE_TYPE_STYLE[r.type] || PALETTE_TYPE_STYLE.page;
             const on = i === cursor;
             return (
               <button key={r.id} role="option" aria-selected={on}

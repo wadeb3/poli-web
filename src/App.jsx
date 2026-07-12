@@ -2555,7 +2555,6 @@ function PoliAppInner() {
 
   // ── Command palette ──
   const [paletteOpen, setPaletteOpen] = usePaletteShortcut();
-  const [paletteQuery, setPaletteQuery] = useState(""); // pre-fills the palette when opened from HomeFront's search hero
 
   // ── Responsive ──
   const [wide, setWide] = useState(typeof window !== "undefined" && window.innerWidth >= 900);
@@ -2727,7 +2726,7 @@ function PoliAppInner() {
         divisions={recentDivisions}
         onOpenBill={(id) => navigateToBill(id)}
         onNavigate={navigate}
-        onSearch={(q) => { setPaletteQuery(q); setPaletteOpen(true); }}
+        items={paletteItems}
         nextSitting={{ label: "Parliament sits", days: 8 }}
         dataState={billsLoading ? "cached" : "live"}
       />
@@ -2907,7 +2906,7 @@ function PoliAppInner() {
       )}
 
       <div style={{ display:"flex", minHeight:"100vh", background:"var(--poli-paper)", fontFamily:FONT.ui, color:"var(--poli-ink)", ...appStyle }}>
-        <CommandPalette open={paletteOpen} onClose={() => { setPaletteOpen(false); setPaletteQuery(""); }} items={paletteItems} initialQuery={paletteQuery} />
+        <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} items={paletteItems} />
 
         {/* Desktop sidebar */}
         {wide && (
