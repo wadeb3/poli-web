@@ -110,6 +110,30 @@ const fmtAmount = n => n >= 1_000_000
     ? `$${(n / 1_000).toFixed(0)}k`
     : `$${n}`;
 
+// Real chamber sizes for the seat hemicycle. NOT summed from PARTIES below —
+// checked, and PARTIES' own seat/senator figures currently add up to 175
+// (House) and 70 (Senate), neither of which matches the real 151/76. That's
+// a pre-existing data-accuracy issue in this file (worth a proper pass on
+// PARTIES' numbers separately), not something the hemicycle should inherit —
+// no single party's own count exceeds these real totals, so nothing overflows.
+const HOUSE_TOTAL = 151;
+const SENATE_TOTAL = 76;
+
+/** Dot-grid hemicycle — proportion at a glance instead of a bare number. */
+function SeatGrid({ held, total, color }) {
+  const held_ = Math.max(0, Math.min(held || 0, total));
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 3, maxWidth: 216 }}>
+      {Array.from({ length: total }, (_, i) => (
+        <div key={i} style={{
+          width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
+          background: i < held_ ? color : C.surfaceB,
+        }} />
+      ))}
+    </div>
+  );
+}
+
 // Australian federal election years
 const ELECTION_YEARS = new Set(["2025-26","2024-25","2021-22","2018-19","2015-16","2012-13","2009-10","2006-07","2003-04","2001-02"]);
 
@@ -174,7 +198,7 @@ function PartyFinancials({ partyCode, supabase }) {
   const chartData = returns;
   const latest = chartData[chartData.length - 1];
   const maxVal = Math.max(...chartData.flatMap(r => [r.total_receipts || 0, r.total_payments || 0])) || 1;
-  const chartH = 80;
+  const chartH = 64; // half-height budget — chart mirrors income (up) and expenditure (down) around a shared baseline
 
   // Format year label: "2024-25" → "24-25", "1998-99" → "98-99"
   const fmtYear = y => {
@@ -205,44 +229,65 @@ function PartyFinancials({ partyCode, supabase }) {
         ))}
       </div>
 
-      {/* Grouped column chart */}
+      {/* Mirrored income/expenditure chart — income grows up, expenditure grows
+          down from a shared baseline, so the visual gap between them at each
+          year IS the surplus/deficit, not a number you compute separately.
+          Election years get a shaded band behind the whole column rather than
+          a small floating mark, so spending-in-election-year patterns are
+          visible across the timeline at a glance, not just per-year. */}
       {chartData.length > 1 && (
         <div>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: chartH, borderBottom: `1px solid ${C.border}` }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "stretch", paddingTop: 16 }}>
             {chartData.map(r => {
-              const incPct  = ((r.total_receipts || 0) / maxVal) * 100;
-              const expPct  = ((r.total_payments || 0) / maxVal) * 100;
-              const isElec  = ELECTION_YEARS.has(r.financial_year);
+              const incPx = ((r.total_receipts || 0) / maxVal) * chartH;
+              const expPx = ((r.total_payments || 0) / maxVal) * chartH;
+              const isElec = ELECTION_YEARS.has(r.financial_year);
               const isLatest = r.financial_year === latest.financial_year;
+              const surplus = r.surplus || 0;
               return (
-                <div key={r.financial_year} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}>
+                <div key={r.financial_year} style={{ flex: 1, position: "relative", display: "flex", flexDirection: "column", alignItems: "center" }}>
                   {isElec && (
-                    <div title="Election year" style={{ position: "absolute", top: -14, fontSize: 9, color: C.amber, fontWeight: 700 }}>✦</div>
+                    <>
+                      <div aria-hidden style={{
+                        position: "absolute", top: -14, bottom: -4, left: -5, right: -5, zIndex: 0,
+                        background: C.accentSoft, borderRadius: 8,
+                      }} />
+                      <div style={{ position: "relative", zIndex: 1, fontSize: 8, fontWeight: 700, color: C.accentText, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 3, whiteSpace: "nowrap" }}>
+                        Election
+                      </div>
+                    </>
                   )}
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: 2, width: "100%", height: chartH }}>
-                    <div
-                      title={`Income ${r.financial_year}: ${fmtAmount(r.total_receipts || 0)}`}
-                      style={{ flex: 1, height: `${incPct}%`, background: C.green, borderRadius: "2px 2px 0 0", minHeight: 2, opacity: isLatest ? 1 : 0.6 }}
-                    />
-                    <div
-                      title={`Expenditure ${r.financial_year}: ${fmtAmount(r.total_payments || 0)}`}
-                      style={{ flex: 1, height: `${expPct}%`, background: C.red, borderRadius: "2px 2px 0 0", minHeight: 2, opacity: isLatest ? 1 : 0.6 }}
-                    />
+                  {!isElec && <div style={{ height: 12 }} />}
+
+                  {/* Income — grows up from baseline */}
+                  <div style={{ width: "100%", height: chartH, display: "flex", alignItems: "flex-end", justifyContent: "center", position: "relative", zIndex: 1 }}>
+                    <div title={`Income ${r.financial_year}: ${fmtAmount(r.total_receipts || 0)}`}
+                      style={{ width: "58%", height: Math.max(incPx, 2), background: C.green, borderRadius: "4px 4px 0 0", opacity: isLatest ? 1 : 0.65 }} />
+                  </div>
+
+                  {/* Shared baseline */}
+                  <div style={{ width: "100%", height: 1.5, background: C.borderDark, position: "relative", zIndex: 1 }} />
+
+                  {/* Expenditure — grows down from baseline */}
+                  <div style={{ width: "100%", height: chartH, display: "flex", alignItems: "flex-start", justifyContent: "center", position: "relative", zIndex: 1 }}>
+                    <div title={`Expenditure ${r.financial_year}: ${fmtAmount(r.total_payments || 0)}`}
+                      style={{ width: "58%", height: Math.max(expPx, 2), background: C.red, borderRadius: "0 0 4px 4px", opacity: isLatest ? 1 : 0.65 }} />
+                  </div>
+
+                  {/* Year + net position — the gap above IS this number, this just labels it */}
+                  <div style={{ marginTop: 7, fontSize: 9.5, fontWeight: isLatest ? 700 : 500, color: isLatest ? C.mid : C.faint, fontVariantNumeric: "tabular-nums", position: "relative", zIndex: 1 }}>
+                    {fmtYear(r.financial_year)}
+                  </div>
+                  <div style={{ marginTop: 2, fontSize: 9, fontWeight: 700, color: surplus >= 0 ? C.green : C.red, position: "relative", zIndex: 1 }}>
+                    {surplus >= 0 ? "+" : "−"}{fmtAmount(Math.abs(surplus))}
                   </div>
                 </div>
               );
             })}
           </div>
-          {/* X-axis labels */}
-          <div style={{ display: "flex", gap: 8, marginTop: 5 }}>
-            {chartData.map(r => (
-              <div key={r.financial_year} style={{ flex: 1, fontSize: 9, color: r.financial_year === latest.financial_year ? C.mid : C.faint, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
-                {fmtYear(r.financial_year)}
-              </div>
-            ))}
-          </div>
+
           {/* Legend */}
-          <div style={{ display: "flex", gap: 14, marginTop: 8, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 14, marginTop: 14, alignItems: "center" }}>
             {[{ color: C.green, label: "Income" }, { color: C.red, label: "Expenditure" }].map(l => (
               <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <div style={{ width: 8, height: 8, borderRadius: 2, background: l.color }} />
@@ -250,7 +295,7 @@ function PartyFinancials({ partyCode, supabase }) {
               </div>
             ))}
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ fontSize: 9, color: C.amber, fontWeight: 700 }}>✦</span>
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: C.accentSoft, border: `1px solid ${C.accentMid}` }} />
               <span style={{ fontSize: 10, color: C.faint }}>Election year</span>
             </div>
           </div>
@@ -432,19 +477,26 @@ export function PartiesExplorer({ onViewDonations, supabase }) {
               <Chip color={party.color} tone="tint">{party.position}</Chip>
             </div>
 
-            {/* Seats stats */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 20 }}>
-              {[
-                { label: "House seats",  value: party.seats },
-                { label: "Senate seats", value: party.senators },
-                { label: "Founded",      value: party.founded || "—" },
-              ].map(s => (
-                <div key={s.label} style={{ background: C.surface, borderRadius: RADIUS.control, padding: "10px 12px" }}>
-                  <div style={{ fontSize: 10, color: C.faint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{s.label}</div>
-                  <div style={{ fontSize: 20, fontWeight: 600, color: C.ink, fontVariantNumeric: "tabular-nums" }}>{s.value}</div>
+            {/* Seats — hemicycle dot-grid, proportion at a glance instead of a bare number */}
+            <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+              <div style={{ flex: 1, background: C.surface, borderRadius: RADIUS.control, padding: "14px 16px" }}>
+                <div style={{ fontSize: 10, color: C.faint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>House of Representatives</div>
+                <SeatGrid held={party.seats} total={HOUSE_TOTAL} color={party.color} />
+                <div style={{ marginTop: 10, fontSize: 12, color: C.mid }}>
+                  <span style={{ ...TYPE.h3, fontSize: 20, color: C.ink }}>{party.seats}</span> of {HOUSE_TOTAL} seats — {((party.seats / HOUSE_TOTAL) * 100).toFixed(1)}%
                 </div>
-              ))}
+              </div>
+              <div style={{ flex: 1, background: C.surface, borderRadius: RADIUS.control, padding: "14px 16px" }}>
+                <div style={{ fontSize: 10, color: C.faint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Senate</div>
+                <SeatGrid held={party.senators} total={SENATE_TOTAL} color={party.color} />
+                <div style={{ marginTop: 10, fontSize: 12, color: C.mid }}>
+                  <span style={{ ...TYPE.h3, fontSize: 20, color: C.ink }}>{party.senators || 0}</span> of {SENATE_TOTAL} seats — {(((party.senators || 0) / SENATE_TOTAL) * 100).toFixed(1)}%
+                </div>
+              </div>
             </div>
+            {party.founded && (
+              <div style={{ fontSize: 11, color: C.faint, marginBottom: 20 }}>Founded {party.founded}</div>
+            )}
 
             {/* About */}
             <div style={{ marginBottom: 20 }}>
