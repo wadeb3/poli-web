@@ -2535,7 +2535,7 @@ export default function PoliApp() {
 function PoliAppInner() {
   // ── Boot / tour ──
   const [booting, setBooting]     = useState(true);
-  const [showIntro, setShowIntro] = useState(true);
+  const [showIntro, setShowIntro] = useState(false); // was true — intro tour disabled for now, not deleted; flip back to re-enable
   const [postcode, setPostcode]   = useState(null);
 
   useEffect(() => {
@@ -2655,7 +2655,7 @@ function PoliAppInner() {
   }, []);
   // Avoid hardcoding a budget year in the label — it goes stale every May.
   const budgetLabel = budgetState === "live" ? "Federal Budget — current" : "Federal Budget 2024–25";
-  const [budgetView, setBudgetView] = useState("Measures"); // "Measures" | "At a glance"
+  const [budgetView, setBudgetView] = useState("At a glance"); // "Measures" | "At a glance"
 
   // Budget at a Glance — live from budget_glance (populated by sync_budget_glance.py).
   // Falls back to the real, hand-verified figures baked into REVENUE_COMPOSITION etc.

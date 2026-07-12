@@ -116,9 +116,11 @@ if (typeof document !== "undefined") {
     body{transition:background 0.25s ease;}
   `;
   const stored = localStorage.getItem("poli-theme");
-  const system = window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  document.documentElement.setAttribute("data-poli-theme", stored || system);
-  document.documentElement.setAttribute("data-poli-accent", localStorage.getItem("poli-accent") || "violet");
+  // Was: follow OS prefers-color-scheme on first visit. Defaulting to light
+  // instead, regardless of system setting — dark only applies once someone
+  // explicitly picks it via ThemeToggle (which is what populates "stored").
+  document.documentElement.setAttribute("data-poli-theme", stored || "light");
+  document.documentElement.setAttribute("data-poli-accent", localStorage.getItem("poli-accent") || "terracotta");
 }
 
 /**
@@ -128,8 +130,8 @@ if (typeof document !== "undefined") {
 export function useAccent() {
   const [accent, setAccent] = useState(() =>
     typeof document !== "undefined"
-      ? document.documentElement.getAttribute("data-poli-accent") || "violet"
-      : "violet"
+      ? document.documentElement.getAttribute("data-poli-accent") || "terracotta"
+      : "terracotta"
   );
   useEffect(() => {
     document.documentElement.setAttribute("data-poli-accent", accent);
