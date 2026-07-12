@@ -1372,9 +1372,23 @@ function BudgetGlance({ revenue = REVENUE_COMPOSITION, spending = SPENDING_BY_FU
 // ── Budget Tracker ────────────────────────────────────────────────────────────
 function BudgetTracker({ measures = BUDGET_MEASURES, dataState = "sample", budgetLabel = "Federal Budget 2024–25" }) {
   const [filter, setFilter] = useState("All");
+  const [openId, setOpenId] = useState(null);
   const filtered = filter==="Cost of living" ? measures.filter(m=>m.colLiving) : measures;
   const dirColor = d => d==="expenditure"?C.red:d==="revenue"?C.amber:C.green;
+  const dirTag = d => d==="expenditure"?"Spending":d==="saving"?"Saving":"Revenue";
   const badge = { live:{c:C.green,l:"Live — Budget Paper No. 2 & budget.gov.au"}, cached:{c:C.amber,l:"Last known — live fetch failed"}, sample:{c:C.faint,l:"Sample data"} }[dataState];
+
+  // Group by portfolio, preserving first-seen order rather than alphabetising —
+  // reads closer to how BP2 itself is organised.
+  const grouped = useMemo(() => {
+    const map = new Map();
+    filtered.forEach(m => {
+      const key = m.portfolio || "Other";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(m);
+    });
+    return Array.from(map.entries());
+  }, [filtered]);
 
   return (
     <div>
@@ -1392,33 +1406,43 @@ function BudgetTracker({ measures = BUDGET_MEASURES, dataState = "sample", budge
         </div>
       </div>
 
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(380px, 1fr))", gap:12 }}>
-      {filtered.map(m => (
-        <div key={m.id} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"18px 20px" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
-            <div style={{ flex:1 }}>
-              <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"wrap" }}>
-                <Tag color={dirColor(m.direction)}>{m.direction==="expenditure"?"Spending":m.direction==="saving"?"Saving":"Revenue"}</Tag>
-                <Tag color={C.faint}>{m.portfolio}</Tag>
-                {m.colLiving && <Tag color={C.teal}>Cost of living</Tag>}
-              </div>
-              <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:C.ink, marginBottom:4 }}>{m.title}</div>
-            </div>
-            <div style={{ textAlign:"right", flexShrink:0, marginLeft:12 }}>
-              <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, color:dirColor(m.direction) }}>{m.amount}</div>
-              {m.year && <div style={{ fontSize:10, color:C.faint }}>{m.year}</div>}
-            </div>
+      {grouped.map(([portfolio, items]) => (
+        <div key={portfolio} style={{ marginBottom:18 }}>
+          <SectionLabel>{portfolio} · {items.length}</SectionLabel>
+          <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:14, overflow:"hidden" }}>
+            {items.map((m, i) => {
+              const isOpen = openId === m.id;
+              return (
+                <div key={m.id} style={{ borderBottom: i < items.length-1 ? `1px solid ${C.border}` : "none" }}>
+                  <button onClick={()=>setOpenId(isOpen ? null : m.id)} style={{
+                    width:"100%", textAlign:"left", display:"flex", alignItems:"center", gap:10,
+                    padding:"11px 14px", background: isOpen ? C.surface : "transparent",
+                    border:"none", cursor:"pointer", fontFamily:"inherit",
+                  }}>
+                    <span style={{ width:7, height:7, borderRadius:99, background:dirColor(m.direction), flexShrink:0 }} />
+                    <span style={{ flex:1, minWidth:0, fontSize:13, color:C.ink, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.title}</span>
+                    {m.colLiving && <Tag color={C.teal}>Cost of living</Tag>}
+                    <span style={{ fontSize:11.5, fontWeight:600, color:dirColor(m.direction), flexShrink:0, fontVariantNumeric:"tabular-nums" }}>{m.amount}</span>
+                    <span style={{ color:C.faint, fontSize:12, flexShrink:0, width:14, textAlign:"center" }}>{isOpen ? "−" : "+"}</span>
+                  </button>
+                  {isOpen && (
+                    <div style={{ padding:"0 14px 16px 31px" }}>
+                      <div style={{ marginBottom:8 }}><Tag color={dirColor(m.direction)}>{dirTag(m.direction)}</Tag></div>
+                      <p style={{ fontSize:13, color:C.mid, margin:"0 0 8px", lineHeight:1.6 }}>{m.plain}</p>
+                      {m.impact && m.impact !== m.plain && (
+                        <div style={{ background:C.surface, borderLeft:`3px solid ${C.accent}`, borderRadius:"0 8px 8px 0", padding:"9px 12px" }}>
+                          <div style={{ fontSize:10, fontWeight:700, color:C.accent, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>What this means for you</div>
+                          <div style={{ fontSize:12, color:C.mid, lineHeight:1.5 }}>{m.impact}</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-          <p style={{ fontSize:13, color:C.mid, margin:"0 0 10px", lineHeight:1.6 }}>{m.plain}</p>
-          {m.impact && m.impact !== m.plain && (
-            <div style={{ background:C.surface, borderLeft:`3px solid ${C.accent}`, borderRadius:"0 8px 8px 0", padding:"9px 12px" }}>
-              <div style={{ fontSize:10, fontWeight:700, color:C.accent, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>What this means for you</div>
-              <div style={{ fontSize:12, color:C.mid, lineHeight:1.5 }}>{m.impact}</div>
-            </div>
-          )}
         </div>
       ))}
-      </div>
     </div>
   );
 }
@@ -2730,7 +2754,7 @@ function PoliAppInner() {
       if (s === "budget") return (
         <V5PageWrapper title={budgetLabel} sub="Key budget measures explained in plain English.">
           <div style={{ display:"flex", gap:8, marginBottom:14 }}>
-            {["Measures","At a glance"].map(v => (
+            {["At a glance","Measures"].map(v => (
               <button key={v} onClick={()=>setBudgetView(v)} style={{ padding:"6px 14px", borderRadius:99, border:`1.5px solid ${budgetView===v?C.accent:C.border}`, background:budgetView===v?C.accentSoft:C.white, fontSize:12, fontWeight:600, color:budgetView===v?C.accent:C.mid, cursor:"pointer" }}>{v}</button>
             ))}
           </div>
