@@ -2685,7 +2685,7 @@ function PoliAppInner() {
     ...members.map(m => ({
       id:`mp-${m.id}`, type:"member", title:m.name,
       sub:`${m.role} · ${m.party}`,
-      onSelect:() => navigate("mymp","mp"),
+      onSelect:() => navigateToMember(m.id),
     })),
     ...Object.entries(GLOSSARY).map(([term,def]) => ({
       id:`gl-${term}`, type:"glossary", title:term, sub:def,
@@ -2722,7 +2722,7 @@ function PoliAppInner() {
     // HOME
     if (tab === "home") return (
       <HomeFront
-        bills={billsLoading ? [] : mergeSentiment(liveBills)}
+        bills={billsLoading || billsError ? POLICIES : mergeSentiment(liveBills)}
         divisions={recentDivisions}
         onOpenBill={(id) => navigateToBill(id)}
         onNavigate={navigate}
@@ -2766,6 +2766,7 @@ function PoliAppInner() {
           <PageHeader title="Bill Tracker"
             sub={billsLoading ? "Loading bills from Supabase…" : billsError ? "Couldn't load live data." : `${liveBills.length} bills from the 48th Parliament — translated into plain English.`} />
           <BillsDesk
+            key={selectedBillId || "none"}
             bills={billsLoading || billsError ? POLICIES : mergeSentiment(liveBills)}
             dataState={billsLoading ? "cached" : billsError ? "cached" : "live"}
             loading={billsLoading}
@@ -2838,6 +2839,7 @@ function PoliAppInner() {
             <div style={{ padding:"40px 0", textAlign:"center", color:"var(--poli-faint)", fontSize:13 }}>Loading members…</div>
           ) : (
             <MPDossier
+              key={selectedMemberId || "none"}
               members={membersError ? [] : members}
               initialParty={mpParty}
               initialSelectedId={selectedMemberId}
