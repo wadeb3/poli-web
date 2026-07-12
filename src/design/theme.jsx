@@ -120,7 +120,7 @@ if (typeof document !== "undefined") {
   // instead, regardless of system setting — dark only applies once someone
   // explicitly picks it via ThemeToggle (which is what populates "stored").
   document.documentElement.setAttribute("data-poli-theme", stored || "light");
-  document.documentElement.setAttribute("data-poli-accent", localStorage.getItem("poli-accent") || "terracotta");
+  document.documentElement.setAttribute("data-poli-accent", localStorage.getItem("poli-accent") || "violet");
 }
 
 /**
@@ -130,8 +130,8 @@ if (typeof document !== "undefined") {
 export function useAccent() {
   const [accent, setAccent] = useState(() =>
     typeof document !== "undefined"
-      ? document.documentElement.getAttribute("data-poli-accent") || "terracotta"
-      : "terracotta"
+      ? document.documentElement.getAttribute("data-poli-accent") || "violet"
+      : "violet"
   );
   useEffect(() => {
     document.documentElement.setAttribute("data-poli-accent", accent);
