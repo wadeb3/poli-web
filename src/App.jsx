@@ -35,7 +35,14 @@ import { LearnSyllabus } from "./design/screens/LearnSyllabus.jsx";
 // LEGACY COLOUR TOKENS (v5 components still use these directly)
 // C is kept as-is so no v5 component needs touching yet.
 // ─────────────────────────────────────────────────────────────────────────────
-const C = {
+// Legacy hardcoded palette — kept only as a fallback for any key the real
+// design system (Cv6, imported above from tokens.js) doesn't define. Cv6
+// wins wherever both exist, so this file now follows the same accent/theme
+// switching as every other screen, instead of a frozen, disconnected copy
+// of what the palette looked like on the day this was written. This is the
+// direct fix for the bug the comment below describes — a hardcoded copy of
+// a colour that later drifted out of sync with the real one.
+const C_FALLBACK = {
   white:"#FFFFFF", surface:"#F7F7F7", surfaceB:"#F0F0F0",
   border:"#EBEBEB", borderDark:"#D8D8D8",
   ink:"#1A1A1A", mid:"#6B6B6B", faint:"#AFAFAF",
@@ -45,10 +52,14 @@ const C = {
   red:"#B3372B",   redSoft:"#FAECE9",   redMid:"#EFCBC4",
   amber:"#9A6700", amberSoft:"#FAF3E3", amberMid:"#EEDFB8",
   blue:"#2456A6",  blueSoft:"#EDF2FA",  blueMid:"#C9D8EF",
-  // purple reassigned to slate blue (collision fix for violet accent)
+  // purple deliberately NOT taken from Cv6 even if it defines one — this was
+  // reassigned away from a true purple specifically to avoid colliding with
+  // the violet accent (see history), so it stays pinned here rather than
+  // silently drifting back into collision if Cv6 ever adds its own `purple`.
   purple:"#1E5FAD", purpleSoft:"#EDF2FA",
   teal:"#0D766E",  tealSoft:"#EDF7F5",
 };
+const C = { ...C_FALLBACK, ...Cv6, purple: C_FALLBACK.purple, purpleSoft: C_FALLBACK.purpleSoft };
 
 const PARTY_COLOR = {
   ALP:C.red, LNP:C.blue, Greens:C.green, GRN:C.green,
@@ -317,7 +328,6 @@ const SENATORS = {
 const CABINET = [
   {
     role:"Prime Minister", name:"Anthony Albanese", portfolio:"PM&C", party:"ALP", electorate:"Grayndler, NSW", since:"May 2022",
-    emoji:"🏛️",
     what:"The PM leads the government, chairs Cabinet, and is responsible for overall policy direction. They represent Australia internationally and are accountable to parliament for all government decisions.",
     covers:["Sets national policy agenda","Chairs Cabinet meetings","Represents Australia internationally","Responsible for AUKUS and major defence decisions","Oversees intelligence agencies (ASIO, ASIS)"],
     budget:"The Department of PM&C coordinates across all portfolios; there's no single budget envelope.",
@@ -327,7 +337,6 @@ const CABINET = [
   },
   {
     role:"Deputy Prime Minister & Minister for Defence", name:"Richard Marles", portfolio:"Defence", party:"ALP", electorate:"Corio, VIC", since:"May 2022",
-    emoji:"🛡️",
     what:"The Deputy PM steps in when the PM is unavailable. As Defence Minister, Marles oversees the Australian Defence Force, AUKUS negotiations, and all military capability decisions.",
     covers:["Australian Defence Force (Army, Navy, Air Force)","AUKUS submarine pathway","Defence industry and procurement","Veterans' affairs (joint responsibility)","Pine Gap and intelligence facilities"],
     budget:"$54.2 billion (2024–25), rising to 2.1% of GDP",
@@ -337,7 +346,6 @@ const CABINET = [
   },
   {
     role:"Treasurer", name:"Jim Chalmers", portfolio:"Treasury", party:"ALP", electorate:"Rankin, QLD", since:"May 2022",
-    emoji:"💰",
     what:"The Treasurer is responsible for managing the national economy. They deliver the annual federal budget, set fiscal policy, and oversee the tax system, superannuation, and financial regulation.",
     covers:["Federal Budget","Income tax policy","Superannuation","Banking and financial regulation (with APRA, ASIC, RBA)","Cost of living measures","Inflation and economic forecasting"],
     budget:"Administers the entire $700B+ federal budget envelope",
@@ -347,7 +355,6 @@ const CABINET = [
   },
   {
     role:"Minister for Foreign Affairs", name:"Penny Wong", portfolio:"DFAT", party:"ALP", electorate:"SA Senate", since:"May 2022",
-    emoji:"🌏",
     what:"The Foreign Affairs Minister manages Australia's relationships with other nations, represents Australia at the United Nations, and oversees the diplomatic service and foreign aid program.",
     covers:["Australia's diplomatic relationships","United Nations and multilateral bodies","Foreign aid (Australian Aid program)","Consular services for Australians abroad","Trade policy (shared with Trade Minister)","Pacific Engagement Visa and Pacific step-up"],
     budget:"$7.2 billion (DFAT + overseas aid)",
@@ -357,7 +364,6 @@ const CABINET = [
   },
   {
     role:"Attorney-General", name:"Mark Dreyfus", portfolio:"AG", party:"ALP", electorate:"Isaacs, VIC", since:"May 2022",
-    emoji:"⚖️",
     what:"The Attorney-General is the government's chief law officer. They oversee the federal legal system, human rights, national security legislation, and appoint federal judges.",
     covers:["Federal courts and judges","Human rights legislation","National security laws and oversight","Privacy law and the Privacy Act","Anti-corruption (National Anti-Corruption Commission)","Freedom of information"],
     budget:"$1.6 billion",
@@ -367,7 +373,6 @@ const CABINET = [
   },
   {
     role:"Minister for Health and Aged Care", name:"Mark Butler", portfolio:"Health", party:"ALP", electorate:"Hindmarsh, SA", since:"May 2022",
-    emoji:"🏥",
     what:"Oversees the entire health system including Medicare, hospitals funding (with states), the PBS (Pharmaceutical Benefits Scheme), aged care, and public health programs.",
     covers:["Medicare and GP bulk billing","Hospitals funding agreements with states","Pharmaceutical Benefits Scheme (PBS)","Aged care reform","Mental health","Tobacco and vaping regulation","TGA (Therapeutic Goods Administration)"],
     budget:"$125 billion (health and aged care combined)",
@@ -377,7 +382,6 @@ const CABINET = [
   },
   {
     role:"Minister for Education", name:"Jason Clare", portfolio:"Education", party:"ALP", electorate:"Blaxland, NSW", since:"May 2022",
-    emoji:"🎓",
     what:"Responsible for federal school funding policy, universities, vocational education (TAFE), and student support including HECS-HELP debt.",
     covers:["School funding (Gonski agreements with states)","University fees and HECS-HELP","TAFE and vocational training","Early childhood education","Australian Curriculum","Universities Accord implementation"],
     budget:"$42 billion (education)",
@@ -387,7 +391,6 @@ const CABINET = [
   },
   {
     role:"Minister for Finance", name:"Katy Gallagher", portfolio:"Finance", party:"ALP", electorate:"ACT Senate", since:"May 2022",
-    emoji:"📊",
     what:"The Finance Minister manages the government's spending and financial framework, essentially the internal budget management that sits alongside the Treasurer's macroeconomic role.",
     covers:["Government spending frameworks","Public service and APS reform","Federal property and assets","Government advertising policy","Parliamentary entitlements","Budget process administration"],
     budget:"Administers government-wide spending frameworks, not a single portfolio budget",
@@ -397,7 +400,6 @@ const CABINET = [
   },
   {
     role:"Minister for Housing", name:"Julie Collins", portfolio:"Housing", party:"ALP", electorate:"Franklin, TAS", since:"May 2022",
-    emoji:"🏠",
     what:"Leads federal housing policy including the Housing Australia Future Fund, social housing investment, the Help to Buy shared equity scheme, and the National Housing Accord with states.",
     covers:["Housing Australia Future Fund ($10B)","Social housing construction","Help to Buy shared equity scheme","National Housing Accord (with states and territories)","Homelessness funding","National Rental Affordability Scheme"],
     budget:"$10B+ Housing Australia Future Fund; $350M/year in housing-specific grants",
@@ -407,7 +409,6 @@ const CABINET = [
   },
   {
     role:"Minister for Climate Change and Energy", name:"Chris Bowen", portfolio:"Climate & Energy", party:"ALP", electorate:"McMahon, NSW", since:"May 2022",
-    emoji:"🌱",
     what:"Responsible for Australia's climate policy including the 82% renewables by 2030 target, the Capacity Investment Scheme, the Safeguard Mechanism, and energy market transition.",
     covers:["82% renewable electricity target by 2030","Capacity Investment Scheme (CIS)","Safeguard Mechanism (industrial emissions)","ARENA and CEFC (clean energy finance)","Gas market regulation","Net zero 2050 policy framework","Carbon Credit scheme"],
     budget:"$24.9 billion in clean energy investments over the forward estimates",
@@ -417,7 +418,6 @@ const CABINET = [
   },
   {
     role:"Minister for the NDIS", name:"Bill Shorten", portfolio:"NDIS", party:"ALP", electorate:"Maribyrnong, VIC", since:"May 2022",
-    emoji:"♿",
     what:"Oversees the National Disability Insurance Scheme, Australia's $42 billion support system for people with permanent and significant disabilities. Responsible for the NDIS Review implementation.",
     covers:["NDIS eligibility and plans","NDIA (National Disability Insurance Agency)","NDIS Quality and Safeguards Commission","Early childhood intervention","Foundational supports (outside NDIS)","Disability employment services"],
     budget:"$42 billion and growing: the fastest-growing federal program",
@@ -427,7 +427,6 @@ const CABINET = [
   },
   {
     role:"Minister for Trade and Tourism", name:"Don Farrell", portfolio:"Trade", party:"ALP", electorate:"SA Senate", since:"May 2022",
-    emoji:"✈️",
     what:"Manages Australia's trade relationships, free trade agreements, export promotion, and inbound tourism strategy.",
     covers:["Free trade agreements (AUSFTA, ChAFTA, etc.)","World Trade Organization representation","Export Finance Australia","Austrade (export promotion)","Tourism Australia","Wine Australia"],
     budget:"$1.3 billion",
@@ -437,7 +436,6 @@ const CABINET = [
   },
   {
     role:"Minister for Home Affairs", name:"Clare O'Neil", portfolio:"Home Affairs", party:"ALP", electorate:"Hotham, VIC", since:"May 2022",
-    emoji:"🔒",
     what:"Oversees domestic security, border protection, immigration policy, cybersecurity, and emergency management.",
     covers:["Australian Border Force","Immigration and visa system","Cybersecurity (Australian Signals Directorate coordination)","ASIO (with PM)","Emergency Management Australia","Counter-terrorism policy","Migration policy and numbers"],
     budget:"$4.8 billion",
@@ -447,7 +445,6 @@ const CABINET = [
   },
   {
     role:"Minister for Industry and Science", name:"Ed Husic", portfolio:"Industry", party:"ALP", electorate:"Chifley, NSW", since:"May 2022",
-    emoji:"⚙️",
     what:"Responsible for Australian industry development, science policy, space, and the National Reconstruction Fund which supports sovereign manufacturing capability.",
     covers:["National Reconstruction Fund ($15B)","Advanced manufacturing policy","CSIRO and science agencies","Australian Space Agency","Critical technologies (AI, quantum)","Buy Australian plan","Industry policy"],
     budget:"$2.1 billion (plus $15B NRF)",
@@ -457,7 +454,6 @@ const CABINET = [
   },
   {
     role:"Minister for Agriculture, Fisheries and Forestry", name:"Murray Watt", portfolio:"Agriculture", party:"ALP", electorate:"QLD Senate", since:"May 2022",
-    emoji:"🌾",
     what:"Responsible for Australia's agricultural sector, biosecurity, fisheries, and forestry. Manages the interface between rural industries and environmental policy.",
     covers:["Farm sector support and drought assistance","Biosecurity Australia (import controls)","Fisheries management","Forestry policy","Agricultural trade (with Trade Minister)","Live animal export","Murray-Darling Basin Plan"],
     budget:"$1.9 billion",
@@ -520,6 +516,21 @@ const findElectorate = q => {
 
 // ── Micro-components ──────────────────────────────────────────────────────────
 const Divider = ({ my=16 }) => <div style={{ borderTop:`1px solid ${C.border}`, margin:`${my}px 0` }} />;
+
+// Small status dot used everywhere Poli shows data provenance (live/cached/
+// sample badges). Same dot language as the logo's own mark — not decorative,
+// it's the one recurring visual signal for "this is real, current data."
+// Live gets a slow, subtle pulse; cached/sample stay still, since a pulse on
+// stale data would be actively misleading.
+const LiveDot = ({ color, live=false }) => (
+  <>
+    {live && <style>{`@keyframes poliPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(0.8);}}`}</style>}
+    <span style={{
+      width:6, height:6, borderRadius:99, background:color, flexShrink:0, display:"inline-block",
+      animation: live ? "poliPulse 1.8s ease-in-out infinite" : "none",
+    }} />
+  </>
+);
 
 const Tag = ({ children, color=C.accent, bg, border }) => (
   <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 9px", borderRadius:99, fontSize:11, fontWeight:600, color, background:bg||color+"18", border:`1px solid ${border||color+"33"}` }}>
@@ -764,7 +775,7 @@ function PolicyDetail({ policy }) {
             {/* Donation context */}
             {policy.donations?.length > 0 && (
               <div style={{ background:C.amberSoft, border:`1px solid ${C.amber}22`, borderRadius:12, padding:"14px", marginTop:12 }}>
-                <div style={{ fontSize:10, fontWeight:700, color:C.amber, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>💰 Donation context</div>
+                <div style={{ fontSize:10, fontWeight:700, color:C.amber, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>Donation context</div>
                 <p style={{ fontSize:11, color:C.mid, margin:"0 0 10px", lineHeight:1.5 }}>Groups with financial interests in this policy area made the following donations in recent election cycles. Poli shows correlation, not causation.</p>
                 {policy.donations.map((d,i) => (
                   <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"7px 0", borderBottom:i<policy.donations.length-1?`1px solid ${C.border}`:"none" }}>
@@ -1084,12 +1095,10 @@ function AlertsTab({ alerts, onToggleAlert, bills, dataState = "sample" }) {
 
   return (
     <div>
-      {dataState !== "live" && (
-        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12, fontSize:11, fontWeight:600, color:dataState==="cached"?C.amber:C.faint }}>
-          <span style={{ width:6, height:6, borderRadius:99, background:dataState==="cached"?C.amber:C.faint }} />
-          {dataState==="cached" ? "Couldn't reach live bill data, showing last known" : "Sample data"}
-        </div>
-      )}
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12, fontSize:11, fontWeight:600, color:dataState==="live"?C.green:dataState==="cached"?C.amber:C.faint }}>
+        <LiveDot color={dataState==="live"?C.green:dataState==="cached"?C.amber:C.faint} live={dataState==="live"} />
+        {dataState==="live" ? "Live bill data" : dataState==="cached" ? "Couldn't reach live bill data, showing last known" : "Sample data"}
+      </div>
       <div style={{ background:C.accentSoft, border:`1px solid ${C.accentMid}`, borderRadius:16, padding:"14px 16px", marginBottom:20 }}>
         <div style={{ fontSize:13, fontWeight:600, color:C.accent, marginBottom:4 }}>Bill progress alerts</div>
         <p style={{ fontSize:12, color:C.mid, margin:0, lineHeight:1.5 }}>Track bills you care about. Tap 🔔 on any policy card to add it here. You'll see updates when bills advance, pass, or polling changes significantly.</p>
@@ -1397,7 +1406,7 @@ function BudgetTracker({ measures = BUDGET_MEASURES, dataState = "sample", budge
         <p style={{ fontSize:13, color:C.mid, margin:"0 0 10px", lineHeight:1.5 }}>Key budget measures in plain English: what was funded, what was cut, and what it means for you.</p>
         {badge && (
           <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10, fontSize:11, fontWeight:600, color:badge.c }}>
-            <span style={{ width:6, height:6, borderRadius:99, background:badge.c }} />
+            <LiveDot color={badge.c} live={dataState === "live"} />
             {badge.l}
           </div>
         )}
@@ -1498,13 +1507,15 @@ function CabinetCards() {
                 cursor:"pointer", display:"flex", gap:14, alignItems:"center", textAlign:"left",
               }}
             >
-              {/* Emoji avatar */}
+              {/* Initials avatar — matches the same pattern used in the v6 CabinetCards
+                  component (no emoji, no photo licensing/hotlinking to manage) */}
               <div style={{
                 width:44, height:44, borderRadius:12, flexShrink:0,
                 background:`${pColor}10`, border:`1px solid ${pColor}25`,
-                display:"flex", alignItems:"center", justifyContent:"center", fontSize:13,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontFamily:"'Instrument Serif', serif", fontSize:16, color:pColor,
               }}>
-                {m.emoji}
+                {m.name.split(" ").filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase()}
               </div>
 
               <div style={{ flex:1, minWidth:0 }}>
