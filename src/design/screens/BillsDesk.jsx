@@ -295,13 +295,8 @@ function BriefingPane({ bill, dataState, vote, onVote, alertOn, onToggleAlert })
         );
       })()}
 
-      <SentimentBar support={bill.support} neutral={bill.neutral} oppose={bill.oppose} height={7} />
-
-      {/* Live sentiment counts */}
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.faint, margin: "4px 0 12px", fontVariantNumeric: "tabular-nums" }}>
-        <span style={{ color: bill.support > 0 ? C.green : C.faint, fontWeight: bill.support > 0 ? 600 : 400 }}>{bill.support || 0}% support</span>
-        <span>{bill.totalVotes > 0 ? `${bill.totalVotes.toLocaleString()} votes` : "Be the first to vote"}</span>
-        <span style={{ color: bill.oppose > 0 ? C.red : C.faint, fontWeight: bill.oppose > 0 ? 600 : 400 }}>{bill.oppose || 0}% oppose</span>
+      <div style={{ marginBottom: 14 }}>
+        <SentimentBar support={bill.support} neutral={bill.neutral} oppose={bill.oppose} n={bill.totalVotes} height={7} />
       </div>
 
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>

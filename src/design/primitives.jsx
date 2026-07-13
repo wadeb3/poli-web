@@ -159,9 +159,16 @@ export function SectionLabel({ children, color = C.borderDark, right }) {
 
 /**
  * Support / neutral / oppose sentiment bar with legend.
- * @param {{ support: number, neutral: number, oppose: number, height?: number }} props
+ * @param {{ support: number, neutral: number, oppose: number, height?: number,
+ *           n?: number }} props
+ *   n — optional total vote count. When provided, replaces the middle
+ *   "X% neutral" label with the raw count ("X votes" / "Be the first to
+ *   vote") instead — more honest than a neutral% on small samples, same
+ *   n-count-disclosure principle the polling screens already state
+ *   explicitly. Omit `n` to keep the neutral% label (existing behaviour,
+ *   unaffected for every other caller).
  */
-export function SentimentBar({ support, neutral, oppose, height = 6 }) {
+export function SentimentBar({ support, neutral, oppose, height = 6, n }) {
   return (
     <div>
       <div role="img" aria-label={`${support}% support, ${neutral}% neutral, ${oppose}% oppose`}
@@ -172,7 +179,7 @@ export function SentimentBar({ support, neutral, oppose, height = 6 }) {
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 7, fontSize: 11, fontVariantNumeric: "tabular-nums" }}>
         <span style={{ color: C.green, fontWeight: 600 }}>{support}% support</span>
-        <span style={{ color: C.faint }}>{neutral}% neutral</span>
+        <span style={{ color: C.faint }}>{typeof n === "number" ? (n > 0 ? `${n.toLocaleString()} vote${n === 1 ? "" : "s"}` : "Be the first to vote") : `${neutral}% neutral`}</span>
         <span style={{ color: C.red, fontWeight: 600 }}>{oppose}% oppose</span>
       </div>
     </div>
