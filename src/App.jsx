@@ -647,7 +647,7 @@ function PolicyCard({ policy, onVote, alerts, onToggleAlert }) {
           <button onClick={()=>setVote(null)} style={{ padding:"9px 14px", borderRadius:10, border:`1px solid ${C.border}`, background:"none", cursor:"pointer", fontSize:12, color:C.faint }}>Change</button>
         )}
       </div>
-      {expanded && <PolicyDetail policy={policy} />}
+      {expanded && <div className="poli-reveal"><PolicyDetail policy={policy} /></div>}
     </div>
   );
 }
@@ -1435,7 +1435,7 @@ function BudgetTracker({ measures = BUDGET_MEASURES, dataState = "sample", budge
                     <span style={{ color:C.faint, fontSize:12, flexShrink:0, width:14, textAlign:"center" }}>{isOpen ? "−" : "+"}</span>
                   </button>
                   {isOpen && (
-                    <div style={{ padding:"0 14px 16px 31px" }}>
+                    <div className="poli-reveal" style={{ padding:"0 14px 16px 31px" }}>
                       <div style={{ marginBottom:8 }}><Tag color={dirColor(m.direction)}>{dirTag(m.direction)}</Tag></div>
                       <p style={{ fontSize:13, color:C.mid, margin:"0 0 8px", lineHeight:1.6 }}>{m.plain}</p>
                       {m.impact && m.impact !== m.plain && (
@@ -1533,7 +1533,7 @@ function CabinetCards() {
 
             {/* Expanded detail */}
             {isOpen && (
-              <div style={{ borderTop:`1px solid ${C.border}`, background:C.surface }}>
+              <div className="poli-reveal" style={{ borderTop:`1px solid ${C.border}`, background:C.surface }}>
 
                 {/* What this role does */}
                 <div style={{ padding:"16px 18px 0" }}>
@@ -1619,7 +1619,7 @@ function ExpandableFullRecord({ items, PolicyRow }) {
         {expanded ? "Hide full record ↑" : `View all ${items.length} policy positions, newest first ↓`}
       </button>
       {expanded && (
-        <div style={{ marginTop:14, maxHeight:420, overflowY:"auto" }} className="poli-scroll">
+        <div className="poli-reveal poli-scroll" style={{ marginTop:14, maxHeight:420, overflowY:"auto" }}>
           {items.map(p => <PolicyRow key={p.id} p={p} />)}
         </div>
       )}
@@ -2911,6 +2911,27 @@ function PoliAppInner() {
         .poli-scroll::-webkit-scrollbar{width:6px;height:6px;}
         .poli-scroll::-webkit-scrollbar-thumb{background:var(--poli-borderDark);border-radius:99px;}
         .poli-scroll::-webkit-scrollbar-track{background:transparent;}
+
+        /* Motion — one consistent interaction language across every real
+           <button> in the app, applied via transform/box-shadow, which no
+           component sets inline. This layers on top of existing inline
+           styles rather than fighting them — an active-state button's own
+           background or border colour is untouched, since those are
+           different properties this rule never sets. */
+        button:not(:disabled){ transition:transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease; }
+        button:not(:disabled):hover{ transform:translateY(-1px); }
+        button:not(:disabled):active{ transform:translateY(0) scale(0.98); }
+        a{ transition:color 0.15s ease, opacity 0.15s ease; }
+
+        /* Reusable entrance for content that appears via conditional
+           rendering (accordions, expanded detail) — a small fade + settle
+           instead of a hard cut, applied by adding className="poli-reveal". */
+        @keyframes poliFadeIn{ from{opacity:0; transform:translateY(-4px);} to{opacity:1; transform:translateY(0);} }
+        .poli-reveal{ animation:poliFadeIn 0.18s ease; }
+
+        @media (prefers-reduced-motion: reduce){
+          *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+        }
       `}</style>
 
       {booting && <SplashScreen />}
